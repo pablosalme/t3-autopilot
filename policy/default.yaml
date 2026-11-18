@@ -1,0 +1,157 @@
+# t3-autopilot default policy (version 1).
+#
+# This file ships inside the package. Do not edit it in place: copy it to
+# ~/.t3-autopilot/policy.yaml (`npx t3-autopilot init-policy`) and edit that copy.
+# Keys in your copy override the ones here (see README, "Editing the policy").
+#
+# The candidate ORDER below is an unvalidated starting point, not a benchmark
+# result. Tune it with your own log (`get_stats`).
+
+version: 1
+
+# How many candidates recommend_model returns (1-3).
+maxCandidates: 3
+
+# Task type used when the classifier finds no keyword.
+defaultTaskType: code
+
+# Option ids that providers use for reasoning effort. The first one a model
+# declares is used. Values are clamped to what the model supports.
+effortOptionIds: [effort, reasoningEffort, reasoning_effort, variant]
+
+# Effort shifts applied on top of each candidate's effort, in steps of the scale
+# none < minimal < low < medium < high < xhigh < max.
+effortShift:
+  size: { small: -1, medium: 0, large: 1 }
+  criticality: { low: -1, normal: 0, high: 1 }
+
+# Usage-aware balancing. A candidate whose provider instance is above a
+# threshold (percent used) is moved after the others. At 100% it goes last.
+# Unknown usage never penalises. With source "none", only usage passed in the
+# recommend_model call is considered.
+usage:
+  source: none
+  thresholds: { session: 80, weekly: 75, monthly: 90, other: 90 }
+
+# Provider instance ids to never recommend (e.g. a subscription you keep for
+# interactive use only).
+excludeProviders: []
+
+# Model families. A family maps driver kinds (the `driverKind` field of
+# orchestrator_capabilities; "*" means any) to a regular expression over model
+# ids. When several ids match, the highest version wins: numeric capture groups
+# are compared in order (or, without groups, every number in the id). A new
+# model of an existing family is picked up with no change here.
+families:
+  claude-opus:
+    match:
+      claudeAgent: '^claude-opus-(\d+)(?:-(\d+))?$'
+      cursor: '^claude-opus-(\d+)(?:-(\d+))?$'
+      opencode: '^opencode(?:-go)?/claude-opus-(\d+)(?:-(\d+))?$'
+  claude-sonnet:
+    match:
+      claudeAgent: '^claude-sonnet-(\d+)(?:-(\d+))?$'
+      cursor: '^claude-sonnet-(\d+)(?:-(\d+))?$'
+      opencode: '^opencode(?:-go)?/claude-sonnet-(\d+)(?:-(\d+))?$'
+  claude-haiku:
+    match:
+      claudeAgent: '^claude-haiku-(\d+)(?:-(\d+))?$'
+      opencode: '^opencode(?:-go)?/claude-haiku-(\d+)(?:-(\d+))?$'
+  claude-fable:
+    match:
+      claudeAgent: '^claude-fable-(\d+)(?:-(\d+))?$'
+      opencode: '^opencode(?:-go)?/claude-fable-(\d+)(?:-(\d+))?$'
+  gpt:
+    match:
+      codex: '^gpt-(\d+)(?:\.(\d+))?(?:-codex)?$'
+      cursor: '^gpt-(\d+)(?:\.(\d+))?(?:-codex)?$'
+  grok:
+    match:
+      grok: '^grok-(\d+)(?:\.(\d+))?$'
+      cursor: '^grok-(\d+)(?:\.(\d+))?$'
+  grok-build:
+    match:
+      grok: '^grok-(\d+)(?:\.(\d+))?-build(?:-fast)?$'
+  gemini:
+    match:
+      cursor: '^gemini-(\d+)(?:\.(\d+))?(?:-[a-z]+)*$'
+  composer:
+    match:
+      cursor: '^composer-(\d+)(?:\.(\d+))?$'
+  opencode-free:
+    match:
+      opencode: '^opencode(?:-go)?/(?:beam-free|big-pickle)$'
+
+# Task types, in priority order (earlier wins a classifier tie). Each has the
+# keywords the classifier looks for and its candidates in preference order.
+# A candidate names a driver kind (`provider`) or an exact provider instance
+# (`instance`), a family, and optionally an effort, extra options and
+# `noDemote: true` (never moved down for usage below 100%).
+taskTypes:
+  review:
+    description: Independent review of code, a PR, a plan or a document.
+    avoidInheritedProvider: true
+    keywords: [review, audit, critique, second opinion, check the diff, code review, pr review, verify]
+    candidates:
+      - { provider: codex, family: gpt, effort: high }
+      - { provider: cursor, family: gemini, effort: high }
+      - { provider: grok, family: grok, effort: high }
+      - { provider: claudeAgent, family: claude-opus, effort: high }
+  debug:
+    description: Find and fix a bug, a failing test or a crash.
+    keywords: [debug, bug, fix, crash, failing, broken, regression, stack trace, error, flaky]
+    candidates:
+      - { provider: claudeAgent, family: claude-opus, effort: xhigh }
+      - { provider: codex, family: gpt, effort: xhigh }
+      - { provider: cursor, family: claude-opus, effort: xhigh }
+  plan:
+    description: Architecture, design docs, breaking work down.
+    keywords: [plan, architecture, architect, roadmap, breakdown, spec, strategy, trade-off, tradeoff, rfc]
+    candidates:
+      - { provider: claudeAgent, family: claude-opus, effort: xhigh }
+      - { provider: codex, family: gpt, effort: xhigh }
+      - { provider: cursor, family: claude-opus, effort: high }
+  research:
+    description: Web or codebase research, comparisons, reading docs.
+    keywords: [research, investigate, compare, survey, find out, look up, sources, benchmark, explore, summarize, summarise]
+    candidates:
+      - { provider: claudeAgent, family: claude-sonnet, effort: medium }
+      - { provider: grok, family: grok, effort: high }
+      - { provider: cursor, family: gemini, effort: medium }
+  writing:
+    description: Prose, docs, posts, emails, copy.
+    keywords: [write, draft, blog, post, article, copy, email, readme, documentation, docs, newsletter, translate, rewrite]
+    candidates:
+      - { provider: claudeAgent, family: claude-opus, effort: high }
+      - { provider: claudeAgent, family: claude-sonnet, effort: high }
+      - { provider: opencode, family: claude-opus, effort: high }
+  design:
+    description: UI, visual and UX work.
+    keywords: [design, ui, ux, layout, css, styling, mockup, landing page, component, figma, visual]
+    candidates:
+      - { provider: claudeAgent, family: claude-opus, effort: high }
+      - { provider: cursor, family: gemini, effort: high }
+      - { provider: claudeAgent, family: claude-fable, effort: high }
+  quick:
+    description: Small mechanical edits; renames, formatting, bumps.
+    keywords: [rename, typo, format, lint, bump, quick, trivial, small change, one-liner, update version, move file]
+    candidates:
+      - { provider: claudeAgent, family: claude-haiku, effort: low }
+      - { provider: cursor, family: composer }
+      - { provider: opencode, family: opencode-free }
+      - { provider: claudeAgent, family: claude-sonnet, effort: low }
+  code:
+    description: Implement a feature, refactor, write tests.
+    keywords: [implement, feature, refactor, build, add, code, function, endpoint, test, tests, migrate, integrate]
+    candidates:
+      - { provider: claudeAgent, family: claude-opus, effort: high }
+      - { provider: codex, family: gpt, effort: high }
+      - { provider: cursor, family: claude-opus, effort: high }
+      - { provider: grok, family: grok-build, effort: high }
+
+# Used when no candidate of the task type is available.
+fallback:
+  - { provider: claudeAgent, family: claude-opus, effort: high }
+  - { provider: codex, family: gpt, effort: high }
+  - { provider: cursor, family: claude-opus, effort: high }
+  - { provider: grok, family: grok }
