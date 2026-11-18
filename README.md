@@ -1,5 +1,7 @@
 # t3-autopilot
 
+[![CI](https://github.com/pablosalme/t3-autopilot/actions/workflows/ci.yml/badge.svg)](https://github.com/pablosalme/t3-autopilot/actions/workflows/ci.yml)
+
 **What:** an MCP server that recommends the provider, model and effort for each child task in [T3 Code](https://github.com/pingdotgg/t3code).
 **For:** T3 Code users with any mix of providers and subscriptions (Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse, ACP agents). T3 Code only.
 **Status:** pre-alpha (0.1.0). Works from source; **not published on npm yet**.
