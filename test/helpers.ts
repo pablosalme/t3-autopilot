@@ -13,6 +13,16 @@ export function fixture(): Capabilities {
   return parseCapabilities(JSON.parse(readFileSync(FIXTURE, "utf8")));
 }
 
+/** Raw JSON of an invented per-driver fixture in test/fixtures/drivers/<name>.json. */
+export function driverFixtureRaw(name: string): Record<string, unknown> {
+  return JSON.parse(readFileSync(new URL(`./fixtures/drivers/${name}.json`, import.meta.url), "utf8")) as Record<string, unknown>;
+}
+
+/** Parsed per-driver fixture. */
+export function driverFixture(name: string): Capabilities {
+  return parseCapabilities(driverFixtureRaw(name));
+}
+
 export function tempDir(): string {
   return mkdtempSync(join(tmpdir(), "t3-autopilot-test-"));
 }

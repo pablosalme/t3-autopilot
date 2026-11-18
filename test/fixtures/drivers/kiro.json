@@ -1,0 +1,100 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "kiro",
+  "inheritedModel": "default",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "kiro",
+      "driverKind": "kiro",
+      "displayName": "Kiro",
+      "models": [
+        {
+          "id": "default",
+          "label": "Auto"
+        },
+        {
+          "id": "claude-opus-9.1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "claude-sonnet-9.1",
+          "label": "Claude Sonnet 9.1",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "gpt-8.6-sol",
+          "label": "GPT-8.6 Sol",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "kimi-k5",
+          "label": "Kimi K5",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "max"
+              ],
+              "default": "max"
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

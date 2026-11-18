@@ -9,7 +9,8 @@ import type { Family } from "./policy.js";
 export function versionKey(id: string, match: RegExpExecArray): number[] {
   const groups = match.slice(1).filter((g): g is string => g !== undefined && /^\d+$/.test(g));
   const parts = groups.length > 0 ? groups : (id.match(/\d+/g) ?? []);
-  return parts.map((p) => Number.parseInt(p, 10));
+  // Numbers of 5+ digits are snapshot dates (claude-opus-4-20250514), not versions.
+  return parts.filter((p) => p.length < 5).map((p) => Number.parseInt(p, 10));
 }
 
 /** Compare version keys; a missing component counts as -1, so 5.5 > 5 > 4.8. */
@@ -23,10 +24,11 @@ export function compareVersions(a: number[], b: number[]): number {
   return 0;
 }
 
-/** The family regex that applies to this provider, if any. */
+/** The family regex that applies to this provider, if any: its driver's pattern, else the "*" pattern. */
 export function familyPattern(family: Family, provider: Provider): RegExp | undefined {
-  const pattern = family.match[driverKindOf(provider)] ?? family.match["*"];
-  return pattern === undefined ? undefined : new RegExp(pattern);
+  const driver = driverKindOf(provider);
+  const pattern = Object.hasOwn(family.match, driver) ? family.match[driver] : family.match["*"];
+  return pattern === undefined ? undefined : new RegExp(pattern, "i");
 }
 
 /**
@@ -36,7 +38,7 @@ export function familyPattern(family: Family, provider: Provider): RegExp | unde
 export function resolveFamily(family: Family, provider: Provider): Model | undefined {
   const re = familyPattern(family, provider);
   if (!re) return undefined;
-  const exclude = family.exclude ? new RegExp(family.exclude) : undefined;
+  const exclude = family.exclude ? new RegExp(family.exclude, "i") : undefined;
   let best: { model: Model; key: number[] } | undefined;
   for (const model of provider.models) {
     if (exclude?.test(model.id)) continue;

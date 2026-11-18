@@ -77,3 +77,31 @@ describe("loadPolicy", () => {
     expect(() => loadPolicy({ userPath })).toThrow(/provider/);
   });
 });
+
+describe("review regressions", () => {
+  it("validates the exclude regex at load time (#13)", () => {
+    const userPath = join(tempDir(), "policy.yaml");
+    writeFileSync(userPath, "families:\n  broken:\n    match: { '*': '^x$' }\n    exclude: '(['\n");
+    expect(() => loadPolicy({ userPath })).toThrow(/families\.broken\.exclude: invalid regex/);
+  });
+
+  it("names the file when the YAML is broken (#19)", () => {
+    const userPath = join(tempDir(), "policy.yaml");
+    writeFileSync(userPath, "taskTypes: [unclosed\n");
+    expect(() => loadPolicy({ userPath })).toThrow(new RegExp(`${userPath.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&")}: cannot read policy YAML`));
+  });
+
+  it("ignores a __proto__ key in an override", () => {
+    const userPath = join(tempDir(), "policy.yaml");
+    writeFileSync(userPath, "taskTypes:\n  __proto__:\n    candidates: [{ provider: x, family: claude-opus }]\n");
+    const { policy } = loadPolicy({ userPath });
+    expect(Object.hasOwn(policy.taskTypes, "__proto__")).toBe(false);
+    expect(policy.taskTypes.code).toBeDefined();
+  });
+
+  it("rejects numeric option values in a candidate (#14)", () => {
+    const userPath = join(tempDir(), "policy.yaml");
+    writeFileSync(userPath, "taskTypes:\n  code:\n    candidates:\n      - { provider: cursor, family: composer, options: { fastMode: 1 } }\n");
+    expect(() => loadPolicy({ userPath })).toThrow(/Invalid policy/);
+  });
+});

@@ -6,9 +6,16 @@ import type { Policy } from "./policy.js";
  * (kind + percent used + reset time, optionally scoped to some models), so a
  * future source that reads them from T3 needs no translation.
  */
+export const USAGE_KINDS = ["session", "weekly", "monthly", "other"] as const;
+export type UsageKind = (typeof USAGE_KINDS)[number];
+
+/**
+ * Deliberately loose: a window with an unknown `kind` or a percentage outside
+ * 0-100 is ignored when evaluating usage, instead of failing the whole call.
+ */
 export const UsageWindowSchema = z.object({
-  kind: z.enum(["session", "weekly", "monthly", "other"]),
-  usedPercent: z.number().min(0).max(100),
+  kind: z.string(),
+  usedPercent: z.number(),
   resetsAt: z.string().optional(),
   /** If present, the window only applies to these model ids. */
   modelIds: z.array(z.string()).optional(),
@@ -65,11 +72,17 @@ export interface UsageVerdict {
   note?: string;
 }
 
+/** Known kind and a finite percentage in 0-100. Anything else is ignored. */
+export function isUsableWindow(w: UsageWindow): w is UsageWindow & { kind: UsageKind } {
+  return (USAGE_KINDS as readonly string[]).includes(w.kind) && Number.isFinite(w.usedPercent) && w.usedPercent >= 0 && w.usedPercent <= 100;
+}
+
 /** Evaluate one provider/model against the policy thresholds. */
 export function evaluateUsage(usage: ProviderUsage | undefined, modelId: string, policy: Policy): UsageVerdict {
   if (!usage) return { tier: 0 };
   let worst: UsageVerdict = { tier: 0 };
   for (const w of usage.windows) {
+    if (!isUsableWindow(w)) continue;
     if (w.modelIds && !w.modelIds.includes(modelId)) continue;
     const threshold = policy.usage.thresholds[w.kind];
     let tier: UsageTier = 0;

@@ -1,0 +1,57 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "codex",
+  "inheritedModel": "gpt-9-astra",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "cursor",
+      "driverKind": "cursor",
+      "displayName": "Cursor",
+      "models": [
+        {
+          "id": "gemini-8-pro",
+          "label": "Gemini 8 Pro",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "gemini-7-pro",
+          "label": "Gemini 7 Pro"
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "opencode",
+      "driverKind": "opencode",
+      "displayName": "OpenCode",
+      "models": [],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

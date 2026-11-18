@@ -1,0 +1,134 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "cursor",
+  "inheritedModel": "default",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "cursor",
+      "driverKind": "cursor",
+      "displayName": "Cursor",
+      "models": [
+        {
+          "id": "default",
+          "label": "Auto"
+        },
+        {
+          "id": "composer-4",
+          "label": "Composer 4",
+          "options": [
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            }
+          ]
+        },
+        {
+          "id": "composer-3.5",
+          "label": "Composer 3.5",
+          "options": [
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-9-1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "gpt-9.1-sol",
+          "label": "GPT-9.1 Sol",
+          "options": [
+            {
+              "id": "reasoning",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "gemini-7-pro",
+          "label": "Gemini 7 Pro",
+          "options": [
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            },
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "gemini-7.5-flash-lite",
+          "label": "Gemini 7.5 Flash Lite"
+        },
+        {
+          "id": "grok-8",
+          "label": "Grok 8"
+        }
+      ],
+      "omittedModels": 40,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

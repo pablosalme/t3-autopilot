@@ -6,11 +6,16 @@ import { defaultPolicyPath, userPolicyPath } from "./paths.js";
 export const EFFORT_SCALE = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 export type Effort = (typeof EFFORT_SCALE)[number];
 
-const OptionValue = z.union([z.string(), z.number(), z.boolean()]);
+/** T3 option values are strings or booleans. */
+const OptionValue = z.union([z.string(), z.boolean()]);
 
 export const CandidateRuleSchema = z
   .object({
-    /** Driver kind (e.g. claudeAgent, codex, cursor). Matches every enabled instance of that driver. */
+    /**
+     * Driver kind (e.g. claudeAgent, codex, cursor). Matches every enabled
+     * instance of that driver. "*" matches every eligible instance of any
+     * driver, in the order orchestrator_capabilities lists them.
+     */
     provider: z.string().optional(),
     /** Exact provider instance id. Takes precedence over `provider`. */
     instance: z.string().optional(),
@@ -30,6 +35,8 @@ export const FamilySchema = z.object({
   match: z.record(z.string(), z.string()),
   /** Optional regular expression; matching ids are ignored. */
   exclude: z.string().optional(),
+  /** Words for orchestrator_capabilities `search` that find this family's models (e.g. "opus"). */
+  search: z.string().optional(),
 });
 
 export const TaskTypeSchema = z.object({
@@ -66,6 +73,12 @@ export const PolicySchema = z.object({
   families: z.record(z.string(), FamilySchema),
   taskTypes: z.record(z.string(), TaskTypeSchema),
   fallback: z.array(CandidateRuleSchema).default([]),
+  /**
+   * When the task type and `fallback` leave free slots, recommend each
+   * remaining eligible provider's default model ("auto"/"default"), or its
+   * first listed model, marked as low confidence.
+   */
+  genericFallback: z.boolean().default(true),
 });
 
 export type CandidateRule = z.infer<typeof CandidateRuleSchema>;
@@ -92,6 +105,7 @@ export function mergePolicy(base: Plain, override: Plain): Plain {
     if ((key === "families" || key === "taskTypes") && isPlain(value)) {
       const merged: Plain = { ...(isPlain(base[key]) ? (base[key] as Plain) : {}) };
       for (const [name, entry] of Object.entries(value)) {
+        if (name === "__proto__") continue;
         if (entry === null) delete merged[name];
         else merged[name] = entry;
       }
@@ -110,7 +124,12 @@ export function mergePolicy(base: Plain, override: Plain): Plain {
 }
 
 function readYaml(path: string): Plain {
-  const raw = parseYaml(readFileSync(path, "utf8")) as unknown;
+  let raw: unknown;
+  try {
+    raw = parseYaml(readFileSync(path, "utf8")) as unknown;
+  } catch (e) {
+    throw new Error(`${path}: cannot read policy YAML: ${(e as Error).message}`);
+  }
   if (raw === null || raw === undefined) return {};
   if (!isPlain(raw)) throw new Error(`${path}: expected a YAML mapping at the top level`);
   return raw;
@@ -132,14 +151,21 @@ export function validatePolicy(raw: unknown, source: string): Policy {
         problems.push(`families.${name}.match.${driver}: invalid regex (${(e as Error).message})`);
       }
     }
+    if (fam.exclude !== undefined) {
+      try {
+        new RegExp(fam.exclude);
+      } catch (e) {
+        problems.push(`families.${name}.exclude: invalid regex (${(e as Error).message})`);
+      }
+    }
   }
   const checkRules = (rules: CandidateRule[], where: string) =>
     rules.forEach((r, i) => {
-      if (!policy.families[r.family]) problems.push(`${where}[${i}]: unknown family "${r.family}"`);
+      if (!Object.hasOwn(policy.families, r.family)) problems.push(`${where}[${i}]: unknown family "${r.family}"`);
     });
   for (const [name, t] of Object.entries(policy.taskTypes)) checkRules(t.candidates, `taskTypes.${name}.candidates`);
   checkRules(policy.fallback, "fallback");
-  if (!policy.taskTypes[policy.defaultTaskType]) {
+  if (!Object.hasOwn(policy.taskTypes, policy.defaultTaskType)) {
     problems.push(`defaultTaskType "${policy.defaultTaskType}" is not a task type`);
   }
   if (problems.length) throw new Error(`Invalid policy (${source}):\n- ${problems.join("\n- ")}`);

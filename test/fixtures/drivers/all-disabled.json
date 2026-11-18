@@ -1,0 +1,221 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": null,
+  "inheritedModel": null,
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "claudeAgent",
+      "driverKind": "claudeAgent",
+      "displayName": "Claude",
+      "models": [
+        {
+          "id": "claude-opus-9-2",
+          "label": "Claude Opus 9.2",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "ultracode",
+              "values": [
+                false,
+                true
+              ]
+            },
+            {
+              "id": "contextWindow",
+              "values": [
+                "200k",
+                "1m"
+              ],
+              "default": "200k"
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-9-1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-4-20250514",
+          "label": "Claude Opus 4 (dated snapshot)",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "claude-sonnet-9-1",
+          "label": "Claude Sonnet 9.1",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "claude-haiku-9-0",
+          "label": "Claude Haiku 9.0",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "claude-fable-8-3",
+          "label": "Claude Fable 8.3",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider instance is disabled."
+      ]
+    },
+    {
+      "providerInstanceId": "cursor",
+      "driverKind": "cursor",
+      "displayName": "Cursor",
+      "models": [],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider executable is not installed."
+      ]
+    },
+    {
+      "providerInstanceId": "grok",
+      "driverKind": "grok",
+      "displayName": "Grok",
+      "models": [
+        {
+          "id": "grok-build",
+          "label": "Grok Build"
+        },
+        {
+          "id": "grok-8.1",
+          "label": "Grok 8.1",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-8",
+          "label": "Grok 8",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-8.1-fast",
+          "label": "Grok 8.1 Fast"
+        },
+        {
+          "id": "grok-8-build",
+          "label": "Grok 8 Build",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider is not authenticated."
+      ]
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

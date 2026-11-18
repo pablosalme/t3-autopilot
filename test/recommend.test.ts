@@ -47,7 +47,7 @@ describe("recommendModel", () => {
       caps.providers.find((p) => p.providerInstanceId === "codex")!.constraints = ["Provider instance is disabled."];
       const r = await rec({ capabilities: caps });
       expect(ids(r).some((id) => id.startsWith("codex/"))).toBe(false);
-      expect(ids(r)).toEqual(["claudeAgent/claude-opus-7-1", "cursor/claude-opus-7", "grok/grok-6-build-fast"]);
+      expect(ids(r)).toEqual(["claudeAgent/claude-opus-7-1", "cursor/claude-opus-7", "opencode/opencode/claude-opus-7-1"]);
       expect(r.skipped).toContain("codex: Provider instance is disabled.");
       expect(r.skipped).toContain("antigravity: Provider instance is disabled.");
     });
@@ -100,7 +100,7 @@ describe("recommendModel", () => {
 
     it("demotes a candidate above the threshold", async () => {
       const r = await rec({ usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 82 }] }] });
-      expect(ids(r)).toEqual(["codex/gpt-6.2-codex", "cursor/claude-opus-7", "grok/grok-6-build-fast"]);
+      expect(ids(r)).toEqual(["codex/gpt-6.2-codex", "cursor/claude-opus-7", "opencode/opencode/claude-opus-7-1"]);
       expect(r.usageSource).toBe("none+call");
     });
 
@@ -124,7 +124,7 @@ describe("recommendModel", () => {
             { providerInstanceId: "codex", windows: [{ kind: "session", usedPercent: 90 }] },
           ],
         },
-        policyWith({ maxCandidates: 3, taskTypes: { code: { candidates: [
+        policyWith({ maxCandidates: 3, fallback: [], genericFallback: false, taskTypes: { code: { candidates: [
           { provider: "claudeAgent", family: "claude-opus", effort: "high" },
           { provider: "codex", family: "gpt", effort: "high" },
         ] } } }),
@@ -166,20 +166,34 @@ describe("recommendModel", () => {
   });
 
   it("uses the fallback list when no candidate of the type is available", async () => {
-    const p = policyWith({ taskTypes: { code: { candidates: [{ provider: "pi", family: "claude-opus" }] } } });
+    const p = policyWith({ taskTypes: { code: { candidates: [{ provider: "pi", family: "claude-opus", effort: "low" }] } } });
     const r = await rec({}, p);
     expect(r.candidates[0]!.reason).toMatch(/^fallback #1/);
-    expect(r.skipped.some((s) => s.includes("provider not available"))).toBe(true);
+    expect(r.candidates[0]!.source).toBe("fallback");
+    // The fallback follows the task type's effort, not its own.
+    expect(r.candidates[0]!.options).toEqual([{ id: "effort", value: "low" }]);
+    // A driver the user does not have is not reported as a problem.
+    expect(r.skipped.some((s) => s.includes("pi"))).toBe(false);
+  });
+
+  it("fills the free slots with the fallback list up to maxCandidates", async () => {
+    const p = policyWith({ taskTypes: { code: { candidates: [{ provider: "claudeAgent", family: "claude-opus", effort: "high" }] } } });
+    const r = await rec({}, p);
+    expect(r.candidates).toHaveLength(3);
+    expect(r.candidates.map((c) => c.source)).toEqual(["taskType", "fallback", "fallback"]);
+    expect(ids(r)).toEqual(["claudeAgent/claude-opus-7-1", "cursor/claude-opus-7", "opencode/opencode/claude-opus-7-1"]);
   });
 
   it("falls back to the orchestrator's own model when nothing else resolves", async () => {
     const p = policyWith({
       taskTypes: { code: { candidates: [{ provider: "pi", family: "claude-opus" }] } },
       fallback: [],
+      genericFallback: false,
     });
     const r = await rec({}, p);
     expect(r.candidates).toEqual([
-      expect.objectContaining({ providerInstanceId: "claudeAgent", model: "claude-opus-7-1", options: [{ id: "effort", value: "high" }] }),
+      expect.objectContaining({ providerInstanceId: "claudeAgent", model: "claude-opus-7-1", options: [{ id: "effort", value: "high" }], source: "inherited", sameAsOrchestrator: true }),
     ]);
+    expect(r.candidates[0]!.reason).toMatch(/low confidence/);
   });
 });

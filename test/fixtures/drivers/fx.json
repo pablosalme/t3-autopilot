@@ -1,0 +1,82 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "fx",
+  "inheritedModel": "default",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "fx",
+      "driverKind": "fx",
+      "displayName": "fx",
+      "models": [
+        {
+          "id": "default",
+          "label": "Default (kestrel-3)",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "auto",
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "kestrel-3",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "auto",
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "kestrel-2",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "auto",
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

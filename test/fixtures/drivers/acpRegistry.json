@@ -1,0 +1,61 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "acp-vibe",
+  "inheritedModel": "default",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "acp-vibe",
+      "driverKind": "acpRegistry",
+      "displayName": "Vibe (ACP)",
+      "models": [
+        {
+          "id": "default",
+          "label": "Default"
+        },
+        {
+          "id": "devstral-9",
+          "label": "Devstral 9",
+          "options": [
+            {
+              "id": "thought_level",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "mode",
+              "values": [
+                "default",
+                "plan"
+              ],
+              "default": "default"
+            }
+          ]
+        },
+        {
+          "id": "devstral-9-small",
+          "label": "Devstral 9 Small"
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

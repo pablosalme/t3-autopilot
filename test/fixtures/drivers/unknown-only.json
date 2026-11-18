@@ -1,0 +1,57 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "sparrow",
+  "inheritedModel": "sparrow-large",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "sparrow",
+      "driverKind": "sparrowCli",
+      "displayName": "Sparrow",
+      "models": [
+        {
+          "id": "sparrow-large",
+          "label": "Sparrow Large",
+          "options": [
+            {
+              "id": "depth",
+              "values": [
+                "shallow",
+                "deep"
+              ],
+              "default": "deep"
+            }
+          ]
+        },
+        {
+          "id": "sparrow-small",
+          "label": "Sparrow Small"
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "heron",
+      "driverKind": "heronAgent",
+      "displayName": "Heron",
+      "models": [],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

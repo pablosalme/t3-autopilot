@@ -1,0 +1,51 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "antigravity",
+  "inheritedModel": "antigravity-default",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "antigravity",
+      "driverKind": "antigravity",
+      "displayName": "Antigravity",
+      "models": [
+        {
+          "id": "antigravity-default",
+          "label": "Default"
+        },
+        {
+          "id": "gemini-7-carbon",
+          "label": "Gemini 7 Carbon"
+        },
+        {
+          "id": "gemini-6.8-flash-high",
+          "label": "Gemini 6.8 Flash (High)"
+        },
+        {
+          "id": "gemini-6.8-flash-low",
+          "label": "Gemini 6.8 Flash (Low)"
+        },
+        {
+          "id": "gemini-6.1-pro-low",
+          "label": "Gemini 6.1 Pro (Low)"
+        }
+      ],
+      "omittedModels": 6,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

@@ -1,4 +1,4 @@
-import type { Model, OptionValue, SelectedOption } from "./capabilities.js";
+import type { Model, ModelOption, OptionValue, SelectedOption } from "./capabilities.js";
 import { EFFORT_SCALE, type Effort } from "./policy.js";
 
 export function shiftEffort(effort: Effort, steps: number): Effort {
@@ -27,6 +27,28 @@ export function clampEffort(wanted: Effort, supported: readonly OptionValue[]): 
   return EFFORT_SCALE[pick as number] as Effort;
 }
 
+/** True when an option can carry an effort level: free-form, or at least one value on the scale. */
+function takesEffort(opt: ModelOption): boolean {
+  return opt.values === undefined || opt.values.some((v) => typeof v === "string" && EFFORT_SCALE.includes(v as Effort));
+}
+
+/** Option ids that look like a reasoning control on agents with their own ids (ACP agents). */
+const EFFORT_LIKE_ID = /effort|reason|think|thought/i;
+
+/**
+ * The option that sets reasoning effort: the first id of `effortOptionIds`
+ * that the model declares with effort values, else any option whose id looks
+ * like a reasoning control and has effort values. A boolean `thinking` toggle
+ * is never used for effort.
+ */
+export function findEffortOption(declared: readonly ModelOption[], effortOptionIds: readonly string[]): ModelOption | undefined {
+  for (const id of effortOptionIds) {
+    const opt = declared.find((o) => o.id === id);
+    if (opt && takesEffort(opt)) return opt;
+  }
+  return declared.find((o) => EFFORT_LIKE_ID.test(o.id) && o.values !== undefined && takesEffort(o));
+}
+
 export interface BuiltOptions {
   options: SelectedOption[];
   /** The effort actually set, if any. */
@@ -50,7 +72,7 @@ export function buildOptions(
   let effortSet: Effort | undefined;
 
   if (effort) {
-    const opt = effortOptionIds.map((id) => declared.find((o) => o.id === id)).find((o) => o !== undefined);
+    const opt = findEffortOption(declared, effortOptionIds);
     if (!opt) {
       notes.push("model has no effort option; using its default");
     } else {

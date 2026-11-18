@@ -1,0 +1,83 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "grok",
+  "inheritedModel": "grok-build",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "grok",
+      "driverKind": "grok",
+      "displayName": "Grok",
+      "models": [
+        {
+          "id": "grok-build",
+          "label": "Grok Build"
+        },
+        {
+          "id": "grok-8.1",
+          "label": "Grok 8.1",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-8",
+          "label": "Grok 8",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-8.1-fast",
+          "label": "Grok 8.1 Fast"
+        },
+        {
+          "id": "grok-8-build",
+          "label": "Grok 8 Build",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

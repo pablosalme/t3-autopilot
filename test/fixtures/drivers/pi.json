@@ -1,0 +1,73 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "pi",
+  "inheritedModel": "default",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "pi",
+      "driverKind": "pi",
+      "displayName": "Pi",
+      "models": [
+        {
+          "id": "default",
+          "label": "Default"
+        },
+        {
+          "id": "anthropic/claude-opus-9-1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "thinking",
+              "values": [
+                "off",
+                "minimal",
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "google/gemini-7-pro",
+          "label": "Gemini 7 Pro",
+          "options": [
+            {
+              "id": "thinking",
+              "values": [
+                "off",
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "openrouter/qwen/qwen5-coder-plus",
+          "label": "Qwen5 Coder Plus"
+        }
+      ],
+      "omittedModels": 10,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

@@ -1,0 +1,489 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "codex",
+  "inheritedModel": "gpt-9-astra",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "codex",
+      "driverKind": "codex",
+      "displayName": "Codex",
+      "models": [
+        {
+          "id": "gpt-9-astra",
+          "label": "GPT-9 Astra",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "serviceTier",
+              "values": [
+                "default",
+                "fast"
+              ],
+              "default": "default"
+            }
+          ]
+        },
+        {
+          "id": "gpt-9.1-sol",
+          "label": "GPT-9.1 Sol",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "gpt-9-luna",
+          "label": "GPT-9 Luna",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "minimal",
+                "low",
+                "medium"
+              ],
+              "default": "low"
+            }
+          ]
+        },
+        {
+          "id": "gpt-8.6-terra",
+          "label": "GPT-8.6 Terra",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "gpt-8.4-mini",
+          "label": "GPT-8.4 Mini"
+        },
+        {
+          "id": "gpt-8.3-codex-spark",
+          "label": "GPT-8.3 Codex Spark"
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "cursor",
+      "driverKind": "cursor",
+      "displayName": "Cursor",
+      "models": [
+        {
+          "id": "default",
+          "label": "Auto"
+        },
+        {
+          "id": "composer-4",
+          "label": "Composer 4",
+          "options": [
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            }
+          ]
+        },
+        {
+          "id": "composer-3.5",
+          "label": "Composer 3.5",
+          "options": [
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-9-1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "gpt-9.1-sol",
+          "label": "GPT-9.1 Sol",
+          "options": [
+            {
+              "id": "reasoning",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "gemini-7-pro",
+          "label": "Gemini 7 Pro",
+          "options": [
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            },
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "gemini-7.5-flash-lite",
+          "label": "Gemini 7.5 Flash Lite"
+        },
+        {
+          "id": "grok-8",
+          "label": "Grok 8"
+        }
+      ],
+      "omittedModels": 40,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "opencode",
+      "driverKind": "opencode",
+      "displayName": "OpenCode",
+      "models": [
+        {
+          "id": "opencode/big-pickle",
+          "label": "Big Pickle",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "agent",
+              "values": [
+                "build",
+                "plan"
+              ],
+              "default": "build"
+            }
+          ]
+        },
+        {
+          "id": "opencode/nova-3-free",
+          "label": "Nova 3 Free",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/kimi-k5",
+          "label": "Kimi K5",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "anthropic/claude-sonnet-9-1",
+          "label": "Claude Sonnet 9.1",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "openai/gpt-9.1-sol",
+          "label": "GPT-9.1 Sol",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/glm-8",
+          "label": "GLM 8",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/deepseek-v7.1-flash",
+          "label": "DeepSeek V7.1 Flash"
+        },
+        {
+          "id": "openrouter/anthropic/claude-opus-9.1",
+          "label": "Claude Opus 9.1 (OpenRouter)",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        }
+      ],
+      "omittedModels": 67,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "kiro",
+      "driverKind": "kiro",
+      "displayName": "Kiro",
+      "models": [
+        {
+          "id": "default",
+          "label": "Auto"
+        },
+        {
+          "id": "claude-opus-9.1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "claude-sonnet-9.1",
+          "label": "Claude Sonnet 9.1",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "gpt-8.6-sol",
+          "label": "GPT-8.6 Sol",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "kimi-k5",
+          "label": "Kimi K5",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "max"
+              ],
+              "default": "max"
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "pi",
+      "driverKind": "pi",
+      "displayName": "Pi",
+      "models": [
+        {
+          "id": "default",
+          "label": "Default"
+        },
+        {
+          "id": "anthropic/claude-opus-9-1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "thinking",
+              "values": [
+                "off",
+                "minimal",
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "google/gemini-7-pro",
+          "label": "Gemini 7 Pro",
+          "options": [
+            {
+              "id": "thinking",
+              "values": [
+                "off",
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "openrouter/qwen/qwen5-coder-plus",
+          "label": "Qwen5 Coder Plus"
+        }
+      ],
+      "omittedModels": 10,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

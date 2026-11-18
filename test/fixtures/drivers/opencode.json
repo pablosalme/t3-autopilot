@@ -1,0 +1,154 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "opencode",
+  "inheritedModel": "opencode/big-pickle",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "opencode",
+      "driverKind": "opencode",
+      "displayName": "OpenCode",
+      "models": [
+        {
+          "id": "opencode/big-pickle",
+          "label": "Big Pickle",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "agent",
+              "values": [
+                "build",
+                "plan"
+              ],
+              "default": "build"
+            }
+          ]
+        },
+        {
+          "id": "opencode/nova-3-free",
+          "label": "Nova 3 Free",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/kimi-k5",
+          "label": "Kimi K5",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "anthropic/claude-sonnet-9-1",
+          "label": "Claude Sonnet 9.1",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "openai/gpt-9.1-sol",
+          "label": "GPT-9.1 Sol",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/glm-8",
+          "label": "GLM 8",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/deepseek-v7.1-flash",
+          "label": "DeepSeek V7.1 Flash"
+        },
+        {
+          "id": "openrouter/anthropic/claude-opus-9.1",
+          "label": "Claude Opus 9.1 (OpenRouter)",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        }
+      ],
+      "omittedModels": 67,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}
