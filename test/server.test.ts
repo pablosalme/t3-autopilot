@@ -4,7 +4,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it } from "vitest";
 import { loadPolicy } from "../src/policy.js";
 import { createServer } from "../src/server.js";
-import { fixture, tempDir } from "./helpers.js";
+import { driverFixtureRaw, fixture, tempDir } from "./helpers.js";
 
 async function connect() {
   const dir = tempDir();
@@ -50,4 +50,98 @@ describe("MCP server", () => {
     const res = await client.callTool({ name: "recommend_model", arguments: { task: "x", capabilities: "{bad" } });
     expect(res.isError).toBe(true);
   });
+
+  it("keeps the last capabilities so later calls can omit them (#8)", async () => {
+    const client = await connect();
+    const first = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code" } });
+    expect(first.isError).toBe(true);
+    expect(JSON.stringify(first.content)).toMatch(/No capabilities yet/);
+
+    const withCaps = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code", capabilities: fixture() } });
+    expect((withCaps.structuredContent as { capabilitiesFrom: string }).capabilitiesFrom).toBe("call");
+    const cached = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code" } });
+    expect(cached.isError).toBeFalsy();
+    const data = cached.structuredContent as { capabilitiesFrom: string; candidates: { providerInstanceId: string }[] };
+    expect(data.capabilitiesFrom).toBe("cache");
+    expect(data.candidates[0]!.providerInstanceId).toBe("claudeAgent");
+  });
+
+  it("merges a search output into the cached capabilities", async () => {
+    const client = await connect();
+    await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "review", capabilities: driverFixtureRaw("cursor") } });
+    const merged = await client.callTool({
+      name: "recommend_model",
+      arguments: { task: "x", taskType: "review", capabilities: driverFixtureRaw("search-cursor-gemini"), mergeCapabilities: true },
+    });
+    const data = merged.structuredContent as { capabilitiesFrom: string; candidates: { model: string }[] };
+    expect(data.capabilitiesFrom).toBe("merged");
+    expect(data.candidates.map((c) => c.model)).toContain("gemini-8-pro");
+    // The merge is kept for the next call.
+    const again = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "review" } });
+    expect((again.structuredContent as typeof data).candidates.map((c) => c.model)).toContain("gemini-8-pro");
+  });
+
+  it("accepts a bare providers array (#10)", async () => {
+    const client = await connect();
+    const res = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code", capabilities: fixture().providers } });
+    expect(res.isError).toBeFalsy();
+  });
+
+  it("rejects prototype keys as taskType everywhere (#6)", async () => {
+    const client = await connect();
+    for (const taskType of ["constructor", "__proto__"]) {
+      const rec = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType, capabilities: fixture() } });
+      expect(rec.isError).toBe(true);
+      expect(JSON.stringify(rec.content)).toMatch(/Unknown taskType/);
+      const out = await client.callTool({
+        name: "log_outcome",
+        arguments: { taskType, providerInstanceId: "a", model: "m", outcome: "success" },
+      });
+      expect(out.isError).toBe(true);
+      const del = await client.callTool({ name: "log_delegation", arguments: { taskType, providerInstanceId: "a", model: "m" } });
+      expect(del.isError).toBe(true);
+    }
+    const stats = await client.callTool({ name: "get_stats", arguments: { taskType: "constructor" } });
+    expect(stats.isError).toBeFalsy();
+    expect((stats.structuredContent as { stats: unknown }).stats).toBeNull();
+  });
+
+  it("validates input: bad enums, missing fields, bad dates", async () => {
+    const client = await connect();
+    const bad = async (name: string, args: Record<string, unknown>) => {
+      const res = await client.callTool({ name, arguments: args }).catch((e: unknown) => ({ isError: true, thrown: e }));
+      expect(res.isError, `${name} ${JSON.stringify(args)}`).toBe(true);
+    };
+    await bad("recommend_model", { task: "x", size: "huge", capabilities: fixture() });
+    await bad("recommend_model", { task: "", capabilities: fixture() });
+    await bad("recommend_model", { capabilities: fixture() });
+    await bad("log_outcome", { outcome: "maybe", taskType: "code", providerInstanceId: "a", model: "m" });
+    await bad("log_outcome", { outcome: "success" });
+    await bad("get_stats", { since: "not a date" });
+  });
+
+  it("ignores invalid usage windows instead of failing (#11)", async () => {
+    const client = await connect();
+    const res = await client.callTool({
+      name: "recommend_model",
+      arguments: {
+        task: "x",
+        taskType: "code",
+        capabilities: fixture(),
+        usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "daily", usedPercent: 120 }] }],
+      },
+    });
+    expect(res.isError).toBeFalsy();
+    expect((res.structuredContent as { candidates: { providerInstanceId: string }[] }).candidates[0]!.providerInstanceId).toBe("claudeAgent");
+  });
+
+  it("lists every task type on its own line in the tool description (#3)", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const desc = tools.find((t) => t.name === "recommend_model")!.description!;
+    for (const t of ["review", "debug", "plan", "research", "quick", "code", "design", "writing"]) {
+      expect(desc).toMatch(new RegExp(`\\n- ${t}: `));
+    }
+  });
 });
+

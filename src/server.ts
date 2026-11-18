@@ -1,10 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { SelectedOptionSchema } from "./capabilities.js";
+import { mergeCapabilities, parseCapabilities, SelectedOptionSchema, type Capabilities } from "./capabilities.js";
 import { computeStats, logDelegation, logOutcome, OUTCOMES, readLog } from "./log.js";
 import { logPath as defaultLogPath } from "./paths.js";
-import { loadPolicy, type LoadedPolicy } from "./policy.js";
+import { loadPolicy, type LoadedPolicy, type Policy } from "./policy.js";
 import { recommendModel } from "./recommend.js";
 import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usage.js";
 
@@ -34,14 +34,23 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   const getLogPath = opts.logPath ?? defaultLogPath;
 
   // Read once at startup only to describe the task types; calls reload it.
-  let typeList = "code, debug, review, research, writing, design, plan, quick";
+  let typeList = "- code\n- debug\n- review\n- research\n- writing\n- design\n- plan\n- quick";
   try {
     typeList = Object.entries(load().policy.taskTypes)
-      .map(([name, t]) => (t.description ? `${name} (${t.description})` : name))
-      .join("; ");
+      .map(([name, t]) => (t.description ? `- ${name}: ${t.description}` : `- ${name}`))
+      .join("\n");
   } catch {
     // An invalid policy is reported by each tool call.
   }
+
+  // Last capabilities received, so the orchestrator does not resend ~10 KB on every call.
+  let cached: Capabilities | undefined;
+
+  const requireTaskType = (policy: Policy, taskType: string | undefined) => {
+    if (taskType !== undefined && !Object.hasOwn(policy.taskTypes, taskType)) {
+      throw new Error(`Unknown taskType "${taskType}". Known types: ${Object.keys(policy.taskTypes).join(", ")}`);
+    }
+  };
 
   const server = new McpServer({ name: "t3-autopilot", version: VERSION });
 
@@ -50,17 +59,30 @@ export function createServer(opts: ServerOptions = {}): McpServer {
     {
       title: "Recommend a model for delegate_task",
       description:
-        "Call before every T3 Code delegate_task. Returns 1-3 candidates, best first; pass a candidate's " +
-        "providerInstanceId, model and options as delegate_task.target. If the first cannot start or hits a usage " +
-        `limit, use the next. Task types: ${typeList}.`,
+        "Call before every child task, including ones you would start with your native subagent tool. Returns 1-3 " +
+        "candidates, best first; pass a candidate's providerInstanceId, model and options as delegate_task.target " +
+        "(sameAsOrchestrator: true means your native subagent tool also works). If the first cannot start or hits a " +
+        "usage limit, use the next. Always pass taskType, one of:\n" +
+        typeList,
       inputSchema: {
         task: z.string().min(1).describe("One line describing what the child will do."),
-        taskType: z.string().optional().describe("Task type, if known. Omit to classify from `task`."),
+        taskType: z
+          .string()
+          .optional()
+          .describe("Task type from the list in the description. Pass it; the keyword classifier is only a last resort."),
         size: z.enum(["small", "medium", "large"]).optional().describe("Rough size of the task. Shifts effort."),
         criticality: z.enum(["low", "normal", "high"]).optional().describe("How costly a mistake is. Shifts effort."),
         capabilities: z
-          .union([z.object({}).passthrough(), z.string()])
-          .describe("The full output of T3 Code's orchestrator_capabilities, as returned (object or JSON string)."),
+          .union([z.object({}).passthrough(), z.string(), z.array(z.unknown())])
+          .optional()
+          .describe(
+            "Output of T3 Code's orchestrator_capabilities, as returned (object, JSON string, providers array, or a " +
+              "list of outputs). Needed on the first call; later calls reuse the last one received.",
+          ),
+        mergeCapabilities: z
+          .boolean()
+          .optional()
+          .describe("Merge `capabilities` into the ones kept from earlier calls (use it for orchestrator_capabilities `search` output)."),
         usage: z
           .array(ProviderUsageSchema)
           .optional()
@@ -72,7 +94,21 @@ export function createServer(opts: ServerOptions = {}): McpServer {
       try {
         const { policy } = load();
         const usageSource = opts.usageSource ?? createUsageSource(policy);
-        return ok(await recommendModel(args, policy, usageSource));
+        let capabilities: Capabilities;
+        if (args.capabilities !== undefined) {
+          const given = parseCapabilities(args.capabilities);
+          capabilities = args.mergeCapabilities && cached ? mergeCapabilities([cached, given]) : given;
+        } else if (cached) {
+          capabilities = cached;
+        } else {
+          throw new Error(
+            "No capabilities yet: call orchestrator_capabilities and pass its full output as `capabilities` (later calls can omit it).",
+          );
+        }
+        const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
+        const result = await recommendModel({ ...rest, capabilities }, policy, usageSource);
+        cached = capabilities;
+        return ok({ ...result, capabilitiesFrom: args.capabilities === undefined ? "cache" : args.mergeCapabilities ? "merged" : "call" });
       } catch (e) {
         return fail(e);
       }
@@ -105,6 +141,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
     },
     async (args) => {
       try {
+        requireTaskType(load().policy, args.taskType);
         const record = logDelegation(getLogPath(), args);
         return ok({ delegationId: record.id, logged: record });
       } catch (e) {
@@ -126,12 +163,13 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         providerInstanceId: z.string().optional(),
         model: z.string().optional(),
         outcome: z.enum(OUTCOMES),
-        note: z.string().optional(),
+        note: z.string().optional().describe("Short note (kept to 200 characters). Avoid secrets."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async (args) => {
       try {
+        requireTaskType(load().policy, args.taskType);
         return ok({ logged: logOutcome(getLogPath(), args) });
       } catch (e) {
         return fail(e);
@@ -160,7 +198,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         const path = getLogPath();
         const stats = computeStats(readLog(path), { since });
         if (args.taskType !== undefined) {
-          const only = stats.byTaskType[args.taskType];
+          const only = Object.hasOwn(stats.byTaskType, args.taskType) ? stats.byTaskType[args.taskType] : undefined;
           return ok({ log: path, taskType: args.taskType, stats: only ?? null });
         }
         return ok({ log: path, ...stats });
