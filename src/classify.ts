@@ -12,22 +12,24 @@ function escapeRegex(s: string): string {
 }
 
 /**
- * Keyword heuristic. For each task type, count how many of its keywords appear
- * in the task text (case-insensitive, whole words; a keyword counts once).
- * The type with the most matches wins; ties go to the type listed first in
- * the policy. No match at all -> `defaultTaskType`.
+ * Last-resort keyword heuristic; callers should pass `taskType`. For each task
+ * type, every keyword found in the task text (case-insensitive, whole words,
+ * counted once) scores its number of words, so a phrase such as "review
+ * comments" outweighs the single word "review". The highest score wins; ties
+ * go to the type listed first in the policy. No match -> `defaultTaskType`.
  */
 export function classifyTask(task: string, policy: Policy): Classification {
   const text = task.toLowerCase();
-  let best: { type: string; matched: string[] } | undefined;
+  let best: { type: string; matched: string[]; score: number } | undefined;
   for (const [type, def] of Object.entries(policy.taskTypes)) {
     const matched = def.keywords.filter((kw) => {
       const k = kw.trim().toLowerCase();
       if (!k) return false;
       return new RegExp(`(^|[^\\p{L}\\p{N}_])${escapeRegex(k)}($|[^\\p{L}\\p{N}_])`, "u").test(text);
     });
-    if (matched.length > 0 && (!best || matched.length > best.matched.length)) {
-      best = { type, matched };
+    const score = matched.reduce((n, kw) => n + kw.trim().split(/\s+/).length, 0);
+    if (score > 0 && (!best || score > best.score)) {
+      best = { type, matched, score };
     }
   }
   if (!best) {

@@ -6,7 +6,8 @@ import type { SelectedOption } from "./capabilities.js";
 export const OUTCOMES = ["success", "failure", "corrected"] as const;
 export type Outcome = (typeof OUTCOMES)[number];
 
-const SUMMARY_MAX = 200;
+/** Maximum length of the free-text `summary` and `note` fields. */
+export const TEXT_MAX = 200;
 
 export interface DelegationRecord {
   kind: "delegation";
@@ -43,7 +44,7 @@ function append(path: string, record: LogRecord): void {
 
 function truncate(s: string | undefined): string | undefined {
   if (s === undefined) return undefined;
-  return s.length > SUMMARY_MAX ? `${s.slice(0, SUMMARY_MAX - 1)}…` : s;
+  return s.length > TEXT_MAX ? `${s.slice(0, TEXT_MAX - 1)}…` : s;
 }
 
 function newId(): string {
@@ -96,7 +97,7 @@ export function logOutcome(path: string, input: OutcomeInput, now: Date = new Da
     ts: now.toISOString(),
     delegationId: input.delegationId ?? newId(),
     outcome: input.outcome,
-    ...(input.note !== undefined ? { note: input.note } : {}),
+    ...(input.note !== undefined ? { note: truncate(input.note) } : {}),
     ...(standalone ? { taskType: input.taskType, providerInstanceId: input.providerInstanceId, model: input.model } : {}),
   };
   append(path, record);
@@ -166,26 +167,42 @@ export function computeStats(records: LogRecord[], opts: { since?: Date } = {}):
     }
   }
 
-  const stats: Stats = { total: emptyCounts(), byTaskType: {}, byModel: {}, followedFirstRecommendation: { followed: 0, logged: 0 } };
+  // Maps, not plain objects: task types and model keys come from the log and
+  // may be any string ("constructor", "__proto__").
+  const total = emptyCounts();
+  const byTaskType = new Map<string, { counts: Counts; byModel: Map<string, Counts> }>();
+  const byModel = new Map<string, Counts>();
+  const followed = { followed: 0, logged: 0 };
   const bump = (c: Counts, o?: Outcome) => {
     c.delegations++;
     if (o) c[o]++;
   };
+  const get = <T>(m: Map<string, T>, k: string, make: () => T): T => {
+    let v = m.get(k);
+    if (v === undefined) m.set(k, (v = make()));
+    return v;
+  };
   for (const row of rows.values()) {
-    const t = (stats.byTaskType[row.taskType] ??= { ...emptyCounts(), byModel: {} });
-    const tm = (t.byModel[row.key] ??= emptyCounts());
-    const m = (stats.byModel[row.key] ??= emptyCounts());
-    for (const c of [stats.total, t, tm, m]) bump(c, row.outcome);
+    const t = get(byTaskType, row.taskType, () => ({ counts: emptyCounts(), byModel: new Map<string, Counts>() }));
+    const tm = get(t.byModel, row.key, emptyCounts);
+    const m = get(byModel, row.key, emptyCounts);
+    for (const c of [total, t.counts, tm, m]) bump(c, row.outcome);
     if (row.rank !== undefined) {
-      stats.followedFirstRecommendation.logged++;
-      if (row.rank === 1) stats.followedFirstRecommendation.followed++;
+      followed.logged++;
+      if (row.rank === 1) followed.followed++;
     }
   }
-  finish(stats.total);
-  for (const t of Object.values(stats.byTaskType)) {
-    finish(t);
-    Object.values(t.byModel).forEach(finish);
-  }
-  Object.values(stats.byModel).forEach(finish);
+  finish(total);
+  const stats: Stats = { total, byTaskType: {}, byModel: {}, followedFirstRecommendation: followed };
+  // Object.fromEntries defines own properties, so "__proto__" stays a plain key.
+  stats.byTaskType = Object.fromEntries(
+    [...byTaskType].map(([k, t]) => {
+      finish(t.counts);
+      t.byModel.forEach(finish);
+      return [k, { ...t.counts, byModel: Object.fromEntries(t.byModel) }];
+    }),
+  );
+  byModel.forEach(finish);
+  stats.byModel = Object.fromEntries(byModel);
   return stats;
 }
