@@ -1,0 +1,4 @@
+# Keep LF in every checkout, Windows included. Tests compare README.md and
+# policy/default.yaml byte for byte with strings built in code ("\n"), and the
+# published package should not depend on the packer's git settings.
+* text=auto eol=lf
