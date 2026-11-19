@@ -15,6 +15,7 @@ The technical side of t3-autopilot: the tools, the policy file, the data it keep
 - [Log and statistics](#log-and-statistics)
 - [Data directory](#data-directory)
 - [Capabilities and restarts](#capabilities-and-restarts)
+  - [Merging outputs](#merging-outputs)
 - [FAQ and limitations](#faq-and-limitations)
 - [Development](#development)
 - [Roadmap](#roadmap)
@@ -88,7 +89,7 @@ orchestrator ── mark_unavailable (child hit a limit or plan) ──▶ t3-au
 ```
 
 1. T3 Code has no plugin or hook for delegation, so t3-autopilot is a separate stdio MCP server added to the CLI of the agent that acts as orchestrator. A short instruction in your `CLAUDE.md` / `AGENTS.md` tells the orchestrator to call it before every child task.
-2. An MCP server cannot call T3's tools, so the orchestrator passes the output of `orchestrator_capabilities` (the providers and models your T3 setup offers) on the first call of a thread. The server keeps the last one, in memory and in a file in its data directory, so later calls omit it, even after the server restarts.
+2. An MCP server cannot call T3's tools, so the orchestrator passes the complete output of `orchestrator_capabilities` (the providers and models your T3 setup offers) on the first call of a thread. The server keeps the last one, in memory and in a file in its data directory, so later calls omit it, even after the server restarts.
 3. For the task type, t3-autopilot walks the policy's candidates in order, resolves each model family on every eligible provider instance and returns up to 3 candidates (`maxCandidates`). Free slots are filled from the policy's `fallback` list and, if needed, with a provider's default model (marked "low confidence"). If nothing at all resolves, the single candidate is the orchestrator's own provider, model and options (`source: "inherited"`).
 4. The orchestrator logs each delegation and, after reviewing the child's work, its outcome. `get_stats` summarises that log so you can tune the policy with your own data.
 5. When a child cannot start because of a usage limit or its plan, the orchestrator marks that provider instance (or only that model) unavailable, and until the mark expires its candidates come last with the reason. A `failure` outcome, by contrast, is about quality and moves nothing.
@@ -173,7 +174,7 @@ T3 Code tells orchestrators to use their native subagent tool for children on th
 In short, it tells the orchestrator to:
 
 1. call `recommend_model` before every child task, always with `taskType`;
-2. pass `capabilities` on the first call of the thread, after an error and when providers change;
+2. pass `capabilities` on the first call of the thread, after an error and when providers change, whole and never trimmed (the server keeps that copy, and one without the models' `options` loses the effort settings);
 3. use the first candidate (its native subagent tool if `sameAsOrchestrator` is `true`, otherwise `delegate_task`), and call `mark_unavailable` and take the next one if the child cannot start because of a usage limit or its plan;
 4. tell the user in one line which provider and model it picked and why;
 5. inherit its own provider and model if there is no candidate or the call fails;
@@ -193,7 +194,7 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 | `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model), `reason` (required unless clearing), `until` (ISO date; 24 h by default), or `clear: true` to remove marks | `marked` (or `cleared`) and `active`, every mark in force |
 | `get_stats` | optional `since` (ISO date), `taskType` | `log` (the file path), counts, success rate and pending delegations in total, per task type and per model; `followedFirstRecommendation`; the `unavailable` marks in force. With `taskType`: `stats` for that type only (or `null`) |
 
-- `capabilities` accepts the object as T3 returns it, a JSON string, a bare `providers` array, or a list of several outputs (`[full, search1, ...]`), merged by `providerInstanceId`.
+- `capabilities` accepts the object as T3 returns it, a JSON string, a bare `providers` array, or a list of several outputs (`[full, search1, ...]`), merged by `providerInstanceId` (see [Merging outputs](#merging-outputs)). Pass each output complete: the server keeps what it gets.
 - `classification` says whether the task type was `given` by the caller or came from the keyword `classifier`, with the keywords that matched.
 - `source` is `taskType`, `fallback`, `generic` (a provider's default model, low confidence) or `inherited` (the orchestrator's own model, used only when nothing else resolves).
 - `sameAsOrchestrator` is `true` when the candidate is the orchestrator's own provider instance and model, so its native subagent tool does the same job.
@@ -274,7 +275,7 @@ The candidate order in the default policy is an unvalidated starting point, not 
 
 ### Effort
 
-Each candidate can set an `effort` on the scale `none < minimal < low < medium < high < xhigh < max`. `size` and `criticality` shift it (by default `small`/`low` one step down, `large`/`high` one step up, never below `low`). The value is written to the first effort option the model declares (`effort`, `reasoningEffort`, `reasoning_effort`, `variant`, `thinking`, `reasoning`, `thought_level`, or an ACP option whose id looks like one) and clamped to the values it supports; a boolean `thinking` toggle is never used for effort. Fallback candidates use the effort of the task type's first candidate, so a quick task does not get a fallback model at high effort.
+Each candidate can set an `effort` on the scale `none < minimal < low < medium < high < xhigh < max`. `size` and `criticality` shift it (by default `small`/`low` one step down, `large`/`high` one step up, never below `low`). The value is written to the first effort option the model declares (`effort`, `reasoningEffort`, `reasoning_effort`, `variant`, `thinking`, `reasoning`, `thought_level`, or an ACP option whose id looks like one) and clamped to the values it supports; a boolean `thinking` toggle is never used for effort. Each option is set once: if a candidate also names the model's effort option under `options` (`effort: high` with `options: { effort: low }`), `effort` wins. Fallback candidates use the effort of the task type's first candidate, so a quick task does not get a fallback model at high effort.
 
 ### Usage limits
 
@@ -316,7 +317,7 @@ A mark says nothing about quality. A poor result is a `failure` in `log_outcome`
 
 ## Data directory
 
-Everything lives in `~/.t3-autopilot/` (or the directory named by the `T3_AUTOPILOT_HOME` environment variable, the only one t3-autopilot reads):
+Everything lives in `~/.t3-autopilot/` (or the directory named by the `T3_AUTOPILOT_HOME` environment variable, the only one t3-autopilot reads). A leading `~` in that variable is expanded to your home directory (`~/autopilot-data`), because the `env` block of an MCP configuration is passed as written, with no shell to expand it:
 
 | File | Contents |
 |---|---|
@@ -325,11 +326,24 @@ Everything lives in `~/.t3-autopilot/` (or the directory named by the `T3_AUTOPI
 | `unavailable.json` | `mark_unavailable` marks: provider instance, model, a reason cut to 200 characters, until when. |
 | `capabilities-cache.json` | The last `orchestrator_capabilities` output: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens. |
 
-The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests. The JSON files are written atomically (to a temporary file, then renamed), so another server process never reads a half-written one.
+The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests.
+
+On Linux and macOS, `log.jsonl`, `unavailable.json` and `capabilities-cache.json` are readable by their owner only (mode `600`); a log created with a wider mode is narrowed the next time it is written. `policy.yaml` is yours and keeps the mode you give it. The JSON files are written atomically (to a temporary file, then renamed), so another server process never reads a half-written one; on Windows, where a rename fails while another process has the file open, it is tried again a few times over 150 ms before the error is reported.
 
 ## Capabilities and restarts
 
 Agent CLIs can restart MCP servers between turns, so the last full `orchestrator_capabilities` output (and the searches merged into it) is also saved in `capabilities-cache.json` and reused for `capabilitiesCacheTtlHours` (12 by default) after it was received; merging a search does not reset that clock. A result built on it says `capabilitiesFrom: "disk-cache"`, its age in `capabilitiesAgeMinutes`, and a warning. The copy can be out of date: within those hours a provider may sign out or retire a model id, and every orchestrator that shares the data directory saves to the same file, so after a restart one may get another's capabilities (its own provider and model decide `sameAsOrchestrator` and the independent-review rule; the warning names them). A child that cannot start, or a rejected model id, is the sign to pass a fresh output. A copy older than the TTL is ignored, so the call fails with "No capabilities yet", like the first call of a thread; a lone search output passed with `mergeCapabilities` and nothing to merge into is used for that call only and not kept. Set `capabilitiesCacheTtlHours: 0` to keep capabilities in memory only.
+
+### Merging outputs
+
+Outputs are merged by `providerInstanceId`, whether one is passed with `mergeCapabilities: true` or several as a list (a list passed with `mergeCapabilities: true` is merged into the kept capabilities as well). The later output is the newer one, so it decides what both say:
+
+- **Models.** A model listed again takes its fields from the later output, its `options` above all; a field the later one leaves out stays. Models with a new id are added in T3's order.
+- **Eligibility.** Every output lists every provider, a `search` too, so whether a provider can run a child task (`canRunChildTask`, `constraints`, `canRunCrossProviderChildTask`) is what the later one says: a provider that signed out stops being recommended, and one that was enabled comes back.
+- **The orchestrator.** `inheritedProviderInstanceId`, `inheritedModel` and `inheritedOptions` come together from the last output that names a provider, so they are the caller's own and never one output's provider with another's model.
+- **Short lists.** A provider the later output lists no models for (a search that did not select it) keeps its models, its `omittedModels` and its warning.
+
+`recommend_model` calls are handled one at a time, in the order they arrive, so calls sent together see the capabilities the first one brought.
 
 ## FAQ and limitations
 

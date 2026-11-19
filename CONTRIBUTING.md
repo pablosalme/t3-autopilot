@@ -56,7 +56,9 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 | `test/fixtures/` | Invented `orchestrator_capabilities` outputs |
 | `scripts/` | Smoke test and packed-tarball check |
 | `.github/workflows/` | CI (`ci.yml`) and the npm release (`release.yml`) |
+| `docs/reference.md` | The technical reference: tools, policy, data files |
 | `docs/providers.md` | How each T3 Code driver is handled, with references to T3's source |
+| `docs/README.es.md` | The README in Spanish |
 
 ## Guidelines
 
@@ -65,7 +67,8 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 - **Default policy order.** The candidate order is an informed guess, not a benchmark. Explain a change in the pull request; data helps (`get_stats` from your own log, public evaluations).
 - **New provider driver.** Add an invented fixture in `test/fixtures/drivers/` that follows the shape of a real `orchestrator_capabilities` output, cover it in `test/drivers.test.ts` and document it in `docs/providers.md`.
 - **Invented model versions.** Fixtures and examples use made-up versions so they never read as claims about real models.
-- **The snippet.** If you change `src/snippet.ts`, update the copy in the README; a test checks that they match.
+- **The snippet.** If you change `src/snippet.ts`, update its two copies, in `README.md` and in `docs/README.es.md` (in English in both); a test in `test/cli.test.ts` checks that they match word for word.
+- **One README at the root.** Translations go in `docs/` (`docs/README.es.md`). npm packs every `README.*` at the root and takes the first one its directory listing returns as the package's front page, so a `README.es.md` next to `README.md` could replace it on npmjs.com; `npm run test:pack` fails if the package has one.
 - **Bug fixes come with a regression test.**
 
 ## Commits and pull requests

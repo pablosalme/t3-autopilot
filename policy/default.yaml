@@ -3,7 +3,9 @@
 # This file ships inside the package. Do not edit it in place: run
 # `t3-autopilot init-policy` (`node dist/cli.js init-policy` in a source
 # checkout) to create ~/.t3-autopilot/policy.yaml and put your changes
-# there. Keys in your copy override the ones here (see README, "The policy").
+# there. Keys in your copy override the ones here; see "The policy" in
+# docs/reference.md of the repository:
+# https://github.com/pablosalme/t3-autopilot/blob/main/docs/reference.md#the-policy
 #
 # The candidate ORDER below is an unvalidated starting point, not a benchmark
 # result. Tune it with your own log (`get_stats`).
