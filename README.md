@@ -1,145 +1,131 @@
+**English** · [Español](docs/README.es.md)
+
 # t3-autopilot
 
 [![CI](https://github.com/pablosalme/t3-autopilot/actions/workflows/ci.yml/badge.svg)](https://github.com/pablosalme/t3-autopilot/actions/workflows/ci.yml)
 
-An [MCP](https://modelcontextprotocol.io) server that tells a [T3 Code](https://github.com/pingdotgg/t3code) orchestrator which provider, model and reasoning effort to use for each child task.
+Picks the right AI model for every task your [T3 Code](https://github.com/pingdotgg/t3code) agent hands off, so you don't have to.
 
-> **Status: pre-release (0.1.0).** It works and is tested on Linux, macOS and Windows, but it is **not published on npm yet**: install it from source. It is an independent project, not part of T3 Code.
+## What it is
 
-## Why
+In T3 Code, the agent you talk to can hand parts of a job to helper agents, and each helper can run on any of the AI subscriptions you have connected: Claude, Codex, Cursor, Grok and others. t3-autopilot is a small add-on that tells your agent which of your models to use for each of those tasks.
 
-In T3 Code, one agent thread (the *orchestrator*) can hand work to child threads that run on any provider you have connected: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse or an ACP agent. For every child it has to pick a provider instance, an exact model id and options such as reasoning effort. Left alone, an orchestrator tends to:
+Think of the person who hands out the work in a workshop: the delicate job goes to the most experienced hand, sweeping up goes to the apprentice, and the inspection is done by someone who did not make the piece. t3-autopilot does that with your AI models:
 
-- delegate everything to its own model, even when another subscription suits the task better;
-- hard-code model ids that go stale as soon as a provider ships a new version;
+| You ask for | It suggests | Why |
+|---|---|---|
+| A new feature | Your newest Claude Opus, thinking hard | It is a demanding job |
+| A review of that feature | Your newest GPT, on Codex | A second opinion should come from someone else |
+| Renaming a few files | Your newest Claude Haiku, thinking little | Small and fast is enough |
+
+(This is what the built-in preferences give if you have Claude and Codex connected and your agent runs on Claude. You can change them.)
+
+It is an independent project, not part of T3 Code.
+
+## Why it helps
+
+Left alone, an agent tends to:
+
+- use its own model for everything, even when another subscription you pay for suits the task better;
+- remember model names that go out of date as soon as a new version comes out;
 - ask the model that wrote the code to review it.
 
-t3-autopilot answers one question before each delegation: *for this task, which of the models I actually have should I use?* You state your preferences once, per task type, as **model families** (`claude-opus`, `gpt`, `gemini`...) in a YAML policy. t3-autopilot resolves each family to the newest matching model id on the providers your T3 setup offers right now and returns targets ready for `delegate_task`, best first, with the reason for each.
+With t3-autopilot:
 
-It only recommends: it never launches agents, never proxies requests and never reads provider tokens or T3's settings files.
+- **Each kind of task goes to a model that suits it.** There is a ready-made list for eight kinds of task: coding, reviewing, debugging, planning, research, quick edits, design and writing.
+- **You always get the newest version you have.** Preferences say "Claude Opus", not a version number, so a new version is used as soon as your account offers it.
+- **Reviews get a real second opinion,** from a different provider than the one that did the work.
+- **A subscription that runs out does not stop the work.** If a helper cannot start because a limit was reached, your agent moves on to the next option.
+- **You are told what was chosen.** Your agent says in one line which model it picked and why.
 
-## What it looks like
-
-The orchestrator is about to delegate a review. It calls `recommend_model` (the first call of a thread also passes the output of T3's `orchestrator_capabilities`):
-
-```json
-{ "task": "Review the PR that moves auth checks into middleware", "taskType": "review", "criticality": "high", "capabilities": { "...": "output of orchestrator_capabilities" } }
-```
-
-t3-autopilot answers (real output, without the `classification`, `skipped` and `usageSource` fields; the setup is invented: Claude, Codex, Cursor, Grok and OpenCode, with the orchestrator on Claude, and the model names are made up):
-
-```json
-{
-  "taskType": "review",
-  "candidates": [
-    {
-      "providerInstanceId": "codex",
-      "model": "gpt-6.2-codex",
-      "options": [{ "id": "reasoningEffort", "value": "xhigh" }],
-      "reason": "review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh",
-      "source": "taskType",
-      "sameAsOrchestrator": false
-    },
-    {
-      "providerInstanceId": "cursor",
-      "model": "gemini-5.1-pro",
-      "options": [{ "id": "reasoning_effort", "value": "high" }],
-      "reason": "review #3 (any provider): newest listed gemini on cursor is gemini-5.1-pro, effort high (31 models left out of the list, so a newer one may exist; effort xhigh not supported, using high)",
-      "source": "taskType",
-      "sameAsOrchestrator": false
-    },
-    {
-      "providerInstanceId": "grok",
-      "model": "grok-6",
-      "options": [{ "id": "reasoningEffort", "value": "xhigh" }],
-      "reason": "review #4: latest grok on grok is grok-6, effort xhigh",
-      "source": "taskType",
-      "sameAsOrchestrator": false
-    }
-  ],
-  "warnings": [
-    "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor gpt\", \"cursor gemini\" and pass each output to recommend_model with mergeCapabilities: true.",
-    "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode gpt\", \"opencode gemini\" and pass each output to recommend_model with mergeCapabilities: true."
-  ],
-  "capabilitiesFrom": "call"
-}
-```
-
-The review goes to another provider than the orchestrator's (Claude's own candidate is moved down), `criticality: "high"` raised the effort one step, and Cursor's Gemini, which tops out at `high`, got that instead. Cursor and OpenCode list only part of their catalog, so the Gemini pick is the newest *listed* one and the warnings give the searches that would show the rest. The orchestrator then delegates with the first candidate as `delegate_task.target` and tells you in one line which model it picked and why.
+It only gives advice. It never starts agents itself and never sees your passwords or account tokens.
 
 ## How it works
 
-```text
-orchestrator ── orchestrator_capabilities ─────────────────────▶ T3 Code
-orchestrator ── recommend_model(task, taskType, capabilities) ─▶ t3-autopilot
-orchestrator ◀─ candidates: providerInstanceId, model, options, reason
-orchestrator ── delegate_task(target = first candidate) ───────▶ T3 Code
-orchestrator ── log_delegation, later log_outcome ─────────────▶ t3-autopilot (log.jsonl)
-orchestrator ── mark_unavailable (child hit a limit or plan) ──▶ t3-autopilot (unavailable.json)
-```
+1. **Your agent asks.** Before it hands off a task, it tells t3-autopilot what kind of task it is and which models you have in T3 Code.
+2. **t3-autopilot answers.** It checks your preferences and returns up to three options, best first, each with its reason.
+3. **Your agent uses the first one** and tells you in one line which model it picked and why. If that one cannot start, it goes on to the next.
 
-1. T3 Code has no plugin or hook for delegation, so t3-autopilot is a separate stdio MCP server added to the CLI of the agent that acts as orchestrator. A short instruction in your `CLAUDE.md` / `AGENTS.md` tells the orchestrator to call it before every child task.
-2. An MCP server cannot call T3's tools, so the orchestrator passes the output of `orchestrator_capabilities` (the providers and models your T3 setup offers) on the first call of a thread. The server keeps the last one, in memory and in a file in its data directory, so later calls omit it, even after the server restarts.
-3. For the task type, t3-autopilot walks the policy's candidates in order, resolves each model family on every eligible provider instance and returns up to 3 candidates. Free slots are filled from the policy's fallback list and, if needed, with a provider's default model (marked "low confidence").
-4. The orchestrator logs each delegation and, after reviewing the child's work, its outcome. `get_stats` summarises that log so you can tune the policy with your own data.
-5. When a child cannot start because of a usage limit or its plan, the orchestrator marks that provider instance (or only that model) unavailable, and until the mark expires its candidates come last with the reason. A `failure` outcome, by contrast, is about quality and moves nothing.
+Your agent can also note how each handoff went (accepted as is, needed fixes, or not usable), so later you can see which models work best for you.
 
 ## Install
 
-You need Node.js 20 or later and T3 Code with at least one provider signed in. t3-autopilot is **not on npm yet**, so install it from source:
+You need:
 
-```sh
-git clone https://github.com/pablosalme/t3-autopilot.git
-cd t3-autopilot
-npm ci            # installs dependencies and builds dist/ (prepare script)
-```
+- T3 Code, with at least one provider signed in.
+- [Node.js](https://nodejs.org) 22 or later. To check, run `node --version` in a terminal.
 
-After `git pull`, run `npm ci` again (or `npm run build`).
+There is nothing to download by hand: `npx`, a tool that comes with Node.js, fetches t3-autopilot and runs it.
 
-Only the orchestrator needs the server; child agents do not. Register it, at user scope so every project gets it, with the absolute path to `dist/cli.js` (replace `/path/to/t3-autopilot`), then restart the agent in T3 Code so it loads the new server.
+### Step 1. Add it to your agent
+
+Only the agent you talk to needs it (T3 Code calls it the *orchestrator*); the helpers do not. Copy the line for the agent you use and paste it into a terminal:
 
 **Claude Code**
 
 ```sh
-claude mcp add --scope user t3-autopilot -- node /path/to/t3-autopilot/dist/cli.js
-claude mcp list   # t3-autopilot: ... ✔ Connected
+claude mcp add --scope user t3-autopilot -- npx -y t3-autopilot
 ```
 
-**Codex** (`codex mcp add t3-autopilot -- node /path/to/t3-autopilot/dist/cli.js`, or in `~/.codex/config.toml`):
-
-```toml
-[mcp_servers.t3-autopilot]
-command = "node"
-args = ["/path/to/t3-autopilot/dist/cli.js"]
-```
-
-**Grok CLI** (writes `~/.grok/config.toml`; `grok mcp doctor` checks the connection):
+**Codex**
 
 ```sh
-grok mcp add t3-autopilot -- node /path/to/t3-autopilot/dist/cli.js
+codex mcp add t3-autopilot -- npx -y t3-autopilot
 ```
 
-**OpenCode** (writes the global `~/.config/opencode/opencode.json`):
+**Grok CLI**
 
 ```sh
-opencode mcp add t3-autopilot --global -- node /path/to/t3-autopilot/dist/cli.js
+grok mcp add t3-autopilot -- npx -y t3-autopilot
 ```
 
-**Other MCP clients** that read an `mcpServers` JSON block:
+**OpenCode**
+
+```sh
+opencode mcp add t3-autopilot --global -- npx -y t3-autopilot
+```
+
+These lines register t3-autopilot as an *MCP server*, the standard way of giving an AI agent an extra tool.
+
+<details>
+<summary>Another agent, or one that asks for a JSON configuration</summary>
+
+Add this block to its MCP configuration:
 
 ```json
 {
   "mcpServers": {
-    "t3-autopilot": { "command": "node", "args": ["/path/to/t3-autopilot/dist/cli.js"] }
+    "t3-autopilot": { "command": "npx", "args": ["-y", "t3-autopilot"] }
   }
 }
 ```
 
-Once the package is on npm, the command will become `npx -y t3-autopilot`. Do not use it before then: the name is not registered yet, so it would fail or, if someone else took the name, run their code.
+</details>
 
-## Instructions for the orchestrator
+### Step 2. Tell your agent to use it
 
-T3 Code tells orchestrators to use their native subagent tool for children on their own provider, and *"Provider or model unavailable: say so. Never switch unasked"*. The snippet below asks for a recommendation before every child, native ones too, and explicitly authorises the orchestrator to switch provider and model as recommended. Paste it into the orchestrator's `CLAUDE.md` or `AGENTS.md` (`node dist/cli.js snippet` prints it):
+Agents read a rules file every time they start: `CLAUDE.md` for Claude Code, `AGENTS.md` for most others. t3-autopilot prints the paragraph to add to it:
+
+```sh
+npx -y t3-autopilot snippet
+```
+
+Copy what it prints and paste it at the end of your rules file. Or let the terminal do it. For Claude Code:
+
+```sh
+npx -y t3-autopilot snippet >> ~/.claude/CLAUDE.md
+```
+
+For Codex:
+
+```sh
+npx -y t3-autopilot snippet >> ~/.codex/AGENTS.md
+```
+
+Do not skip this step. Without it, your agent has the tool but does not know when to use it. The paragraph also gives your agent permission to switch model, which T3 Code otherwise tells it not to do on its own.
+
+<details>
+<summary>See the paragraph it adds</summary>
 
 ```markdown
 ## Model selection for delegated tasks (t3-autopilot)
@@ -156,126 +142,136 @@ You are authorized to pick the provider, model and options of every child task i
 8. Right after delegating, call `log_delegation` with the `taskType`, `providerInstanceId`, `model` and `options` you used, `recommendedRank` (1-based rank of the candidate, or null if you chose something else) and `childThreadId`; keep the `delegationId`. After you review the child's result, call `log_outcome` with that `delegationId` and `outcome`: `success` (accepted as is), `corrected` (you had to fix or redo part of it) or `failure` (not usable; a child that could not start goes to `mark_unavailable` instead); add a short `note`.
 ```
 
-Whether the orchestrator follows it depends on the model; nothing enforces it. `get_stats` shows how often the first candidate was used.
+</details>
 
-## Tools
+### Step 3. Restart your agent
 
-| Tool | Input | Output |
-|---|---|---|
-| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType`, `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`) |
-| `log_delegation` | `taskType`, `providerInstanceId`, `model`, optional `options`, `recommendedRank` (1-based, or null), `childThreadId`, `summary` | `delegationId` |
-| `log_outcome` | `outcome` (`success`/`corrected`/`failure`), optional `note`, plus `delegationId` **or** `taskType` + `providerInstanceId` + `model` | the stored record |
-| `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model), `reason`, `until` (ISO date; 24 h by default), or `clear: true` to remove marks | the mark (or the marks cleared) and every mark in force |
-| `get_stats` | optional `since` (ISO date), `taskType` | counts, success rate and pending delegations per task type and per model; how often the first candidate was followed; the `unavailable` marks in force |
+Restart your agent in T3 Code so it loads t3-autopilot and reads the new rules.
 
-- `capabilities` accepts the object as T3 returns it, a JSON string, a bare `providers` array, or a list of several outputs (`[full, search1, ...]`), merged by `providerInstanceId`.
-- `source` is `taskType`, `fallback`, `generic` (a provider's default model, low confidence) or `inherited` (the orchestrator's own model, used only when nothing else resolves).
-- `skipped` says why providers or policy entries were left out (disabled, not signed in, excluded); `warnings` are things the orchestrator can act on.
-- Errors (unknown `taskType`, no eligible provider, an invalid policy file) come back as tool errors with a message that says what to fix; the server keeps running.
+### Alternative: install from the source code
 
-## Supported providers
-
-t3-autopilot works with whatever provider instances you have in T3 Code, in any combination, including several instances of the same driver (for example two Claude subscriptions). It knows the eleven drivers T3 ships: `claudeAgent`, `codex`, `cursor`, `grok`, `opencode`, `antigravity`, `kiro`, `pi`, `fx`, `muse` and `acpRegistry`. [docs/providers.md](docs/providers.md) lists each one's model ids, effort option and default model, with references to T3's source.
-
-- **Eligibility.** Only instances with `canRunChildTask: true` (enabled for the project, installed and signed in) are recommended. If none is, `recommend_model` fails with each instance's reason.
-- **Families across drivers.** Most families match on any driver, so Claude Opus is found as `claude-opus-5-5` on Claude or Cursor, `claude-opus-5.5` on Kiro, or `anthropic/claude-opus-5-5` on OpenCode and Pi.
-- **Short model lists.** For Cursor, OpenCode, Pi, Kiro, fx, Antigravity and ACP agents, T3 lists at most 8 models and counts the rest as `omittedModels`. Then the result has a `warnings` entry with the `search` to run (for example `orchestrator_capabilities` with `search: "cursor opus"`); passing that output with `mergeCapabilities: true` merges it into the kept capabilities, and the warning goes away for the providers the search listed models for. Without it, the newest model is chosen among the listed ones only. A search is capped at 8 matches too, in the user's order rather than by version, so when it still leaves models out the warning stays and suggests a narrower search (for example `"cursor gemini-9"` and `"cursor gemini-10"`). While a provider's latest list is truncated, its candidates say "newest listed" instead of "latest".
-- **Unknown providers.** A provider no family covers (an unknown driver, an ACP agent with its own model names) still gets a candidate: its default model (`default`, `auto`, `grok-build`, `antigravity-default`) or, failing that, the first model T3 lists for it, marked "low confidence".
-
-## The policy
-
-The default policy is [`policy/default.yaml`](policy/default.yaml). Override it in `~/.t3-autopilot/policy.yaml` (or `$T3_AUTOPILOT_HOME/policy.yaml`). It is re-read on every call, so no restart is needed; a broken file is reported by the tools that use it (file, entry and reason) and the server keeps running. `node dist/cli.js init-policy` writes a short commented template there; uncomment only what you change, so future default updates still reach you.
-
-Merge rules: entries under `families` and `taskTypes` replace the default entry with the same name as a whole (set one to `null` to remove it); `usage` and `effortShift` merge one level deep; every other key replaces the default.
-
-### Task types
-
-`review`, `debug`, `plan`, `research`, `quick`, `code`, `design`, `writing`; the tool description lists them with one line each. The orchestrator is an LLM and should always pass `taskType`. If it does not, the task text is matched against each type's `keywords` (case-insensitive, whole words; a phrase scores its number of words); the highest score wins, ties go to the type listed first, and no match gives `defaultTaskType` (`code`). The keywords are a last resort, not a classifier.
-
-### Model families
-
-A family maps driver kinds (`driverKind` in `orchestrator_capabilities`; `*` for any driver without its own entry) to a case-insensitive regular expression over model ids, plus an optional `exclude` regex and a `search` hint. When several ids match, the highest version wins (numeric capture groups compared in order; numbers of 5 or more digits are snapshot dates and are ignored); on a tie (`gemini-4-neon` and `gemini-4-argon` are both version 4), the model T3 lists first (your preferred order) wins, and its reason says "same version as N others, T3 lists this one first" instead of calling it the latest. A new version or a renamed tier that still matches the family (`claude-opus-5-5` → `claude-opus-5-6`, `gemini-4-carbon` → `gemini-4-neon`) is picked up with no change to code or policy.
-
-```yaml
-families:
-  devstral:
-    search: devstral
-    match:
-      '*': '^(?:[\w.-]+/)*devstral-(\d+)(?:\.(\d+))?$'
-
-taskTypes:
-  quick:
-    keywords: [rename, typo, format, bump]
-    candidates:
-      - { provider: acpRegistry, family: devstral }
-      - { provider: claudeAgent, family: claude-haiku, effort: low }
-      - { provider: '*', family: gemini-flash, effort: low }
-
-excludeProviders: [cursor-work]  # never recommend this provider instance
-capabilitiesCacheTtlHours: 4     # reuse saved capabilities after a restart for 4 h (default 12, 0: never)
-genericFallback: false           # never recommend a provider's default model with low confidence
-usage:
-  thresholds: { weekly: 60 }
-```
-
-A candidate names a driver kind (`provider`, matching every eligible instance of it), `'*'` (any eligible instance, in the order T3 lists them) or an exact provider instance (`instance`). Optional `options` (for example `{ fastMode: true }`) are set when the model supports them, and `noDemote: true` keeps a candidate in place when its provider is busy (below 100%).
-
-The candidate order in the default policy is an unvalidated starting point, not a benchmark result. `claude-fable` is placed second for `writing`, `design` and `plan` because T3 gives it a fixed 1M-token context; that is a guess too. Use `get_stats` to see what works for you.
-
-### Effort
-
-Each candidate can set an `effort` on the scale `none < minimal < low < medium < high < xhigh < max`. `size` and `criticality` shift it (by default `small`/`low` one step down, `large`/`high` one step up, never below `low`). The value is written to the first effort option the model declares (`effort`, `reasoningEffort`, `reasoning_effort`, `variant`, `thinking`, `reasoning`, `thought_level`, or an ACP option whose id looks like one) and clamped to the values it supports; a boolean `thinking` toggle is never used for effort. Fallback candidates use the task type's effort, so a quick task does not get a fallback model at high effort.
-
-### Usage limits
-
-If you pass `usage` (percentages per provider instance, in the same shape as T3's own usage windows: `kind`, `usedPercent`, `resetsAt`, `modelIds`), a candidate whose provider is above a threshold (default: session 80%, weekly 75%, monthly 90%) moves after the others, and one at 100% goes last; within each group the policy order stays. If every provider is exhausted you still get candidates, each marked as such. Unknown usage never penalises, and windows with an unknown `kind` or a percentage outside 0-100 are ignored.
-
-For independent reviews (`avoidInheritedProvider: true` on the `review` type), the orchestrator's own provider is moved down so the review comes from a different one.
-
-## Data and privacy
-
-Everything lives in `~/.t3-autopilot/` (or `$T3_AUTOPILOT_HOME`): `policy.yaml` (your override), `log.jsonl` (delegations and outcomes), `unavailable.json` (`mark_unavailable` marks: provider instance, model, a reason cut to 200 characters, until when) and `capabilities-cache.json` (the last `orchestrator_capabilities` output: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens). The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests.
-
-## FAQ and limitations
-
-**Does it know how much of my subscription quota is left?** No. T3 Code tracks usage limits per provider, but does not expose them over MCP, and t3-autopilot will not read provider tokens or cookies to find out. Usage only counts when the orchestrator passes `usage` in the call; otherwise every provider is treated as available.
-
-**Why does the orchestrator have to pass `capabilities`?** An MCP server cannot call T3's tools, and t3-autopilot deliberately does not read T3's files: `settings.json` can hold API keys, and the provider cache is an internal format without sign-in or per-project status ([details](docs/providers.md#local-autodetection-not-implemented)). The orchestrator passes `orchestrator_capabilities` once per thread; the server keeps it.
-
-**What happens when the server restarts?** Agent CLIs can restart MCP servers between turns, so the last full `orchestrator_capabilities` output (and the searches merged into it) is also saved in `capabilities-cache.json` and reused for `capabilitiesCacheTtlHours` (12 by default) after it was received; merging a search does not reset that clock. A result built on it says `capabilitiesFrom: "disk-cache"`, its age in `capabilitiesAgeMinutes`, and a warning. The copy can be out of date: within those hours a provider may sign out or retire a model id, and every orchestrator that shares the data directory saves to the same file, so after a restart one may get another's capabilities (its own provider and model decide `sameAsOrchestrator` and the independent-review rule; the warning names them). A child that cannot start, or a rejected model id, is the sign to pass a fresh output. A copy older than the TTL is ignored, so the call fails with "No capabilities yet", like the first call of a thread; a lone search output passed with `mergeCapabilities` and nothing to merge into is used for that call only and not kept. Set `capabilitiesCacheTtlHours: 0` to keep capabilities in memory only.
-
-**A provider released or renamed a model. Do I need to update anything?** Not if the new id still matches its family (see [Model families](#model-families)); pass a fresh `orchestrator_capabilities` output and the new id is used. A new family or naming scheme needs a policy entry. A small model with a new suffix can be taken for the flagship of its family (a hypothetical `gpt-7-io` matches `gpt`); add the suffix to that family's `exclude`.
-
-**Does it guarantee the orchestrator uses the recommendation?** No. The snippet asks for it and authorises switching, but the orchestrator is a language model. `log_delegation` records whether it used the first candidate (`recommendedRank`).
-
-**Why can a warning about omitted models stay after a search?** It goes away once a merged search output lists models for that provider and leaves none out. A search with more than 8 matches is truncated as well, so the warning stays with a narrower search to run. If the search finds nothing for the provider, T3 returns it with no models, which looks the same as a provider the search did not select, so the warning stays too.
-
-**Does it work without T3 Code?** It is built around T3's `orchestrator_capabilities` and `delegate_task`. Another host would have to pass data in the same shape.
-
-**Are the model names in the examples real?** No. Fixtures and examples use invented versions so they never read as claims about real models.
-
-## Development
+If you prefer not to use `npx`, download the code and build it:
 
 ```sh
+git clone https://github.com/pablosalme/t3-autopilot.git
+cd t3-autopilot
 npm ci
-npm run lint            # Biome: lint and format check (npm run format fixes)
-npm run typecheck
-npm run test:coverage   # Vitest with coverage thresholds; needs Node 22.12+
-npm run build
-npm run smoke           # starts dist/cli.js over stdio and calls recommend_model with several fixtures
-npm run test:e2e        # end-to-end over stdio with the MCP SDK client (node:test, any Node 20+)
-npm run test:pack       # npm pack, install the tarball in a temporary project, run its bin
 ```
 
-CI runs all of them on Node 20 and 22 on Linux, macOS and Windows (Vitest, lint and the dependency audit where they apply). See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, [SECURITY.md](SECURITY.md) to report a vulnerability and [CHANGELOG.md](CHANGELOG.md) for changes.
+Then follow the same steps, writing `node /path/to/t3-autopilot/dist/cli.js` wherever they say `npx -y t3-autopilot` (replace `/path/to` with the folder you downloaded it to). For example, for Claude Code:
 
-## Roadmap
+```sh
+claude mcp add --scope user t3-autopilot -- node /path/to/t3-autopilot/dist/cli.js
+```
 
-1. **Usage from T3 Code.** T3 already tracks session, weekly and monthly limits per provider but only exposes them over its internal WebSocket API. A `t3` usage source will follow if T3 exposes usage over MCP ([discussion #15137](https://github.com/pingdotgg/t3code/discussions/15137)).
-2. **Third-party usage readers** (local usage aggregators) as additional usage sources. t3-autopilot itself will not read provider tokens or cookies.
-3. **Policy proposals:** compare `orchestrator_capabilities` with the policy (new or retired families) and propose a policy diff for you to approve.
-4. **Ordering from the log:** reorder candidates per task type by observed success rate once there is enough data.
-5. **Publish on npm.**
+To update later, run `git pull` and then `npm ci` again.
+
+## Check that it works
+
+1. **The program runs.** This prints a version number:
+
+   ```sh
+   npx -y t3-autopilot --version
+   ```
+
+2. **Your agent sees it.** In Claude Code, `claude mcp list` shows a line like `t3-autopilot: ... ✔ Connected`. In Grok CLI, `grok mcp doctor` checks the connection.
+3. **It is used.** In T3 Code, ask your agent for something it has to hand off, for example: *"Delegate a review of the README to a child task."* Before it starts, it should tell you in one line which provider and model it picked and why, something like *"review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh"* (the model name is made up).
+
+After the first handoff, a folder called `.t3-autopilot` appears in your home folder. If none of this happens, see [the questions below](#questions).
+
+## Make it yours
+
+t3-autopilot works with no configuration. To change its preferences, create your own settings file:
+
+```sh
+npx -y t3-autopilot init-policy
+```
+
+This writes `policy.yaml` in the `.t3-autopilot` folder of your home folder. It is a plain text file with ready-made examples, all switched off with a `#` at the start of the line. Open it with any text editor, remove the `#` from the lines you want and save. Changes apply on the next task; there is nothing to restart.
+
+The most common changes:
+
+```yaml
+# Never use this provider (for example, one you keep for yourself):
+excludeProviders: [cursor-work]
+
+# Get two options instead of three:
+maxCandidates: 2
+```
+
+`cursor-work` is an example: use the provider name your agent shows when it explains its pick.
+
+You can also change which models are preferred for each kind of task, or add a model family that is not in the list. Both are explained in the [reference](docs/reference.md#the-policy).
+
+If you make a mistake in the file, nothing breaks: your agent gets a message that says what to fix, and carries on with its own model in the meantime.
+
+## Privacy
+
+Everything t3-autopilot keeps is in one folder on your computer: `.t3-autopilot`, inside your home folder.
+
+| File | What it holds |
+|---|---|
+| `policy.yaml` | Your preferences. Only there if you created it. |
+| `log.jsonl` | The handoffs your agent noted: kind of task, provider, model, the settings used, the id of the helper's conversation and how it went. A short summary or note only if your agent adds one (200 characters at most). |
+| `unavailable.json` | Providers or models that are out for a while because a limit was reached, with the reason and until when. |
+| `capabilities-cache.json` | The last list of providers and models T3 Code gave your agent, and whether each can be used. No passwords or tokens. |
+
+What it never does:
+
+- **It never connects to the internet.** Nothing leaves your computer. (`npx` downloads the program from npm; the program itself contacts nobody.)
+- **It never reads passwords, API keys, tokens or cookies,** nor T3 Code's settings files.
+- **It never stores the task descriptions** your agent sends when it asks for a recommendation.
+- **It never starts agents or changes anything in T3 Code.** It only recommends; your agent decides.
+
+## Uninstall
+
+1. Remove it from your agent:
+   - Claude Code: `claude mcp remove t3-autopilot`
+   - Grok CLI: `grok mcp remove t3-autopilot`
+   - Codex: delete the `t3-autopilot` block from `~/.codex/config.toml`.
+   - OpenCode: delete the `t3-autopilot` entry from `~/.config/opencode/opencode.json`.
+2. Delete the paragraph titled "Model selection for delegated tasks (t3-autopilot)" from your rules file (`CLAUDE.md` or `AGENTS.md`).
+3. Delete the `.t3-autopilot` folder in your home folder, if you do not want to keep your preferences and the log.
+
+That is all. If you installed from the source code, delete that folder too.
+
+## Questions
+
+**Does it cost anything or use up my subscriptions?**
+No. It is free and open source, and it never calls an AI model: it only answers your agent's question.
+
+**Do I need T3 Code?**
+Yes. It is built around the way T3 Code hands off tasks.
+
+**Which providers does it work with?**
+All the ones T3 Code offers: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse and ACP agents. Any combination works, including two accounts of the same provider. [docs/providers.md](docs/providers.md) has the details of each.
+
+**Does it know how much of my subscription is left?**
+No. T3 Code does not share that with add-ons, and t3-autopilot will not read your account tokens to find out. What it does: when a helper cannot start because a limit was reached, your agent notes it, and that provider goes to the back of the queue until the limit resets (24 hours if the date is not known).
+
+**A new model came out. Do I have to update anything?**
+Usually not. Preferences name families ("Claude Opus", "GPT", "Gemini"), and the newest version you have is picked each time. Only a brand-new family needs a line in your settings file.
+
+**Will my agent always follow the recommendation?**
+Almost always, but nothing forces it: your agent is an AI model following written instructions. If you name a model yourself for a task, yours wins.
+
+**My agent does not seem to use it. What do I check?**
+That step 1 worked (see [Check that it works](#check-that-it-works)), that the paragraph from step 2 is in the rules file your agent reads, that you restarted your agent afterwards, and that `node --version` says 22 or later.
+
+**Can I see how it is going?**
+Yes. Ask your agent for the t3-autopilot statistics: how many tasks went to each model and how they turned out.
+
+**Are the model names in the examples real?**
+No. Examples use made-up versions so that they never read as claims about real models.
+
+**Where is the technical detail?**
+In the [reference](docs/reference.md): the tools, every setting, the file formats and how models are matched.
+
+## More
+
+- [Reference](docs/reference.md): everything technical.
+- [Providers](docs/providers.md): how each T3 Code provider is handled.
+- [Contributing](CONTRIBUTING.md), [security](SECURITY.md) and [changelog](CHANGELOG.md).
 
 ## License
 
