@@ -1,15 +1,15 @@
 import {
   driverKindOf,
-  FULL_CATALOG_DRIVERS,
   type Model,
   type Provider,
   parseCapabilities,
   type SelectedOption,
+  truncatedBy,
 } from "./capabilities.js";
 import { classifyTask } from "./classify.js";
 import { buildOptions, shiftEffort } from "./effort.js";
 import { familyPattern, resolveFamily } from "./families.js";
-import type { CandidateRule, Effort, Policy } from "./policy.js";
+import type { CandidateRule, Effort, Family, Policy } from "./policy.js";
 import { evaluateUsage, type ProviderUsage, type UsageSource, type UsageTier } from "./usage.js";
 
 export type Size = "small" | "medium" | "large";
@@ -130,6 +130,7 @@ function push(
   source: CandidateSource,
   why: string,
   noDemote = false,
+  more: { notes?: string[] } = {},
 ): void {
   const key = `${provider.providerInstanceId}\u0000${model.id}`;
   if (ctx.seen.has(key)) return;
@@ -138,7 +139,7 @@ function push(
   const built = buildOptions(model, policy.effortOptionIds, effort, extra);
   const verdict = evaluateUsage(ctx.usage.get(provider.providerInstanceId), model.id, policy);
   let usageTier = verdict.tier;
-  const notes = [...built.notes];
+  const notes = [...(more.notes ?? []), ...built.notes];
   if (verdict.note) notes.push(verdict.note);
   if (usageTier === 1 && noDemote) {
     usageTier = 0;
@@ -196,16 +197,13 @@ function scoreRules(
       const wanted = baseEffort ?? rule.effort;
       const effort = wanted ? shiftEffort(wanted, ctx.shift) : undefined;
       const where = rule.provider === "*" && rule.instance === undefined ? " (any provider)" : "";
-      push(
-        ctx,
-        provider,
-        model,
-        effort,
-        rule.options,
-        source,
-        `${tag}${where}: latest ${rule.family} on ${provider.providerInstanceId} is ${model.id}`,
-        rule.noDemote,
-      );
+      // A truncated list may hide a newer model, so the pick is only the newest listed one.
+      const truncated = truncatedBy(provider);
+      const newest = truncated > 0 ? "newest listed" : "latest";
+      const why = `${tag}${where}: ${newest} ${rule.family} on ${provider.providerInstanceId} is ${model.id}`;
+      push(ctx, provider, model, effort, rule.options, source, why, rule.noDemote, {
+        notes: truncated > 0 ? [`${truncated} models left out of the list, so a newer one may exist`] : [],
+      });
     }
   });
 }
@@ -259,33 +257,81 @@ function rank(scored: Scored[]): Scored[] {
   );
 }
 
+/** Families the rules would use on this provider, in rule order, without repeats. */
+function familiesFor(ctx: Ctx, rules: CandidateRule[], p: Provider): { name: string; family: Family }[] {
+  const driver = driverKindOf(p);
+  const out = new Map<string, Family>();
+  for (const rule of rules) {
+    const applies =
+      rule.instance !== undefined
+        ? rule.instance === p.providerInstanceId
+        : rule.provider === "*" || rule.provider === driver;
+    const fam = ctx.policy.families[rule.family];
+    if (applies && fam && familyPattern(fam, p) && !out.has(rule.family)) out.set(rule.family, fam);
+  }
+  return [...out].map(([name, family]) => ({ name, family }));
+}
+
 /**
- * Warn about providers whose short list may hide a newer model of a family the
- * policy would use, until a search output that lists models for them is merged.
+ * Narrower `search` terms for a family on a provider, from its newest listed
+ * model: the id (without `provider/` prefixes) up to its first version number,
+ * and the same with the next number. `gemini-4-argon` gives `gemini-4` (every
+ * gemini 4 model, so a tie or a 4.x is listed) and `gemini-5` (a newer one).
+ */
+function narrowerTerms(family: Family, p: Provider): string[] {
+  const model = resolveFamily(family, p);
+  const pattern = familyPattern(family, p);
+  if (!model || !pattern) return [];
+  const m = new RegExp(pattern.source, "id").exec(model.id);
+  const at = m?.indices?.findIndex((range, i) => i > 0 && range !== undefined && /^\d+$/.test(m[i] ?? ""));
+  const range = at !== undefined && at > 0 ? m?.indices?.[at] : undefined;
+  if (!range) return [];
+  const [start, end] = range;
+  const head = model.id.slice(0, start);
+  const cut = head.lastIndexOf("/") + 1;
+  const prefix = head.slice(cut);
+  const version = Number.parseInt(model.id.slice(start, end), 10);
+  return [`${prefix}${version}`, `${prefix}${version + 1}`];
+}
+
+const MERGE_HINT = "and pass each output to recommend_model with mergeCapabilities: true.";
+
+/**
+ * Warn about providers whose latest list was truncated, so a newer model of a
+ * family the policy would use may be missing: the full output's short list
+ * until a search that lists the provider's models is merged, and a search that
+ * itself had more than 8 matches.
  */
 function omittedWarnings(ctx: Ctx, rules: CandidateRule[]): string[] {
   const warnings: string[] = [];
   for (const p of ctx.providers) {
-    const omitted = p.omittedModels ?? 0;
-    const driver = driverKindOf(p);
-    const searched = (p.mergedOutputs ?? 1) > 1;
-    if (omitted === 0 || FULL_CATALOG_DRIVERS.has(driver) || searched) continue;
-    const terms = new Set<string>();
-    for (const rule of rules) {
-      const applies =
-        rule.instance !== undefined
-          ? rule.instance === p.providerInstanceId
-          : rule.provider === "*" || rule.provider === driver;
-      const fam = ctx.policy.families[rule.family];
-      if (!applies || !fam || !familyPattern(fam, p)) continue;
-      terms.add(fam.search ?? rule.family);
+    const omitted = truncatedBy(p);
+    if (omitted === 0) continue;
+    const id = p.providerInstanceId;
+    const families = familiesFor(ctx, rules, p);
+    const last = p.lastOutput;
+    if (last === undefined) {
+      const terms = [...new Set(families.map((f) => f.family.search ?? f.name))];
+      const searches = terms.slice(0, 2).map((t) => `"${id} ${t}"`);
+      warnings.push(
+        `${id}: orchestrator_capabilities left out ${omitted} models, so a newer model may be missing.` +
+          (searches.length ? ` Call orchestrator_capabilities with search ${searches.join(", ")} ${MERGE_HINT}` : ""),
+      );
+      continue;
     }
-    const searches = [...terms].slice(0, 2).map((t) => `"${p.providerInstanceId} ${t}"`);
+    // A truncated search: suggest narrower ones for the families it listed models of.
+    const searched = families.filter(({ family }) => {
+      const re = familyPattern(family, p);
+      const exclude = family.exclude ? new RegExp(family.exclude, "i") : undefined;
+      return last.models.some((m) => re?.test(m) && !exclude?.test(m));
+    });
+    const narrower = [...new Set(searched.slice(0, 2).flatMap(({ family }) => narrowerTerms(family, p)))];
     warnings.push(
-      `${p.providerInstanceId}: orchestrator_capabilities left out ${omitted} models, so a newer model may be missing.` +
-        (searches.length
-          ? ` Call orchestrator_capabilities with search ${searches.join(", ")} and pass each output to recommend_model with mergeCapabilities: true.`
-          : ""),
+      `${id}: the last orchestrator_capabilities output for it listed ${last.models.length} models and left out ` +
+        `${omitted} more (T3 lists at most 8 matches), so a newer model may be missing. ` +
+        (narrower.length
+          ? `Narrow the search: call orchestrator_capabilities with search ${narrower.map((t) => `"${id} ${t}"`).join(", ")} ${MERGE_HINT}`
+          : `Narrow the search with a more specific term, such as a version, ${MERGE_HINT}`),
     );
   }
   return warnings;

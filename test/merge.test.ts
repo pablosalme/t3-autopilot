@@ -21,6 +21,33 @@ const opencodeOpus = () => ({
   ],
 });
 
+/**
+ * A `search: "cursor gemini"` output: T3 lists at most 8 matches, in the user's
+ * order (not by version), and counts the rest in `omittedModels`.
+ */
+const cursorSearch = (models: string[], omittedModels?: number) => ({
+  providers: [
+    { providerInstanceId: "codex", driverKind: "codex", models: [], canRunChildTask: true },
+    {
+      providerInstanceId: "cursor",
+      driverKind: "cursor",
+      models: models.map((id) => ({ id })),
+      ...(omittedModels === undefined ? {} : { omittedModels }),
+      canRunChildTask: true,
+    },
+  ],
+});
+const EIGHT_GEMINI = [
+  "gemini-9-argon",
+  "gemini-9-carbon",
+  "gemini-9-hydrogen",
+  "gemini-8.5-pro",
+  "gemini-8-pro",
+  "gemini-9-flash",
+  "gemini-8.5-flash",
+  "gemini-8-flash-lite",
+];
+
 const policy = defaultPolicy();
 const rec = (capabilities: unknown) =>
   recommendModel({ task: "x", taskType: "code", capabilities }, policy, new NoneUsageSource());
@@ -92,6 +119,9 @@ describe("merging a search output", () => {
     expect(ids(cached)[1]).toBe("cursor/claude-opus-9-2");
     // A second search, for opencode, clears its warning too.
     expect(warned(await call({ capabilities: opencodeOpus(), mergeCapabilities: true }))).toEqual(["pi"]);
+    // A truncated search brings cursor's warning back: its latest list is cut again.
+    const truncated = await call({ capabilities: cursorSearch(EIGHT_GEMINI, 12), mergeCapabilities: true });
+    expect(warned(truncated)).toEqual(["cursor", "pi"]);
   });
 
   it("says so when there is nothing to merge into (first call, or the server restarted)", async () => {
@@ -105,6 +135,49 @@ describe("merging a search output", () => {
     expect(data.capabilitiesFrom).toBe("call");
     expect(data.warnings[0]).toMatch(/^mergeCapabilities: there were no earlier capabilities to merge into/);
     expect(ids(data)[0]).toBe("cursor/claude-opus-9-2");
+  });
+});
+
+describe("a truncated search (more than 8 matches)", () => {
+  const design = (capabilities: unknown) =>
+    recommendModel({ task: "x", taskType: "design", capabilities }, policy, new NoneUsageSource());
+
+  it("keeps the provider's warning and suggests a narrower search", async () => {
+    const r = await design([driverFixtureRaw("cursor"), cursorSearch(EIGHT_GEMINI, 12)]);
+    expect(r.warnings).toHaveLength(1);
+    expect(r.warnings[0]).toMatch(
+      /^cursor: the last orchestrator_capabilities output for it listed 8 models and left out 12 more/,
+    );
+    expect(r.warnings[0]).toContain('search "cursor gemini-9", "cursor gemini-10"');
+    expect(r.warnings[0]).toContain("mergeCapabilities: true");
+  });
+
+  it("does not call the pick from a truncated list the latest", async () => {
+    const r = await design([driverFixtureRaw("cursor"), cursorSearch(EIGHT_GEMINI, 12)]);
+    const gemini = r.candidates.find((c) => c.model.startsWith("gemini-"))!;
+    expect(gemini.model).toBe("gemini-9-argon");
+    expect(gemini.reason).not.toMatch(/latest/);
+    expect(gemini.reason).toMatch(/newest listed gemini on cursor is gemini-9-argon/);
+    expect(gemini.reason).toMatch(/12 models left out of the list/);
+  });
+
+  it("drops the warning once a narrower search lists every match", async () => {
+    const narrower = cursorSearch(["gemini-9-neon", "gemini-9-argon", "gemini-9-carbon", "gemini-9-hydrogen"]);
+    const r = await design([driverFixtureRaw("cursor"), cursorSearch(EIGHT_GEMINI, 12), narrower]);
+    expect(r.warnings).toEqual([]);
+    expect(r.candidates.map((c) => c.reason).join("\n")).not.toMatch(/newest listed|left out/);
+  });
+
+  it("also says newest listed on the full output's short list", async () => {
+    const r = await design(driverFixtureRaw("cursor"));
+    const gemini = r.candidates.find((c) => c.model.startsWith("gemini-"))!;
+    expect(gemini.reason).toMatch(/newest listed gemini on cursor is gemini-7-pro/);
+  });
+
+  it("gives a generic hint when the search listed no model of a family the task uses", async () => {
+    const r = await design([driverFixtureRaw("cursor"), cursorSearch(["composer-9", "composer-8"], 3)]);
+    expect(r.warnings[0]).toMatch(/listed 2 models and left out 3 more/);
+    expect(r.warnings[0]).toMatch(/Narrow the search with a more specific term/);
   });
 });
 

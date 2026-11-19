@@ -176,7 +176,7 @@ t3-autopilot works with whatever provider instances you have in T3 Code, in any 
 
 - **Eligibility.** Only instances with `canRunChildTask: true` (enabled for the project, installed and signed in) are recommended. If none is, `recommend_model` fails with each instance's reason.
 - **Families across drivers.** Most families match on any driver, so Claude Opus is found as `claude-opus-5-5` on Claude or Cursor, `claude-opus-5.5` on Kiro, or `anthropic/claude-opus-5-5` on OpenCode and Pi.
-- **Short model lists.** For Cursor, OpenCode, Pi, Kiro, fx, Antigravity and ACP agents, T3 lists at most 8 models and counts the rest as `omittedModels`. Then the result has a `warnings` entry with the `search` to run (for example `orchestrator_capabilities` with `search: "cursor opus"`); passing that output with `mergeCapabilities: true` merges it into the kept capabilities, and the warning goes away for the providers the search listed models for. Without it, the newest model is chosen among the listed ones only.
+- **Short model lists.** For Cursor, OpenCode, Pi, Kiro, fx, Antigravity and ACP agents, T3 lists at most 8 models and counts the rest as `omittedModels`. Then the result has a `warnings` entry with the `search` to run (for example `orchestrator_capabilities` with `search: "cursor opus"`); passing that output with `mergeCapabilities: true` merges it into the kept capabilities, and the warning goes away for the providers the search listed models for. Without it, the newest model is chosen among the listed ones only. A search is capped at 8 matches too, in the user's order rather than by version, so when it still leaves models out the warning stays and suggests a narrower search (for example `"cursor gemini-9"` and `"cursor gemini-10"`). While a provider's latest list is truncated, its candidates say "newest listed" instead of "latest".
 - **Unknown providers.** A provider no family covers (an unknown driver, an ACP agent with its own model names) still gets a candidate: its default model (`default`, `auto`, `grok-build`, `antigravity-default`) or, failing that, the first model T3 lists for it, marked "low confidence".
 
 ## The policy
@@ -244,7 +244,7 @@ Everything lives in `~/.t3-autopilot/` (or `$T3_AUTOPILOT_HOME`): `policy.yaml` 
 
 **Does it guarantee the orchestrator uses the recommendation?** No. The snippet asks for it and authorises switching, but the orchestrator is a language model. `log_delegation` records whether it used the first candidate (`recommendedRank`).
 
-**Why can a warning about omitted models stay after a search?** It goes away once a merged search output lists models for that provider. If the search finds nothing for it, T3 returns that provider with no models, which looks the same as a provider the search did not select, so the warning stays.
+**Why can a warning about omitted models stay after a search?** It goes away once a merged search output lists models for that provider and leaves none out. A search with more than 8 matches is truncated as well, so the warning stays with a narrower search to run. If the search finds nothing for the provider, T3 returns it with no models, which looks the same as a provider the search did not select, so the warning stays too.
 
 **Does it work without T3 Code?** It is built around T3's `orchestrator_capabilities` and `delegate_task`. Another host would have to pass data in the same shape.
 

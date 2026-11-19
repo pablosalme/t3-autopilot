@@ -42,6 +42,12 @@ export const ProviderSchema = z
      * provider, when more than one did (the full output plus a `search` output).
      */
     mergedOutputs: z.number().int().optional(),
+    /**
+     * Set by t3-autopilot when a later output lists models for this provider:
+     * the ids it listed and its own `omittedModels`. A `search` output with
+     * more than 8 matches is truncated too (T3's LISTED_MODEL_LIMIT).
+     */
+    lastOutput: z.object({ models: z.array(z.string()), omittedModels: z.number().int().min(0) }).optional(),
   })
   .passthrough();
 
@@ -131,7 +137,9 @@ function listsModels(provider: Provider): boolean {
  * number of models added (an estimate: T3 does not say which ones it omitted).
  * A later output that lists no model for a provider (a search that did not
  * select it) leaves that provider as it was, so its omitted-models warning
- * stays until a search that lists its models is merged.
+ * stays until a search that lists its models is merged. The last output that
+ * lists models for a provider is recorded in `lastOutput`: whether the list is
+ * still truncated is decided by that output alone.
  * Thread-level fields (inherited provider, model, options) come from the first
  * output that has them.
  */
@@ -160,7 +168,10 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
       if (added > 0 && existing.omittedModels !== undefined) {
         existing.omittedModels = Math.max(0, existing.omittedModels - added);
       }
-      if (listsModels(p)) existing.mergedOutputs = (existing.mergedOutputs ?? 1) + 1;
+      if (listsModels(p)) {
+        existing.mergedOutputs = (existing.mergedOutputs ?? 1) + 1;
+        existing.lastOutput = { models: p.models.map((m) => m.id), omittedModels: p.omittedModels ?? 0 };
+      }
       // A provider that became unusable in a later output is unusable.
       if (!p.canRunChildTask && existing.canRunChildTask) {
         existing.canRunChildTask = false;
@@ -174,4 +185,15 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
 /** Driver kind of a provider; falls back to the instance id when T3 omits it. */
 export function driverKindOf(provider: Provider): string {
   return provider.driverKind ?? provider.providerInstanceId;
+}
+
+/**
+ * How many models the latest information about a provider left out, so a
+ * newer model may be missing from its list: the `omittedModels` of the last
+ * merged output that listed its models (a truncated `search` included), else
+ * of the output itself. Always 0 for drivers T3 lists in full.
+ */
+export function truncatedBy(provider: Provider): number {
+  if (FULL_CATALOG_DRIVERS.has(driverKindOf(provider))) return 0;
+  return provider.lastOutput ? provider.lastOutput.omittedModels : (provider.omittedModels ?? 0);
 }
