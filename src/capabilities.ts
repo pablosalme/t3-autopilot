@@ -205,7 +205,8 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
           // A model both list: the later output is the newer one, so what it says (its options, above all)
           // replaces what was known; the fields it leaves out stay.
           const old = existing.models.find((x) => x.id === m.id);
-          if (old) Object.assign(old, structuredClone(m));
+          const given = Object.entries(structuredClone(m)).filter(([, v]) => v !== undefined);
+          if (old) Object.assign(old, Object.fromEntries(given));
         }
         anchor = m.id;
       });

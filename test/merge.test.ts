@@ -277,6 +277,11 @@ describe("merging: the later output is the newer one", () => {
       parseCapabilities(claude(["claude-fable-8-3"], false)),
     ]);
     expect(model(merged, "claude-fable-8-3").options).toEqual([EFFORT]);
+    // Also for a caller of the library whose object carries the key with no value.
+    const unset = parseCapabilities(claude(["claude-fable-8-3"], false));
+    unset.providers[0]!.models[0]!.options = undefined;
+    const kept = mergeCapabilities([parseCapabilities(claude(["claude-fable-8-3"], true)), unset]);
+    expect(model(kept, "claude-fable-8-3").options).toEqual([EFFORT]);
     // An explicit empty list says the model has none now.
     const none = claude(["claude-fable-8-3"], false);
     Object.assign(none.providers[0]!.models[0]!, { options: [] });
