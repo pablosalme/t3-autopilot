@@ -39,9 +39,20 @@ const [packed] = JSON.parse(npm(["pack", "--json", "--ignore-scripts", "--pack-d
 const files = packed.files.map((f) => f.path.replace(/\\/g, "/")).sort();
 console.log(`packed ${packed.filename}: ${files.length} files, ${(packed.size / 1024).toFixed(1)} kB`);
 
-const required = ["LICENSE", "README.md", "package.json", "policy/default.yaml", "dist/cli.js", "dist/index.js", "dist/index.d.ts"];
+const required = [
+  "LICENSE",
+  "README.md",
+  "package.json",
+  "policy/default.yaml",
+  "dist/cli.js",
+  "dist/index.js",
+  "dist/index.d.ts",
+];
 for (const f of required) if (!files.includes(f)) fail(`the package lacks ${f}`);
-const unexpected = files.filter((f) => !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(f));
+const unexpected = files.filter(
+  (f) =>
+    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(f),
+);
 if (unexpected.length) fail(`the package has unexpected files: ${unexpected.join(", ")}`);
 console.log("ok   file list");
 

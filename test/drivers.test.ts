@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseCapabilities } from "../src/capabilities.js";
 import { findEffortOption } from "../src/effort.js";
-import { recommendModel, type Recommendation } from "../src/recommend.js";
+import { type Recommendation, recommendModel } from "../src/recommend.js";
 import { NoneUsageSource } from "../src/usage.js";
 import { defaultPolicy, driverFixture, driverFixtureRaw, policyWith } from "./helpers.js";
 
@@ -14,7 +14,19 @@ async function rec(capabilities: unknown, taskType = "code", p = policy): Promis
 }
 const ids = (r: Recommendation) => r.candidates.map((c) => `${c.providerInstanceId}/${c.model}`);
 
-const DRIVERS = ["claudeAgent", "codex", "cursor", "grok", "opencode", "antigravity", "kiro", "pi", "fx", "muse", "acpRegistry"];
+const DRIVERS = [
+  "claudeAgent",
+  "codex",
+  "cursor",
+  "grok",
+  "opencode",
+  "antigravity",
+  "kiro",
+  "pi",
+  "fx",
+  "muse",
+  "acpRegistry",
+];
 const TASK_TYPES = Object.keys(policy.taskTypes);
 
 describe("a user with a single provider of each driver T3 ships", () => {
@@ -86,7 +98,13 @@ describe("only providers t3-autopilot does not know", () => {
 
   it("uses a known driver's default slug when that provider lists no models", async () => {
     const caps = driverFixture("unknown-only");
-    caps.providers.push({ providerInstanceId: "kiro-2", driverKind: "kiro", models: [], canRunChildTask: true, constraints: [] });
+    caps.providers.push({
+      providerInstanceId: "kiro-2",
+      driverKind: "kiro",
+      models: [],
+      canRunChildTask: true,
+      constraints: [],
+    });
     const r = await rec(caps);
     expect(ids(r)).toContain("kiro-2/default");
   });
@@ -154,14 +172,26 @@ describe("capabilities as T3 sends them", () => {
       parentThreadId: null,
       inheritedProviderInstanceId: null,
       inheritedModel: null,
-      providers: [{ providerInstanceId: "x", driverKind: "codex", displayName: null, models: [], canRunChildTask: true, canRunCrossProviderChildTask: true, constraints: [] }],
+      providers: [
+        {
+          providerInstanceId: "x",
+          driverKind: "codex",
+          displayName: null,
+          models: [],
+          canRunChildTask: true,
+          canRunCrossProviderChildTask: true,
+          constraints: [],
+        },
+      ],
     });
     expect(caps.inheritedProviderInstanceId).toBeNull();
   });
 
   it("rejects numeric option values (T3 only sends strings and booleans)", () => {
     expect(() =>
-      parseCapabilities({ providers: [{ providerInstanceId: "x", models: [{ id: "m", options: [{ id: "effort", values: [1, 2] }] }] }] }),
+      parseCapabilities({
+        providers: [{ providerInstanceId: "x", models: [{ id: "m", options: [{ id: "effort", values: [1, 2] }] }] }],
+      }),
     ).toThrow(/orchestrator_capabilities/);
   });
 });
@@ -179,9 +209,15 @@ describe("effort option detection", () => {
   });
 
   it("finds an ACP agent's own reasoning option by name", () => {
-    expect(findEffortOption([{ id: "mode", values: ["default", "plan"] }, { id: "thought_depth", values: ["low", "high"] }], ["effort"])?.id).toBe(
-      "thought_depth",
-    );
+    expect(
+      findEffortOption(
+        [
+          { id: "mode", values: ["default", "plan"] },
+          { id: "thought_depth", values: ["low", "high"] },
+        ],
+        ["effort"],
+      )?.id,
+    ).toBe("thought_depth");
     expect(findEffortOption([{ id: "depth", values: ["shallow", "deep"] }], ["effort"])).toBeUndefined();
   });
 });

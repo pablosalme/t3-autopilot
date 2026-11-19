@@ -5,9 +5,9 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { parse } from "yaml";
-import { parseCapabilities, type Capabilities } from "../src/capabilities.js";
+import { type Capabilities, parseCapabilities } from "../src/capabilities.js";
 import { defaultPolicyPath } from "../src/paths.js";
-import { loadPolicy, mergePolicy, validatePolicy, type Policy } from "../src/policy.js";
+import { loadPolicy, mergePolicy, type Policy, validatePolicy } from "../src/policy.js";
 import { createServer } from "../src/server.js";
 
 const FIXTURE = new URL("./fixtures/capabilities.json", import.meta.url);
@@ -19,7 +19,10 @@ export function fixture(): Capabilities {
 
 /** Raw JSON of an invented per-driver fixture in test/fixtures/drivers/<name>.json. */
 export function driverFixtureRaw(name: string): Record<string, unknown> {
-  return JSON.parse(readFileSync(new URL(`./fixtures/drivers/${name}.json`, import.meta.url), "utf8")) as Record<string, unknown>;
+  return JSON.parse(readFileSync(new URL(`./fixtures/drivers/${name}.json`, import.meta.url), "utf8")) as Record<
+    string,
+    unknown
+  >;
 }
 
 /** Parsed per-driver fixture. */

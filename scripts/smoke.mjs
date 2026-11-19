@@ -39,22 +39,52 @@ async function recommend(label, args, { expectError = false } = {}) {
     return undefined;
   }
   const data = res.structuredContent;
-  console.log(JSON.stringify({ taskType: data.taskType, candidates: data.candidates, warnings: data.warnings, capabilitiesFrom: data.capabilitiesFrom }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        taskType: data.taskType,
+        candidates: data.candidates,
+        warnings: data.warnings,
+        capabilitiesFrom: data.capabilitiesFrom,
+      },
+      null,
+      2,
+    ),
+  );
   check(label, !expectError && data.candidates.length > 0, `${data.candidates.length} candidate(s)`);
   return data;
 }
 
 // 1. A single non-Claude provider (Kiro), with dotted model ids.
-await recommend("single provider: kiro", { task: "Implement the CSV export endpoint", taskType: "code", capabilities: load("drivers/kiro.json") });
+await recommend("single provider: kiro", {
+  task: "Implement the CSV export endpoint",
+  taskType: "code",
+  capabilities: load("drivers/kiro.json"),
+});
 // 2. A mix of providers; Cursor, OpenCode and Pi have short lists (omittedModels).
-await recommend("mixed: codex + cursor + opencode + kiro + pi", { task: "Review the PR", taskType: "review", capabilities: load("drivers/mixed.json") });
+await recommend("mixed: codex + cursor + opencode + kiro + pi", {
+  task: "Review the PR",
+  taskType: "review",
+  capabilities: load("drivers/mixed.json"),
+});
 // 3. Only providers t3-autopilot does not know: generic fallback, low confidence.
-await recommend("only unknown providers", { task: "Fix the flaky upload test", taskType: "debug", capabilities: load("drivers/unknown-only.json") });
+await recommend("only unknown providers", {
+  task: "Fix the flaky upload test",
+  taskType: "debug",
+  capabilities: load("drivers/unknown-only.json"),
+});
 // 4. Cached capabilities: the previous call's are reused.
-const cached = await recommend("cached capabilities (no capabilities argument)", { task: "Rename the util module", taskType: "quick" });
+const cached = await recommend("cached capabilities (no capabilities argument)", {
+  task: "Rename the util module",
+  taskType: "quick",
+});
 check("cache reused", cached?.capabilitiesFrom === "cache");
 // 5. Every provider disabled: a clear error.
-await recommend("all providers disabled", { task: "x", taskType: "code", capabilities: load("drivers/all-disabled.json") }, { expectError: true });
+await recommend(
+  "all providers disabled",
+  { task: "x", taskType: "code", capabilities: load("drivers/all-disabled.json") },
+  { expectError: true },
+);
 // 6. The original mixed fixture with usage passed in the call.
 await recommend("usage-aware (claudeAgent weekly 88%)", {
   task: "Fix the flaky upload test that fails on CI",
@@ -65,7 +95,13 @@ await recommend("usage-aware (claudeAgent weekly 88%)", {
 
 const out = await client.callTool({
   name: "log_outcome",
-  arguments: { taskType: "debug", providerInstanceId: "codex", model: "gpt-6.2-codex", outcome: "success", note: "smoke" },
+  arguments: {
+    taskType: "debug",
+    providerInstanceId: "codex",
+    model: "gpt-6.2-codex",
+    outcome: "success",
+    note: "smoke",
+  },
 });
 check("log_outcome", !out.isError);
 const stats = await client.callTool({ name: "get_stats", arguments: {} });

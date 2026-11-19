@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { recommendModel, type RecommendInput } from "../src/recommend.js";
-import { NoneUsageSource, StaticUsageSource, type UsageSource } from "../src/usage.js";
 import type { Policy } from "../src/policy.js";
+import { type RecommendInput, recommendModel } from "../src/recommend.js";
+import { NoneUsageSource, StaticUsageSource, type UsageSource } from "../src/usage.js";
 import { defaultPolicy, fixture, policyWith } from "./helpers.js";
 
 const policy = defaultPolicy();
@@ -47,7 +47,11 @@ describe("recommendModel", () => {
       caps.providers.find((p) => p.providerInstanceId === "codex")!.constraints = ["Provider instance is disabled."];
       const r = await rec({ capabilities: caps });
       expect(ids(r).some((id) => id.startsWith("codex/"))).toBe(false);
-      expect(ids(r)).toEqual(["claudeAgent/claude-opus-7-1", "cursor/claude-opus-7", "opencode/opencode/claude-opus-7-1"]);
+      expect(ids(r)).toEqual([
+        "claudeAgent/claude-opus-7-1",
+        "cursor/claude-opus-7",
+        "opencode/opencode/claude-opus-7-1",
+      ]);
       expect(r.skipped).toContain("codex: Provider instance is disabled.");
       expect(r.skipped).toContain("antigravity: Provider instance is disabled.");
     });
@@ -99,20 +103,27 @@ describe("recommendModel", () => {
     });
 
     it("demotes a candidate above the threshold", async () => {
-      const r = await rec({ usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 82 }] }] });
+      const r = await rec({
+        usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 82 }] }],
+      });
       expect(ids(r)).toEqual(["codex/gpt-6.2-codex", "cursor/claude-opus-7", "opencode/opencode/claude-opus-7-1"]);
       expect(r.usageSource).toBe("none+call");
     });
 
     it("keeps a candidate below the threshold in place", async () => {
-      const r = await rec({ usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 60 }] }] });
+      const r = await rec({
+        usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 60 }] }],
+      });
       expect(ids(r)[0]).toBe("claudeAgent/claude-opus-7-1");
     });
 
     it("respects a custom threshold", async () => {
       const p = policyWith({ usage: { thresholds: { weekly: 50 } } });
       expect(p.usage.thresholds.session).toBe(80);
-      const r = await rec({ usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 60 }] }] }, p);
+      const r = await rec(
+        { usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 60 }] }] },
+        p,
+      );
       expect(ids(r)[0]).toBe("codex/gpt-6.2-codex");
     });
 
@@ -124,10 +135,19 @@ describe("recommendModel", () => {
             { providerInstanceId: "codex", windows: [{ kind: "session", usedPercent: 90 }] },
           ],
         },
-        policyWith({ maxCandidates: 3, fallback: [], genericFallback: false, taskTypes: { code: { candidates: [
-          { provider: "claudeAgent", family: "claude-opus", effort: "high" },
-          { provider: "codex", family: "gpt", effort: "high" },
-        ] } } }),
+        policyWith({
+          maxCandidates: 3,
+          fallback: [],
+          genericFallback: false,
+          taskTypes: {
+            code: {
+              candidates: [
+                { provider: "claudeAgent", family: "claude-opus", effort: "high" },
+                { provider: "codex", family: "gpt", effort: "high" },
+              ],
+            },
+          },
+        }),
       );
       expect(ids(r)).toEqual(["codex/gpt-6.2-codex", "claudeAgent/claude-opus-7-1"]);
       expect(r.candidates[1]!.reason).toMatch(/exhausted/);
@@ -135,22 +155,38 @@ describe("recommendModel", () => {
 
     it("only applies model-scoped windows to those models", async () => {
       const r = await rec({
-        usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 95, modelIds: ["claude-sonnet-7-1"] }] }],
+        usage: [
+          {
+            providerInstanceId: "claudeAgent",
+            windows: [{ kind: "weekly", usedPercent: 95, modelIds: ["claude-sonnet-7-1"] }],
+          },
+        ],
       });
       expect(ids(r)[0]).toBe("claudeAgent/claude-opus-7-1");
     });
 
     it("does not demote noDemote candidates below 100%", async () => {
-      const p = policyWith({ taskTypes: { code: { candidates: [
-        { provider: "claudeAgent", family: "claude-opus", effort: "high", noDemote: true },
-        { provider: "codex", family: "gpt" },
-      ] } } });
-      const r = await rec({ usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 95 }] }] }, p);
+      const p = policyWith({
+        taskTypes: {
+          code: {
+            candidates: [
+              { provider: "claudeAgent", family: "claude-opus", effort: "high", noDemote: true },
+              { provider: "codex", family: "gpt" },
+            ],
+          },
+        },
+      });
+      const r = await rec(
+        { usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 95 }] }] },
+        p,
+      );
       expect(ids(r)[0]).toBe("claudeAgent/claude-opus-7-1");
     });
 
     it("reads percentages from a UsageSource", async () => {
-      const source = new StaticUsageSource([{ providerInstanceId: "claudeAgent", windows: [{ kind: "session", usedPercent: 85 }] }]);
+      const source = new StaticUsageSource([
+        { providerInstanceId: "claudeAgent", windows: [{ kind: "session", usedPercent: 85 }] },
+      ]);
       const r = await rec({}, policy, source);
       expect(r.usageSource).toBe("static");
       expect(ids(r)[0]).toBe("codex/gpt-6.2-codex");
@@ -166,7 +202,9 @@ describe("recommendModel", () => {
   });
 
   it("uses the fallback list when no candidate of the type is available", async () => {
-    const p = policyWith({ taskTypes: { code: { candidates: [{ provider: "pi", family: "claude-opus", effort: "low" }] } } });
+    const p = policyWith({
+      taskTypes: { code: { candidates: [{ provider: "pi", family: "claude-opus", effort: "low" }] } },
+    });
     const r = await rec({}, p);
     expect(r.candidates[0]!.reason).toMatch(/^fallback #1/);
     expect(r.candidates[0]!.source).toBe("fallback");
@@ -177,11 +215,17 @@ describe("recommendModel", () => {
   });
 
   it("fills the free slots with the fallback list up to maxCandidates", async () => {
-    const p = policyWith({ taskTypes: { code: { candidates: [{ provider: "claudeAgent", family: "claude-opus", effort: "high" }] } } });
+    const p = policyWith({
+      taskTypes: { code: { candidates: [{ provider: "claudeAgent", family: "claude-opus", effort: "high" }] } },
+    });
     const r = await rec({}, p);
     expect(r.candidates).toHaveLength(3);
     expect(r.candidates.map((c) => c.source)).toEqual(["taskType", "fallback", "fallback"]);
-    expect(ids(r)).toEqual(["claudeAgent/claude-opus-7-1", "cursor/claude-opus-7", "opencode/opencode/claude-opus-7-1"]);
+    expect(ids(r)).toEqual([
+      "claudeAgent/claude-opus-7-1",
+      "cursor/claude-opus-7",
+      "opencode/opencode/claude-opus-7-1",
+    ]);
   });
 
   it("falls back to the orchestrator's own model when nothing else resolves", async () => {
@@ -192,7 +236,13 @@ describe("recommendModel", () => {
     });
     const r = await rec({}, p);
     expect(r.candidates).toEqual([
-      expect.objectContaining({ providerInstanceId: "claudeAgent", model: "claude-opus-7-1", options: [{ id: "effort", value: "high" }], source: "inherited", sameAsOrchestrator: true }),
+      expect.objectContaining({
+        providerInstanceId: "claudeAgent",
+        model: "claude-opus-7-1",
+        options: [{ id: "effort", value: "high" }],
+        source: "inherited",
+        sameAsOrchestrator: true,
+      }),
     ]);
     expect(r.candidates[0]!.reason).toMatch(/low confidence/);
   });

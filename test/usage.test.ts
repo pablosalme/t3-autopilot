@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { recommendModel, type Recommendation } from "../src/recommend.js";
+import { type Recommendation, recommendModel } from "../src/recommend.js";
 import { evaluateUsage, NoneUsageSource, type ProviderUsage } from "../src/usage.js";
 import { connectServer, defaultPolicy, fixture, policyWith } from "./helpers.js";
 
@@ -25,7 +25,13 @@ describe("evaluateUsage (#11)", () => {
 
   it("still applies the valid windows next to invalid ones", () => {
     const v = evaluateUsage(
-      { providerInstanceId: "a", windows: [{ kind: "daily", usedPercent: 99 }, { kind: "weekly", usedPercent: 100 }] },
+      {
+        providerInstanceId: "a",
+        windows: [
+          { kind: "daily", usedPercent: 99 },
+          { kind: "weekly", usedPercent: 100 },
+        ],
+      },
       "m",
       policy,
     );
@@ -104,7 +110,11 @@ describe("usage passed in the call, across several providers", () => {
 
   it("with the default policy, all exhausted keeps the same ranking as no usage at all", async () => {
     const policy = defaultPolicy();
-    const none = await recommendModel({ task: "x", taskType: "code", capabilities: fixture() }, policy, new NoneUsageSource());
+    const none = await recommendModel(
+      { task: "x", taskType: "code", capabilities: fixture() },
+      policy,
+      new NoneUsageSource(),
+    );
     const exhausted = await recommendModel(
       { task: "x", taskType: "code", capabilities: fixture(), usage: ALL.map((id) => at(id, "weekly", 100)) },
       policy,

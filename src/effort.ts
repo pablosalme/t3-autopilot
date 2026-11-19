@@ -29,7 +29,9 @@ export function clampEffort(wanted: Effort, supported: readonly OptionValue[]): 
 
 /** True when an option can carry an effort level: free-form, or at least one value on the scale. */
 function takesEffort(opt: ModelOption): boolean {
-  return opt.values === undefined || opt.values.some((v) => typeof v === "string" && EFFORT_SCALE.includes(v as Effort));
+  return (
+    opt.values === undefined || opt.values.some((v) => typeof v === "string" && EFFORT_SCALE.includes(v as Effort))
+  );
 }
 
 /** Option ids that look like a reasoning control on agents with their own ids (ACP agents). */
@@ -41,7 +43,10 @@ const EFFORT_LIKE_ID = /effort|reason|think|thought/i;
  * like a reasoning control and has effort values. A boolean `thinking` toggle
  * is never used for effort.
  */
-export function findEffortOption(declared: readonly ModelOption[], effortOptionIds: readonly string[]): ModelOption | undefined {
+export function findEffortOption(
+  declared: readonly ModelOption[],
+  effortOptionIds: readonly string[],
+): ModelOption | undefined {
   for (const id of effortOptionIds) {
     const opt = declared.find((o) => o.id === id);
     if (opt && takesEffort(opt)) return opt;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mergeCapabilities } from "../src/capabilities.js";
-import { recommendModel, type Recommendation } from "../src/recommend.js";
+import { type Recommendation, recommendModel } from "../src/recommend.js";
 import { NoneUsageSource } from "../src/usage.js";
 import { connectServer, defaultPolicy, driverFixture, driverFixtureRaw } from "./helpers.js";
 
@@ -22,7 +22,8 @@ const opencodeOpus = () => ({
 });
 
 const policy = defaultPolicy();
-const rec = (capabilities: unknown) => recommendModel({ task: "x", taskType: "code", capabilities }, policy, new NoneUsageSource());
+const rec = (capabilities: unknown) =>
+  recommendModel({ task: "x", taskType: "code", capabilities }, policy, new NoneUsageSource());
 /** Provider instance ids that have an omitted-models warning. */
 const warned = (r: Pick<Recommendation, "warnings">) => r.warnings.map((w) => w.slice(0, w.indexOf(":")));
 const ids = (r: Pick<Recommendation, "candidates">) => r.candidates.map((c) => `${c.providerInstanceId}/${c.model}`);
@@ -40,7 +41,9 @@ describe("merging a search output", () => {
     const byId = (id: string) => merged.providers.find((p) => p.providerInstanceId === id)!;
     // cursor: 2 of the 3 opus models were not in the short list.
     expect(byId("cursor")).toMatchObject({ omittedModels: 38, mergedOutputs: 2 });
-    expect(byId("cursor").models.map((m) => m.id)).toEqual(expect.arrayContaining(["claude-opus-9-2", "claude-opus-8-7"]));
+    expect(byId("cursor").models.map((m) => m.id)).toEqual(
+      expect.arrayContaining(["claude-opus-9-2", "claude-opus-8-7"]),
+    );
     for (const id of ["codex", "opencode", "kiro", "pi"]) {
       const before = driverFixture("mixed").providers.find((p) => p.providerInstanceId === id)!;
       expect(byId(id).models, id).toEqual(before.models);
@@ -50,7 +53,11 @@ describe("merging a search output", () => {
   });
 
   it("lets the model found by the search win and keeps the rest of the ranking", async () => {
-    expect(ids(await rec(full()))).toEqual(["codex/gpt-9.1-sol", "cursor/claude-opus-9-1", "opencode/openrouter/anthropic/claude-opus-9.1"]);
+    expect(ids(await rec(full()))).toEqual([
+      "codex/gpt-9.1-sol",
+      "cursor/claude-opus-9-1",
+      "opencode/openrouter/anthropic/claude-opus-9.1",
+    ]);
     expect(ids(await rec([full(), cursorOpus()]))).toEqual([
       "codex/gpt-9.1-sol",
       "cursor/claude-opus-9-2",
@@ -67,7 +74,10 @@ describe("merging a search output", () => {
   it("does the same through the server cache with mergeCapabilities: true", async () => {
     const { client } = await connectServer();
     const call = async (args: Record<string, unknown>) => {
-      const res = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code", ...args } });
+      const res = await client.callTool({
+        name: "recommend_model",
+        arguments: { task: "x", taskType: "code", ...args },
+      });
       expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
       return res.structuredContent as Recommendation & { capabilitiesFrom: string };
     };

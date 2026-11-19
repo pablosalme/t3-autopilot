@@ -1,10 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { mergeCapabilities, parseCapabilities, SelectedOptionSchema, type Capabilities } from "./capabilities.js";
+import { type Capabilities, mergeCapabilities, parseCapabilities, SelectedOptionSchema } from "./capabilities.js";
 import { computeStats, logDelegation, logOutcome, OUTCOMES, readLog } from "./log.js";
 import { logPath as defaultLogPath } from "./paths.js";
-import { loadPolicy, type LoadedPolicy, type Policy } from "./policy.js";
+import { type LoadedPolicy, loadPolicy, type Policy } from "./policy.js";
 import { recommendModel } from "./recommend.js";
 import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usage.js";
 
@@ -74,7 +74,9 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         taskType: z
           .string()
           .optional()
-          .describe("Task type from the list in the description. Pass it; the keyword classifier is only a last resort."),
+          .describe(
+            "Task type from the list in the description. Pass it; the keyword classifier is only a last resort.",
+          ),
         size: z.enum(["small", "medium", "large"]).optional().describe("Rough size of the task. Shifts effort."),
         criticality: z.enum(["low", "normal", "high"]).optional().describe("How costly a mistake is. Shifts effort."),
         capabilities: z
@@ -87,7 +89,9 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         mergeCapabilities: z
           .boolean()
           .optional()
-          .describe("Merge `capabilities` into the ones kept from earlier calls (use it for orchestrator_capabilities `search` output)."),
+          .describe(
+            "Merge `capabilities` into the ones kept from earlier calls (use it for orchestrator_capabilities `search` output).",
+          ),
         usage: z
           .array(ProviderUsageSchema)
           .optional()

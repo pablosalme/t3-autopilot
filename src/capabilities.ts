@@ -103,7 +103,9 @@ export function parseCapabilities(input: unknown): Capabilities {
     try {
       value = JSON.parse(value);
     } catch {
-      throw new Error("capabilities is a string but not valid JSON. Pass the output of orchestrator_capabilities as-is.");
+      throw new Error(
+        "capabilities is a string but not valid JSON. Pass the output of orchestrator_capabilities as-is.",
+      );
     }
   }
   if (Array.isArray(value) && value.length > 0 && value.every(isCapabilitiesLike)) {

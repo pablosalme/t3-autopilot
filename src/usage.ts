@@ -79,7 +79,12 @@ export interface UsageVerdict {
 
 /** Known kind and a finite percentage in 0-100. Anything else is ignored. */
 export function isUsableWindow(w: UsageWindow): w is UsageWindow & { kind: UsageKind } {
-  return (USAGE_KINDS as readonly string[]).includes(w.kind) && Number.isFinite(w.usedPercent) && w.usedPercent >= 0 && w.usedPercent <= 100;
+  return (
+    (USAGE_KINDS as readonly string[]).includes(w.kind) &&
+    Number.isFinite(w.usedPercent) &&
+    w.usedPercent >= 0 &&
+    w.usedPercent <= 100
+  );
 }
 
 /** Evaluate one provider/model against the policy thresholds. */

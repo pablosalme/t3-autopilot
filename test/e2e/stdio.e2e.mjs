@@ -48,7 +48,11 @@ function runCli(args, home) {
   const env = { ...process.env, T3_AUTOPILOT_HOME: home };
   const res = bin
     ? // An installed bin is a .cmd shim on Windows, which only runs through a shell.
-      spawnSync(process.platform === "win32" ? `"${bin}"` : bin, args, { env, encoding: "utf8", shell: process.platform === "win32" })
+      spawnSync(process.platform === "win32" ? `"${bin}"` : bin, args, {
+        env,
+        encoding: "utf8",
+        shell: process.platform === "win32",
+      })
     : spawnSync(process.execPath, [cli, ...args], { env, encoding: "utf8" });
   if (res.error) throw res.error;
   return res;
@@ -79,7 +83,12 @@ describe(`orchestrator flow over stdio (${bin ? "installed bin" : "dist/cli.js"}
   it("initializes and lists the four tools", async () => {
     assert.deepEqual(client.getServerVersion(), { name: "t3-autopilot", version: pkg.version });
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map((t) => t.name).sort(), ["get_stats", "log_delegation", "log_outcome", "recommend_model"]);
+    assert.deepEqual(tools.map((t) => t.name).sort(), [
+      "get_stats",
+      "log_delegation",
+      "log_outcome",
+      "recommend_model",
+    ]);
     const description = tools.find((t) => t.name === "recommend_model").description;
     for (const type of ["review", "debug", "plan", "research", "quick", "code", "design", "writing"]) {
       assert.match(description, new RegExp(`\\n- ${type}: `));
@@ -91,7 +100,11 @@ describe(`orchestrator flow over stdio (${bin ? "installed bin" : "dist/cli.js"}
     assert.equal(data.capabilitiesFrom, "call");
     assert.equal(data.taskType, "code");
     assert.equal(data.classification.source, "given");
-    assert.deepEqual(ids(data), ["codex/gpt-9.1-sol", "cursor/claude-opus-9-1", "opencode/openrouter/anthropic/claude-opus-9.1"]);
+    assert.deepEqual(ids(data), [
+      "codex/gpt-9.1-sol",
+      "cursor/claude-opus-9-1",
+      "opencode/openrouter/anthropic/claude-opus-9.1",
+    ]);
     assert.deepEqual(data.candidates[0].options, [{ id: "reasoningEffort", value: "high" }]);
     assert.equal(data.candidates[0].source, "taskType");
     assert.equal(data.candidates[0].sameAsOrchestrator, false);
@@ -104,13 +117,21 @@ describe(`orchestrator flow over stdio (${bin ? "installed bin" : "dist/cli.js"}
   it("reuses the cached capabilities when the call omits them", async () => {
     const data = await recommend({});
     assert.equal(data.capabilitiesFrom, "cache");
-    assert.deepEqual(ids(data), ["codex/gpt-9.1-sol", "cursor/claude-opus-9-1", "opencode/openrouter/anthropic/claude-opus-9.1"]);
+    assert.deepEqual(ids(data), [
+      "codex/gpt-9.1-sol",
+      "cursor/claude-opus-9-1",
+      "opencode/openrouter/anthropic/claude-opus-9.1",
+    ]);
   });
 
   it("merges a search output: the hidden model wins and only the searched provider's warning goes", async () => {
     const data = await recommend({ capabilities: fixture("search-mixed-cursor-opus"), mergeCapabilities: true });
     assert.equal(data.capabilitiesFrom, "merged");
-    assert.deepEqual(ids(data), ["codex/gpt-9.1-sol", "cursor/claude-opus-9-2", "opencode/openrouter/anthropic/claude-opus-9.1"]);
+    assert.deepEqual(ids(data), [
+      "codex/gpt-9.1-sol",
+      "cursor/claude-opus-9-2",
+      "opencode/openrouter/anthropic/claude-opus-9.1",
+    ]);
     assert.deepEqual(data.candidates[1].options, [{ id: "effort", value: "high" }]);
     assert.deepEqual(warned(data), ["opencode", "pi"]);
   });
@@ -148,11 +169,17 @@ describe(`orchestrator flow over stdio (${bin ? "installed bin" : "dist/cli.js"}
   });
 
   it("logs the outcome with the delegationId", async () => {
-    const res = await client.callTool({ name: "log_outcome", arguments: { delegationId, outcome: "success", note: "accepted as is" } });
+    const res = await client.callTool({
+      name: "log_outcome",
+      arguments: { delegationId, outcome: "success", note: "accepted as is" },
+    });
     assert.ok(!res.isError, text(res));
     assert.equal(res.structuredContent.logged.delegationId, delegationId);
     assert.equal(res.structuredContent.logged.outcome, "success");
-    const unknown = await client.callTool({ name: "log_outcome", arguments: { delegationId: "d_000000000000", outcome: "success" } });
+    const unknown = await client.callTool({
+      name: "log_outcome",
+      arguments: { delegationId: "d_000000000000", outcome: "success" },
+    });
     assert.equal(unknown.isError, true);
     assert.match(text(unknown), /Unknown delegationId/);
   });
@@ -228,11 +255,17 @@ describe("CLI commands", () => {
     const version = runCli(["--version"], home);
     assert.equal(version.status, 0, version.stderr);
     assert.equal(version.stdout, `${pkg.version}\n`);
-    assert.match(runCli(["--help"], home).stdout, /^t3-autopilot \d+\.\d+\.\d+: model selection MCP server for T3 Code orchestrators\./);
+    assert.match(
+      runCli(["--help"], home).stdout,
+      /^t3-autopilot \d+\.\d+\.\d+: model selection MCP server for T3 Code orchestrators\./,
+    );
     const snippet = runCli(["snippet"], home);
     assert.equal(snippet.status, 0);
     assert.ok(snippet.stdout.startsWith("## Model selection for delegated tasks (t3-autopilot)\n"));
-    assert.ok(readFileSync(join(root, "README.md"), "utf8").includes(snippet.stdout), "README shows the snippet the CLI prints");
+    assert.ok(
+      readFileSync(join(root, "README.md"), "utf8").includes(snippet.stdout),
+      "README shows the snippet the CLI prints",
+    );
   });
 
   it("init-policy writes the template once into the data directory", () => {

@@ -24,7 +24,10 @@ const writePolicy = (yaml: string) => writeFileSync(policyFile, yaml, "utf8");
 const start = () => connectClient(createServer());
 type Rec = { candidates: { providerInstanceId: string; model: string }[]; skipped: string[] };
 const recommend = (client: Awaited<ReturnType<typeof start>>, args: Record<string, unknown> = {}) =>
-  client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code", capabilities: fixture(), ...args } });
+  client.callTool({
+    name: "recommend_model",
+    arguments: { task: "x", taskType: "code", capabilities: fixture(), ...args },
+  });
 
 describe("an invalid user policy", () => {
   it("is reported by every tool that needs it, and the server keeps working once it is fixed", async () => {
@@ -41,7 +44,10 @@ describe("an invalid user policy", () => {
     expect(resultText(rec)).toContain(`${policyFile}: cannot read policy YAML:`);
     expect(resultText(rec)).toMatch(/end with a \] at line \d+, column \d+/);
 
-    const del = await client.callTool({ name: "log_delegation", arguments: { taskType: "code", providerInstanceId: "codex", model: "m" } });
+    const del = await client.callTool({
+      name: "log_delegation",
+      arguments: { taskType: "code", providerInstanceId: "codex", model: "m" },
+    });
     expect(del.isError).toBe(true);
     expect(resultText(del)).toContain(policyFile);
     const out = await client.callTool({
@@ -73,7 +79,11 @@ describe("an invalid user policy", () => {
       /- taskTypes\.code\.candidates\[0\]: unknown family "nope"/,
     ],
     ["an invalid regex", "families:\n  x:\n    match: { '*': '([' }\n", /- families\.x\.match\.\*: invalid regex/],
-    ["a candidate without provider", "taskTypes:\n  code:\n    candidates:\n      - { family: gpt }\n", /needs `provider`/],
+    [
+      "a candidate without provider",
+      "taskTypes:\n  code:\n    candidates:\n      - { family: gpt }\n",
+      /needs `provider`/,
+    ],
     ["removing the default task type", "taskTypes:\n  code: null\n", /defaultTaskType "code" is not a task type/],
   ])("%s: the message names the user's file and the entry", async (_label, yaml, expected) => {
     writePolicy(yaml);
@@ -105,7 +115,10 @@ describe("a partial user policy", () => {
     writePolicy("excludeProviders: [claudeAgent]\nmaxCandidates: 2\n");
     const res = await recommend(await start());
     const data = res.structuredContent as Rec;
-    expect(data.candidates.map((c) => `${c.providerInstanceId}/${c.model}`)).toEqual(["codex/gpt-6.2-codex", "cursor/claude-opus-7"]);
+    expect(data.candidates.map((c) => `${c.providerInstanceId}/${c.model}`)).toEqual([
+      "codex/gpt-6.2-codex",
+      "cursor/claude-opus-7",
+    ]);
     expect(data.skipped).toContain("claudeAgent: listed in excludeProviders");
   });
 
@@ -114,7 +127,9 @@ describe("a partial user policy", () => {
     const client = await start();
     const quick = await recommend(client, { taskType: "quick" });
     expect(quick.isError).toBe(true);
-    expect(resultText(quick)).toBe('Unknown taskType "quick". Known types: review, debug, plan, research, code, design, writing');
+    expect(resultText(quick)).toBe(
+      'Unknown taskType "quick". Known types: review, debug, plan, research, code, design, writing',
+    );
     expect((await recommend(client)).isError).toBeFalsy();
   });
 
@@ -122,9 +137,13 @@ describe("a partial user policy", () => {
     writePolicy("usage:\n  thresholds: { weekly: 50 }\n");
     const client = await start();
     const busy = [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 60 }] }];
-    expect(((await recommend(client, { usage: busy })).structuredContent as Rec).candidates[0]!.providerInstanceId).toBe("codex");
+    expect(
+      ((await recommend(client, { usage: busy })).structuredContent as Rec).candidates[0]!.providerInstanceId,
+    ).toBe("codex");
     // session keeps the default 80%.
     const session = [{ providerInstanceId: "claudeAgent", windows: [{ kind: "session", usedPercent: 60 }] }];
-    expect(((await recommend(client, { usage: session })).structuredContent as Rec).candidates[0]!.providerInstanceId).toBe("claudeAgent");
+    expect(
+      ((await recommend(client, { usage: session })).structuredContent as Rec).candidates[0]!.providerInstanceId,
+    ).toBe("claudeAgent");
   });
 });

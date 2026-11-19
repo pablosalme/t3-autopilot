@@ -82,14 +82,17 @@ export interface OutcomeInput {
  * log_delegation) or `taskType` + `providerInstanceId` + `model` is required.
  */
 export function logOutcome(path: string, input: OutcomeInput, now: Date = new Date()): OutcomeRecord {
-  const standalone = input.taskType !== undefined && input.providerInstanceId !== undefined && input.model !== undefined;
+  const standalone =
+    input.taskType !== undefined && input.providerInstanceId !== undefined && input.model !== undefined;
   if (input.delegationId === undefined && !standalone) {
     throw new Error("log_outcome needs delegationId, or taskType + providerInstanceId + model");
   }
   if (input.delegationId !== undefined && !standalone) {
     const known = readLog(path).some((r) => r.kind === "delegation" && r.id === input.delegationId);
     if (!known) {
-      throw new Error(`Unknown delegationId "${input.delegationId}". Pass taskType + providerInstanceId + model instead.`);
+      throw new Error(
+        `Unknown delegationId "${input.delegationId}". Pass taskType + providerInstanceId + model instead.`,
+      );
     }
   }
   const record: OutcomeRecord = {
@@ -98,7 +101,9 @@ export function logOutcome(path: string, input: OutcomeInput, now: Date = new Da
     delegationId: input.delegationId ?? newId(),
     outcome: input.outcome,
     ...(input.note !== undefined ? { note: truncate(input.note) } : {}),
-    ...(standalone ? { taskType: input.taskType, providerInstanceId: input.providerInstanceId, model: input.model } : {}),
+    ...(standalone
+      ? { taskType: input.taskType, providerInstanceId: input.providerInstanceId, model: input.model }
+      : {}),
   };
   append(path, record);
   return record;
@@ -150,7 +155,12 @@ function finish(c: Counts): void {
 
 /** Summarise the log by task type and by model. The last outcome logged for a delegation wins. */
 export function computeStats(records: LogRecord[], opts: { since?: Date } = {}): Stats {
-  interface Row { taskType: string; key: string; outcome?: Outcome; rank?: number | null }
+  interface Row {
+    taskType: string;
+    key: string;
+    outcome?: Outcome;
+    rank?: number | null;
+  }
   const rows = new Map<string, Row>();
   const since = opts.since?.getTime();
 
@@ -162,7 +172,11 @@ export function computeStats(records: LogRecord[], opts: { since?: Date } = {}):
       const row = rows.get(r.delegationId);
       if (row) row.outcome = r.outcome;
       else if (r.taskType && r.providerInstanceId && r.model) {
-        rows.set(r.delegationId, { taskType: r.taskType, key: `${r.providerInstanceId}/${r.model}`, outcome: r.outcome });
+        rows.set(r.delegationId, {
+          taskType: r.taskType,
+          key: `${r.providerInstanceId}/${r.model}`,
+          outcome: r.outcome,
+        });
       }
     }
   }

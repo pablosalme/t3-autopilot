@@ -1,9 +1,9 @@
 import {
   driverKindOf,
   FULL_CATALOG_DRIVERS,
-  parseCapabilities,
   type Model,
   type Provider,
+  parseCapabilities,
   type SelectedOption,
 } from "./capabilities.js";
 import { classifyTask } from "./classify.js";
@@ -90,7 +90,12 @@ interface Ctx {
   shift: number;
 }
 
-function eligibleProviders(providers: Provider[], policy: Policy, inherited: string | undefined, skipped: string[]): Provider[] {
+function eligibleProviders(
+  providers: Provider[],
+  policy: Policy,
+  inherited: string | undefined,
+  skipped: string[],
+): Provider[] {
   return providers.filter((p) => {
     const id = p.providerInstanceId;
     if (!p.canRunChildTask) {
@@ -116,7 +121,16 @@ function instancesFor(rule: CandidateRule, providers: Provider[]): Provider[] {
   return providers.filter((p) => driverKindOf(p) === rule.provider);
 }
 
-function push(ctx: Ctx, provider: Provider, model: Model, effort: Effort | undefined, extra: CandidateRule["options"], source: CandidateSource, why: string, noDemote = false): void {
+function push(
+  ctx: Ctx,
+  provider: Provider,
+  model: Model,
+  effort: Effort | undefined,
+  extra: CandidateRule["options"],
+  source: CandidateSource,
+  why: string,
+  noDemote = false,
+): void {
   const key = `${provider.providerInstanceId}\u0000${model.id}`;
   if (ctx.seen.has(key)) return;
   ctx.seen.add(key);
@@ -156,7 +170,13 @@ function push(ctx: Ctx, provider: Provider, model: Model, effort: Effort | undef
  * effort: the fallback list follows the task type's effort, so a quick task
  * does not get a fallback model at high effort.
  */
-function scoreRules(rules: CandidateRule[], label: string, source: CandidateSource, ctx: Ctx, baseEffort?: Effort): void {
+function scoreRules(
+  rules: CandidateRule[],
+  label: string,
+  source: CandidateSource,
+  ctx: Ctx,
+  baseEffort?: Effort,
+): void {
   const { policy } = ctx;
   rules.forEach((rule, ruleIndex) => {
     const family = policy.families[rule.family];
@@ -176,7 +196,16 @@ function scoreRules(rules: CandidateRule[], label: string, source: CandidateSour
       const wanted = baseEffort ?? rule.effort;
       const effort = wanted ? shiftEffort(wanted, ctx.shift) : undefined;
       const where = rule.provider === "*" && rule.instance === undefined ? " (any provider)" : "";
-      push(ctx, provider, model, effort, rule.options, source, `${tag}${where}: latest ${rule.family} on ${provider.providerInstanceId} is ${model.id}`, rule.noDemote);
+      push(
+        ctx,
+        provider,
+        model,
+        effort,
+        rule.options,
+        source,
+        `${tag}${where}: latest ${rule.family} on ${provider.providerInstanceId} is ${model.id}`,
+        rule.noDemote,
+      );
     }
   });
 }
@@ -189,7 +218,8 @@ function scoreRules(rules: CandidateRule[], label: string, source: CandidateSour
 function scoreGeneric(ctx: Ctx, effort: Effort | undefined): void {
   for (const provider of ctx.providers) {
     const driver = driverKindOf(provider);
-    const driverDefaults = (Object.hasOwn(DRIVER_DEFAULT_MODELS, driver) ? DRIVER_DEFAULT_MODELS[driver] : undefined) ?? [];
+    const driverDefaults =
+      (Object.hasOwn(DRIVER_DEFAULT_MODELS, driver) ? DRIVER_DEFAULT_MODELS[driver] : undefined) ?? [];
     const defaults = [...driverDefaults, ...GENERIC_DEFAULT_IDS];
     const listedDefault = defaults.map((id) => provider.models.find((m) => m.id === id)).find((m) => m !== undefined);
     const firstListed = provider.models[0];
@@ -206,7 +236,9 @@ function scoreGeneric(ctx: Ctx, effort: Effort | undefined): void {
       model = { id: driverDefaults[0] };
       why = "the driver's default model (the provider lists no models)";
     } else {
-      ctx.skipped.push(`generic: ${provider.providerInstanceId} lists no models and its driver "${driver}" has no known default`);
+      ctx.skipped.push(
+        `generic: ${provider.providerInstanceId} lists no models and its driver "${driver}" has no known default`,
+      );
       continue;
     }
     push(
@@ -241,7 +273,9 @@ function omittedWarnings(ctx: Ctx, rules: CandidateRule[]): string[] {
     const terms = new Set<string>();
     for (const rule of rules) {
       const applies =
-        rule.instance !== undefined ? rule.instance === p.providerInstanceId : rule.provider === "*" || rule.provider === driver;
+        rule.instance !== undefined
+          ? rule.instance === p.providerInstanceId
+          : rule.provider === "*" || rule.provider === driver;
       const fam = ctx.policy.families[rule.family];
       if (!applies || !fam || !familyPattern(fam, p)) continue;
       terms.add(fam.search ?? rule.family);
@@ -257,7 +291,11 @@ function omittedWarnings(ctx: Ctx, rules: CandidateRule[]): string[] {
   return warnings;
 }
 
-export async function recommendModel(input: RecommendInput, policy: Policy, usageSource: UsageSource): Promise<Recommendation> {
+export async function recommendModel(
+  input: RecommendInput,
+  policy: Policy,
+  usageSource: UsageSource,
+): Promise<Recommendation> {
   const caps = parseCapabilities(input.capabilities);
 
   let classification: Recommendation["classification"];
@@ -268,12 +306,17 @@ export async function recommendModel(input: RecommendInput, policy: Policy, usag
     classification = { source: "given", reason: "taskType given by the caller", matched: [] };
   } else {
     const c = classifyTask(input.task, policy);
-    classification = { source: "classifier", reason: `${c.reason} (pass taskType for a reliable choice)`, matched: c.matched };
+    classification = {
+      source: "classifier",
+      reason: `${c.reason} (pass taskType for a reliable choice)`,
+      matched: c.matched,
+    };
     input = { ...input, taskType: c.taskType };
   }
   const taskType = input.taskType as string;
   const typeDef = policy.taskTypes[taskType];
-  if (!typeDef) throw new Error(`Unknown taskType "${taskType}". Known types: ${Object.keys(policy.taskTypes).join(", ")}`);
+  if (!typeDef)
+    throw new Error(`Unknown taskType "${taskType}". Known types: ${Object.keys(policy.taskTypes).join(", ")}`);
 
   if (caps.providers.length === 0) {
     throw new Error(
@@ -328,7 +371,8 @@ export async function recommendModel(input: RecommendInput, policy: Policy, usag
           providerInstanceId: inherited,
           model: caps.inheritedModel,
           options: caps.inheritedOptions ?? [],
-          reason: "low confidence: no policy or generic candidate is available; same provider, model and options as the orchestrator",
+          reason:
+            "low confidence: no policy or generic candidate is available; same provider, model and options as the orchestrator",
           source: "inherited",
           sameAsOrchestrator: true,
         },

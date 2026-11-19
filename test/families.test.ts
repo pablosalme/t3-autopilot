@@ -68,8 +68,12 @@ describe("review regressions", () => {
   });
 
   it("a dated snapshot id does not beat a newer version (#5)", () => {
-    expect(resolveFamily(family("claude-opus"), p(["claude-opus-4-20250514", "claude-opus-4-8"]))?.id).toBe("claude-opus-4-8");
-    expect(resolveFamily(family("claude-sonnet"), p(["claude-sonnet-4-5-20250929", "claude-sonnet-4-6"]))?.id).toBe("claude-sonnet-4-6");
+    expect(resolveFamily(family("claude-opus"), p(["claude-opus-4-20250514", "claude-opus-4-8"]))?.id).toBe(
+      "claude-opus-4-8",
+    );
+    expect(resolveFamily(family("claude-sonnet"), p(["claude-sonnet-4-5-20250929", "claude-sonnet-4-6"]))?.id).toBe(
+      "claude-sonnet-4-6",
+    );
     expect(versionKey("claude-opus-4-20250514", /^(.*)$/.exec("claude-opus-4-20250514")!)).toEqual([4]);
   });
 
@@ -81,7 +85,9 @@ describe("review regressions", () => {
   });
 
   it("resolves OpenCode and Pi provider prefixes beyond opencode/ (#9)", () => {
-    expect(resolveFamily(family("claude-opus"), p(["anthropic/claude-opus-4-5"], "opencode"))?.id).toBe("anthropic/claude-opus-4-5");
+    expect(resolveFamily(family("claude-opus"), p(["anthropic/claude-opus-4-5"], "opencode"))?.id).toBe(
+      "anthropic/claude-opus-4-5",
+    );
     expect(resolveFamily(family("claude-opus"), p(["openrouter/anthropic/claude-opus-4.6"], "opencode"))?.id).toBe(
       "openrouter/anthropic/claude-opus-4.6",
     );
@@ -95,7 +101,11 @@ describe("review regressions", () => {
   });
 
   it("matches Kiro's dotted ids and Bedrock-style prefixes", () => {
-    expect(resolveFamily(family("claude-opus"), p(["claude-opus-5.5", "claude-opus-5"], "kiro"))?.id).toBe("claude-opus-5.5");
-    expect(resolveFamily(family("claude-opus"), p(["us.anthropic.claude-opus-4-6-v1"], "acpRegistry"))?.id).toBe("us.anthropic.claude-opus-4-6-v1");
+    expect(resolveFamily(family("claude-opus"), p(["claude-opus-5.5", "claude-opus-5"], "kiro"))?.id).toBe(
+      "claude-opus-5.5",
+    );
+    expect(resolveFamily(family("claude-opus"), p(["us.anthropic.claude-opus-4-6-v1"], "acpRegistry"))?.id).toBe(
+      "us.anthropic.claude-opus-4-6-v1",
+    );
   });
 });

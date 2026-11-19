@@ -17,12 +17,20 @@ describe("MCP server", () => {
       arguments: { task: "Implement the export endpoint", capabilities: fixture() },
     });
     expect(rec.isError).toBeFalsy();
-    const data = rec.structuredContent as { taskType: string; candidates: { providerInstanceId: string; model: string }[] };
+    const data = rec.structuredContent as {
+      taskType: string;
+      candidates: { providerInstanceId: string; model: string }[];
+    };
     expect(data.candidates[0]).toMatchObject({ providerInstanceId: "claudeAgent", model: "claude-opus-7-1" });
 
     const out = await client.callTool({
       name: "log_outcome",
-      arguments: { taskType: data.taskType, providerInstanceId: "claudeAgent", model: "claude-opus-7-1", outcome: "success" },
+      arguments: {
+        taskType: data.taskType,
+        providerInstanceId: "claudeAgent",
+        model: "claude-opus-7-1",
+        outcome: "success",
+      },
     });
     expect(out.isError).toBeFalsy();
 
@@ -42,7 +50,10 @@ describe("MCP server", () => {
     expect(first.isError).toBe(true);
     expect(JSON.stringify(first.content)).toMatch(/No capabilities yet/);
 
-    const withCaps = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code", capabilities: fixture() } });
+    const withCaps = await client.callTool({
+      name: "recommend_model",
+      arguments: { task: "x", taskType: "code", capabilities: fixture() },
+    });
     expect((withCaps.structuredContent as { capabilitiesFrom: string }).capabilitiesFrom).toBe("call");
     const cached = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code" } });
     expect(cached.isError).toBeFalsy();
@@ -53,10 +64,18 @@ describe("MCP server", () => {
 
   it("merges a search output into the cached capabilities", async () => {
     const client = await connect();
-    await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "review", capabilities: driverFixtureRaw("cursor") } });
+    await client.callTool({
+      name: "recommend_model",
+      arguments: { task: "x", taskType: "review", capabilities: driverFixtureRaw("cursor") },
+    });
     const merged = await client.callTool({
       name: "recommend_model",
-      arguments: { task: "x", taskType: "review", capabilities: driverFixtureRaw("search-cursor-gemini"), mergeCapabilities: true },
+      arguments: {
+        task: "x",
+        taskType: "review",
+        capabilities: driverFixtureRaw("search-cursor-gemini"),
+        mergeCapabilities: true,
+      },
     });
     const data = merged.structuredContent as { capabilitiesFrom: string; candidates: { model: string }[] };
     expect(data.capabilitiesFrom).toBe("merged");
@@ -68,14 +87,20 @@ describe("MCP server", () => {
 
   it("accepts a bare providers array (#10)", async () => {
     const client = await connect();
-    const res = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code", capabilities: fixture().providers } });
+    const res = await client.callTool({
+      name: "recommend_model",
+      arguments: { task: "x", taskType: "code", capabilities: fixture().providers },
+    });
     expect(res.isError).toBeFalsy();
   });
 
   it("rejects prototype keys as taskType everywhere (#6)", async () => {
     const client = await connect();
     for (const taskType of ["constructor", "__proto__"]) {
-      const rec = await client.callTool({ name: "recommend_model", arguments: { task: "x", taskType, capabilities: fixture() } });
+      const rec = await client.callTool({
+        name: "recommend_model",
+        arguments: { task: "x", taskType, capabilities: fixture() },
+      });
       expect(rec.isError).toBe(true);
       expect(JSON.stringify(rec.content)).toMatch(/Unknown taskType/);
       const out = await client.callTool({
@@ -83,7 +108,10 @@ describe("MCP server", () => {
         arguments: { taskType, providerInstanceId: "a", model: "m", outcome: "success" },
       });
       expect(out.isError).toBe(true);
-      const del = await client.callTool({ name: "log_delegation", arguments: { taskType, providerInstanceId: "a", model: "m" } });
+      const del = await client.callTool({
+        name: "log_delegation",
+        arguments: { taskType, providerInstanceId: "a", model: "m" },
+      });
       expect(del.isError).toBe(true);
     }
     const stats = await client.callTool({ name: "get_stats", arguments: { taskType: "constructor" } });
@@ -94,7 +122,9 @@ describe("MCP server", () => {
   it("validates input: bad enums, missing fields, bad dates", async () => {
     const client = await connect();
     const bad = async (name: string, args: Record<string, unknown>) => {
-      const res = await client.callTool({ name, arguments: args }).catch((e: unknown) => ({ isError: true, thrown: e }));
+      const res = await client
+        .callTool({ name, arguments: args })
+        .catch((e: unknown) => ({ isError: true, thrown: e }));
       expect(res.isError, `${name} ${JSON.stringify(args)}`).toBe(true);
     };
     await bad("recommend_model", { task: "x", size: "huge", capabilities: fixture() });
@@ -117,7 +147,9 @@ describe("MCP server", () => {
       },
     });
     expect(res.isError).toBeFalsy();
-    expect((res.structuredContent as { candidates: { providerInstanceId: string }[] }).candidates[0]!.providerInstanceId).toBe("claudeAgent");
+    expect(
+      (res.structuredContent as { candidates: { providerInstanceId: string }[] }).candidates[0]!.providerInstanceId,
+    ).toBe("claudeAgent");
   });
 
   it("lists every task type on its own line in the tool description (#3)", async () => {
@@ -129,4 +161,3 @@ describe("MCP server", () => {
     }
   });
 });
-
