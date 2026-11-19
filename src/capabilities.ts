@@ -98,6 +98,11 @@ function isCapabilitiesLike(v: unknown): boolean {
   return typeof v === "object" && v !== null && !Array.isArray(v) && "providers" in v;
 }
 
+/** Whether `value` is a list of capabilities outputs (`[full, search, ...]`), which parseCapabilities merges. */
+export function isOutputList(value: unknown): value is unknown[] {
+  return Array.isArray(value) && value.length > 0 && value.every(isCapabilitiesLike);
+}
+
 /**
  * Accepts the capabilities as an object, a JSON string, a bare `providers`
  * array, or an array of several capabilities outputs (e.g. the full output
@@ -114,7 +119,7 @@ export function parseCapabilities(input: unknown): Capabilities {
       );
     }
   }
-  if (Array.isArray(value) && value.length > 0 && value.every(isCapabilitiesLike)) {
+  if (isOutputList(value)) {
     return mergeCapabilities(value.map((v, i) => parseOne(v, `capabilities[${i}]`)));
   }
   return parseOne(value, "capabilities");

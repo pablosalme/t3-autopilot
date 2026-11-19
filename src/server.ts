@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { mergeCapabilities, parseCapabilities, SelectedOptionSchema } from "./capabilities.js";
+import { isOutputList, mergeCapabilities, parseCapabilities, SelectedOptionSchema } from "./capabilities.js";
 import {
   type CapabilitiesEntry,
   formatAge,
@@ -39,15 +39,6 @@ export interface ServerOptions {
   logPath?: () => string;
   /** Clock, for tests. */
   now?: () => Date;
-}
-
-/** Whether `capabilities` was passed as a list of outputs (`[full, search, ...]`), which parseCapabilities merges. */
-function isOutputList(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.length > 1 &&
-    value.every((v) => typeof v === "object" && v !== null && "providers" in v)
-  );
 }
 
 function ok(data: unknown): CallToolResult {
@@ -150,17 +141,18 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         const notes: string[] = [];
         if (args.capabilities !== undefined) {
           const given = parseCapabilities(args.capabilities);
-          const list = isOutputList(args.capabilities);
+          // How many outputs were passed as a list ([full, search, ...]); 0 for a single output.
+          const listed = isOutputList(args.capabilities) ? args.capabilities.length : 0;
           const base = args.mergeCapabilities ? kept() : undefined;
           if (base) {
             const capabilities = mergeCapabilities([base.capabilities, given]);
             entry = { ...base, capabilities, merged: true };
             capabilitiesFrom = "merged";
           } else {
-            entry = { capabilities: given, receivedAt: at.toISOString(), merged: list, fromDisk: false };
+            entry = { capabilities: given, receivedAt: at.toISOString(), merged: listed > 1, fromDisk: false };
             capabilitiesFrom = "call";
             // A lone output passed for merging is most likely a search: not a catalog to keep.
-            if (args.mergeCapabilities && !list) {
+            if (args.mergeCapabilities && listed === 0) {
               keep = false;
               notes.push(NOTHING_TO_MERGE);
             }
