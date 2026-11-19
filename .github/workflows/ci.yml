@@ -29,8 +29,9 @@ jobs:
       - run: npm run lint
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
       - run: npm run typecheck
-      # Vitest 5 needs Node 22.12+; on Node 20 only the runtime is checked (build + smoke).
-      - run: npm test
+      # Unit tests with coverage thresholds (vitest.config.ts). Vitest 5 needs Node 22.12+, so on
+      # Node 20 the runtime is checked by build, smoke, the end-to-end test and the pack check.
+      - run: npm run test:coverage
         if: matrix.node != 20
       - run: npm run build
       - run: npm run smoke

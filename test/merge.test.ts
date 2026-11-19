@@ -107,3 +107,18 @@ describe("merging a search output", () => {
     expect(ids(data)[0]).toBe("cursor/claude-opus-9-2");
   });
 });
+
+describe("merging, edge cases", () => {
+  it("a provider that cannot run child tasks in a later output becomes ineligible", async () => {
+    const later = driverFixtureRaw("search-mixed-cursor-opus") as { providers: Record<string, unknown>[] };
+    const opencode = later.providers.find((p) => p.providerInstanceId === "opencode")!;
+    Object.assign(opencode, { canRunChildTask: false, constraints: ["Provider is not authenticated."] });
+    const r = await rec([full(), later]);
+    expect(ids(r).some((id) => id.startsWith("opencode/"))).toBe(false);
+    expect(r.skipped).toContain("opencode: Provider is not authenticated.");
+  });
+
+  it("names the element of a list that is not valid JSON", async () => {
+    await expect(rec([full(), "{not json"])).rejects.toThrow(/^capabilities\[1\] is a string but not valid JSON/);
+  });
+});
