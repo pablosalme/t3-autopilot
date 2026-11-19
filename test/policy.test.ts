@@ -88,6 +88,76 @@ describe("loadPolicy", () => {
     expect(() => loadPolicy({ userPath })).toThrow(/invalid regex[\s\S]*unknown family "missing"/);
   });
 
+  it("the bundled default has no unknown keys, with every level of the schema strict", () => {
+    expect(loadPolicy({ userPath: join(tempDir(), "none.yaml") }).warnings).toEqual([]);
+  });
+
+  it("ignores unknown keys at any level and names each one in a warning", () => {
+    const userPath = join(tempDir(), "policy.yaml");
+    writeFileSync(
+      userPath,
+      [
+        "maxCandidatez: 1",
+        "usage:",
+        "  thresholdz: { weekly: 60 }",
+        "  thresholds: { weekley: 60 }",
+        "effortShift: { sizes: { small: -2 } }",
+        "families:",
+        "  kimi:",
+        "    serach: kimi",
+        "    match: { '*': '^kimi-(\\d+)$' }",
+        "taskTypes:",
+        "  quick:",
+        "    keyword: [rename]",
+        "    candidates:",
+        "      - { provider: opencode, family: kimi }",
+        "      - { provider: '*', family: kimi, efort: low, noDemot: true }",
+        "fallback:",
+        "  - { provider: '*', family: gpt, effrt: high }",
+      ].join("\n"),
+    );
+    const { policy, warnings } = loadPolicy({ userPath });
+    const where = (w: string) => /unknown key "([^"]+)" (at the top level|under \S+) is ignored/.exec(w)?.slice(1, 3);
+    // One warning per key; their order is the validator's and means nothing.
+    expect(warnings.map(where).sort()).toEqual(
+      [
+        ["maxCandidatez", "at the top level"],
+        ["sizes", "under effortShift"],
+        ["thresholdz", "under usage"],
+        ["weekley", "under usage.thresholds"],
+        ["serach", "under families.kimi"],
+        ["keyword", "under taskTypes.quick"],
+        ["efort", "under taskTypes.quick.candidates[1]"],
+        ["noDemot", "under taskTypes.quick.candidates[1]"],
+        ["effrt", "under fallback[0]"],
+      ].sort(),
+    );
+    for (const w of warnings) expect(w).toContain(`Policy (${userPath}, on top of the default policy)`);
+    // The misspelt keys change nothing; the rest of the file applies.
+    expect(policy.maxCandidates).toBe(3);
+    expect(policy.usage.thresholds).toMatchObject({ weekly: 75, session: 80 });
+    expect(policy.effortShift.size).toEqual({ small: -1, medium: 0, large: 1 });
+    expect(policy.families.kimi).toEqual({ match: { "*": "^kimi-(\\d+)$" } });
+    expect(policy.taskTypes.quick).toEqual({
+      keywords: [],
+      candidates: [
+        { provider: "opencode", family: "kimi" },
+        { provider: "*", family: "kimi" },
+      ],
+    });
+    expect(policy.fallback).toEqual([{ provider: "*", family: "gpt" }]);
+    expect(policy).not.toHaveProperty("maxCandidatez");
+  });
+
+  it("an unknown key next to a real mistake is part of the error", () => {
+    const userPath = join(tempDir(), "policy.yaml");
+    writeFileSync(userPath, "maxCandidatez: 2\nmaxCandidates: 7\n");
+    expect(() => loadPolicy({ userPath })).toThrow(/Unrecognized key: "maxCandidatez"[\s\S]*→ at maxCandidates/);
+    // A mistake hidden behind an unknown key is still an error once the key is dropped.
+    writeFileSync(userPath, "taskTypes:\n  code:\n    candidates:\n      - { family: gpt, providr: codex }\n");
+    expect(() => loadPolicy({ userPath })).toThrow(/needs `provider`/);
+  });
+
   it("rejects a candidate without provider or instance", () => {
     const userPath = join(tempDir(), "policy.yaml");
     writeFileSync(userPath, "taskTypes:\n  code:\n    candidates:\n      - { family: claude-opus }\n");

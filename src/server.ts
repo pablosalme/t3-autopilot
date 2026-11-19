@@ -138,7 +138,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
     (args) =>
       inTurn(async () => {
         try {
-          const { policy } = load();
+          const { policy, warnings: policyWarnings } = load();
           const usageSource = opts.usageSource ?? createUsageSource(policy);
           const at = now();
           const ttl = policy.capabilitiesCacheTtlHours;
@@ -157,7 +157,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           let entry: NonNullable<typeof cached>;
           let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
           let keep = true;
-          const notes: string[] = [];
+          const notes: string[] = [...policyWarnings];
           if (args.capabilities !== undefined) {
             // `listed`: how many outputs were passed as a list ([full, search, ...]); 0 for a single output.
             const { capabilities: given, outputs: listed } = parseCapabilitiesInput(args.capabilities);

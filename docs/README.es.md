@@ -205,7 +205,7 @@ maxCandidates: 2
 
 También puedes cambiar qué modelos se prefieren para cada tipo de tarea, o añadir una familia de modelos que no esté en la lista. Las dos cosas se explican en la [referencia](reference.md#the-policy) (en inglés).
 
-Si te equivocas en el fichero, no se rompe nada: tu agente recibe un mensaje que dice qué hay que corregir y, mientras tanto, sigue con su propio modelo.
+Si te equivocas en el fichero, no se rompe nada: tu agente recibe un mensaje que dice qué hay que corregir y, mientras tanto, sigue con su propio modelo. Si un ajuste tiene un nombre que no conoce (una errata, por ejemplo), lo ignora y le dice a tu agente cuál es.
 
 ## Privacidad
 

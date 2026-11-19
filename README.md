@@ -203,7 +203,7 @@ maxCandidates: 2
 
 You can also change which models are preferred for each kind of task, or add a model family that is not in the list. Both are explained in the [reference](docs/reference.md#the-policy).
 
-If you make a mistake in the file, nothing breaks: your agent gets a message that says what to fix, and carries on with its own model in the meantime.
+If you make a mistake in the file, nothing breaks: your agent gets a message that says what to fix, and carries on with its own model in the meantime. A setting whose name it does not know (a typo, for example) is ignored, and your agent is told which one.
 
 ## Privacy
 

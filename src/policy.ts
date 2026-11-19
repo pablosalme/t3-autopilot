@@ -9,8 +9,9 @@ export type Effort = (typeof EFFORT_SCALE)[number];
 /** T3 option values are strings or booleans. */
 const OptionValue = z.union([z.string(), z.boolean()]);
 
+// Every object is strict, so a misspelt key is found at any level; checkPolicy turns those into warnings.
 export const CandidateRuleSchema = z
-  .object({
+  .strictObject({
     /**
      * Driver kind (e.g. claudeAgent, codex, cursor). Matches every enabled
      * instance of that driver. "*" matches every eligible instance of any
@@ -30,7 +31,7 @@ export const CandidateRuleSchema = z
     message: "a candidate needs `provider` (driver kind) or `instance` (provider instance id)",
   });
 
-export const FamilySchema = z.object({
+export const FamilySchema = z.strictObject({
   /** driverKind (or "*") -> regular expression over model ids. */
   match: z.record(z.string(), z.string()),
   /** Optional regular expression; matching ids are ignored. */
@@ -39,7 +40,7 @@ export const FamilySchema = z.object({
   search: z.string().optional(),
 });
 
-export const TaskTypeSchema = z.object({
+export const TaskTypeSchema = z.strictObject({
   description: z.string().optional(),
   keywords: z.array(z.string()).default([]),
   avoidInheritedProvider: z.boolean().optional(),
@@ -48,19 +49,19 @@ export const TaskTypeSchema = z.object({
 
 const ShiftSchema = z.record(z.string(), z.number().int());
 
-export const PolicySchema = z.object({
+export const PolicySchema = z.strictObject({
   version: z.literal(1),
   maxCandidates: z.number().int().min(1).max(3).default(3),
   defaultTaskType: z.string(),
   effortOptionIds: z.array(z.string()).min(1),
   effortShift: z
-    .object({ size: ShiftSchema.default({}), criticality: ShiftSchema.default({}) })
+    .strictObject({ size: ShiftSchema.default({}), criticality: ShiftSchema.default({}) })
     .default({ size: {}, criticality: {} }),
   usage: z
-    .object({
+    .strictObject({
       source: z.enum(["none"]).default("none"),
       thresholds: z
-        .object({
+        .strictObject({
           session: z.number().min(0).max(100).default(80),
           weekly: z.number().min(0).max(100).default(75),
           monthly: z.number().min(0).max(100).default(90),
@@ -140,8 +141,43 @@ function readYaml(path: string): Plain {
   return raw;
 }
 
-export function validatePolicy(raw: unknown, source: string): Policy {
-  const parsed = PolicySchema.safeParse(raw);
+export interface CheckedPolicy {
+  policy: Policy;
+  /** One per key the policy does not know; those keys are ignored. */
+  warnings: string[];
+}
+
+/** "taskTypes.code.candidates[0]" for ["taskTypes", "code", "candidates", 0]. */
+function formatPath(path: PropertyKey[]): string {
+  return path.map((p, i) => (typeof p === "number" ? `[${p}]` : `${i ? "." : ""}${String(p)}`)).join("");
+}
+
+/**
+ * Validate a raw policy. A key the schema does not know (a misspelt
+ * `maxCandidatez`, at any level) is not an error: it is ignored, as before,
+ * and reported in `warnings`. Anything else that is wrong throws.
+ */
+export function checkPolicy(raw: unknown, source: string): CheckedPolicy {
+  const warnings: string[] = [];
+  let parsed = PolicySchema.safeParse(raw);
+  if (!parsed.success && parsed.error.issues.every((issue) => issue.code === "unrecognized_keys")) {
+    // Only unknown keys are wrong: drop them from a copy and validate what is left.
+    const pruned: unknown = structuredClone(raw);
+    for (const issue of parsed.error.issues) {
+      if (issue.code !== "unrecognized_keys") continue;
+      let holder: unknown = pruned;
+      for (const step of issue.path) holder = (holder as Record<PropertyKey, unknown>)[step];
+      const where = issue.path.length ? `under ${formatPath(issue.path)}` : "at the top level";
+      for (const key of issue.keys) {
+        delete (holder as Plain)[key];
+        warnings.push(
+          `Policy (${source}): unknown key "${key}" ${where} is ignored. Tell the user to check its spelling; ` +
+            'the valid keys are in "The policy" of docs/reference.md.',
+        );
+      }
+    }
+    parsed = PolicySchema.safeParse(pruned);
+  }
   if (!parsed.success) {
     throw new Error(`Invalid policy (${source}): ${z.prettifyError(parsed.error)}`);
   }
@@ -174,13 +210,20 @@ export function validatePolicy(raw: unknown, source: string): Policy {
     problems.push(`defaultTaskType "${policy.defaultTaskType}" is not a task type`);
   }
   if (problems.length) throw new Error(`Invalid policy (${source}):\n- ${problems.join("\n- ")}`);
-  return policy;
+  return { policy, warnings };
+}
+
+/** Validate a raw policy and return it; unknown keys are ignored (checkPolicy also reports them). */
+export function validatePolicy(raw: unknown, source: string): Policy {
+  return checkPolicy(raw, source).policy;
 }
 
 export interface LoadedPolicy {
   policy: Policy;
   /** Files the policy was built from, in merge order. */
   sources: string[];
+  /** Unknown keys that were ignored, one message each; recommend_model returns them in `warnings`. */
+  warnings: string[];
 }
 
 /** Load the bundled default policy and apply the user override if present. */
@@ -195,5 +238,5 @@ export function loadPolicy(opts: { userPath?: string; defaultPath?: string } = {
   }
   // The bundled default is valid on its own (tested), so errors after a merge come from the user's file.
   const label = sources.length > 1 ? `${userPath}, on top of the default policy` : defaultPath;
-  return { policy: validatePolicy(raw, label), sources };
+  return { ...checkPolicy(raw, label), sources };
 }

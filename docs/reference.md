@@ -198,7 +198,7 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 - `classification` says whether the task type was `given` by the caller or came from the keyword `classifier`, with the keywords that matched.
 - `source` is `taskType`, `fallback`, `generic` (a provider's default model, low confidence) or `inherited` (the orchestrator's own model, used only when nothing else resolves).
 - `sameAsOrchestrator` is `true` when the candidate is the orchestrator's own provider instance and model, so its native subagent tool does the same job.
-- `skipped` says why providers or policy entries were left out (disabled, not signed in, excluded, marked unavailable); `warnings` are things the orchestrator can act on.
+- `skipped` says why providers or policy entries were left out (disabled, not signed in, excluded, marked unavailable); `warnings` are things the orchestrator can act on: models left out of a short list, capabilities read from the disk cache, an unknown key in the policy file.
 - `usageSource` is `none`, or `none+call` when the call passed `usage`.
 - Errors (unknown `taskType`, no capabilities yet, no eligible provider, an invalid policy file) come back as tool errors with a message that says what to fix; the server keeps running.
 
@@ -213,7 +213,7 @@ t3-autopilot works with whatever provider instances you have in T3 Code, in any 
 
 ## The policy
 
-The default policy is [`policy/default.yaml`](../policy/default.yaml). Override it in `~/.t3-autopilot/policy.yaml` (or `$T3_AUTOPILOT_HOME/policy.yaml`). It is re-read on every call, so no restart is needed; a broken file is reported by the tools that use it (file, entry and reason) and the server keeps running. `t3-autopilot init-policy` writes a short commented template there; uncomment only what you change, so future default updates still reach you.
+The default policy is [`policy/default.yaml`](../policy/default.yaml). Override it in `~/.t3-autopilot/policy.yaml` (or `$T3_AUTOPILOT_HOME/policy.yaml`). It is re-read on every call, so no restart is needed; a broken file is reported by the tools that use it (file, entry and reason) and the server keeps running. A key the policy does not know, at any level (a misspelt `maxCandidatez`, or `efort` in a candidate), is not an error: it is ignored, and every `recommend_model` result names it in `warnings` until the file is fixed. `t3-autopilot init-policy` writes a short commented template there; uncomment only what you change, so future default updates still reach you.
 
 Merge rules: entries under `families` and `taskTypes` replace the default entry with the same name as a whole (set one to `null` to remove it); `usage` and `effortShift` merge one level deep; every other key replaces the default.
 

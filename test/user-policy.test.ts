@@ -138,6 +138,35 @@ describe("a partial user policy", () => {
     expect((await recommend(client)).isError).toBeFalsy();
   });
 
+  it("a misspelt key is ignored and named in the warnings of every recommend_model, until it is fixed", async () => {
+    writePolicy("maxCandidatez: 1\nexcludeProviders: [claudeAgent]\n");
+    const client = await start();
+    type Warned = Rec & { warnings: string[] };
+    for (const args of [{}, { capabilities: undefined, taskType: "review" }]) {
+      const res = await recommend(client, args);
+      expect(res.isError, resultText(res)).toBeFalsy();
+      const data = res.structuredContent as Warned;
+      expect(data.warnings[0]).toBe(
+        `Policy (${policyFile}, on top of the default policy): unknown key "maxCandidatez" at the top level is ` +
+          'ignored. Tell the user to check its spelling; the valid keys are in "The policy" of docs/reference.md.',
+      );
+      // The rest of the file applies: three candidates (the default), none on the excluded provider.
+      expect(data.candidates).toHaveLength(3);
+      expect(data.candidates.map((c) => c.providerInstanceId)).not.toContain("claudeAgent");
+    }
+    // The tools without warnings keep working.
+    const del = await client.callTool({
+      name: "log_delegation",
+      arguments: { taskType: "code", providerInstanceId: "codex", model: "m" },
+    });
+    expect(del.isError, resultText(del)).toBeFalsy();
+
+    writePolicy("maxCandidates: 1\nexcludeProviders: [claudeAgent]\n");
+    const fixed = (await recommend(client)).structuredContent as Warned;
+    expect(fixed.warnings.filter((w) => w.startsWith("Policy"))).toEqual([]);
+    expect(fixed.candidates).toHaveLength(1);
+  });
+
   it("merges usage thresholds one level deep", async () => {
     writePolicy("usage:\n  thresholds: { weekly: 50 }\n");
     const client = await start();
