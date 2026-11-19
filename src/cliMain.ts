@@ -50,7 +50,8 @@ Usage:
   t3-autopilot init-policy  Write a commented override template to the user policy path.
   t3-autopilot --help | --version
 
-Data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl).
+Data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl,
+capabilities-cache.json).
 `;
 
 export interface CliIo {

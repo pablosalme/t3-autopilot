@@ -249,6 +249,33 @@ describe("a broken user policy over stdio", () => {
   });
 });
 
+describe("a server restart over stdio", () => {
+  it("the restarted server reuses the capabilities saved before it stopped", async () => {
+    const home = newHome();
+    const args = { task: "x", taskType: "code" };
+    const first = await start(home);
+    const before = await first.client.callTool({
+      name: "recommend_model",
+      arguments: { ...args, capabilities: fixture("mixed") },
+    });
+    assert.ok(!before.isError, text(before));
+    await first.client.close();
+    assert.ok(existsSync(join(home, "capabilities-cache.json")));
+
+    const second = await start(home);
+    try {
+      const after = await second.client.callTool({ name: "recommend_model", arguments: args });
+      assert.ok(!after.isError, text(after));
+      assert.equal(after.structuredContent.capabilitiesFrom, "disk-cache");
+      assert.equal(after.structuredContent.capabilitiesAgeMinutes, 0);
+      assert.deepEqual(ids(after.structuredContent), ids(before.structuredContent));
+      assert.match(after.structuredContent.warnings[0], /^Capabilities from the disk cache \(the server restarted\)/);
+    } finally {
+      await second.client.close();
+    }
+  });
+});
+
 describe("CLI commands", () => {
   it("--version, --help and snippet", () => {
     const home = newHome();

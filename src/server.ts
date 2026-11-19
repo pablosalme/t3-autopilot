@@ -1,9 +1,16 @@
+import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { type Capabilities, mergeCapabilities, parseCapabilities, SelectedOptionSchema } from "./capabilities.js";
+import { mergeCapabilities, parseCapabilities, SelectedOptionSchema } from "./capabilities.js";
+import {
+  type CapabilitiesEntry,
+  formatAge,
+  loadCapabilitiesCache,
+  saveCapabilitiesCache,
+} from "./capabilitiesCache.js";
 import { computeStats, logDelegation, logOutcome, OUTCOMES, readLog } from "./log.js";
-import { logPath as defaultLogPath } from "./paths.js";
+import { autopilotHome, DATA_FILES } from "./paths.js";
 import { type LoadedPolicy, loadPolicy, type Policy } from "./policy.js";
 import { recommendModel } from "./recommend.js";
 import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usage.js";
@@ -11,15 +18,32 @@ import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usag
 export const VERSION = "0.1.0";
 
 const NOTHING_TO_MERGE =
-  "mergeCapabilities: there were no earlier capabilities to merge into (first call, or the server restarted), so only " +
-  "this output was used. If it is a search output, pass the full orchestrator_capabilities output too, as " +
-  "capabilities: [full, search].";
+  "mergeCapabilities: there were no earlier capabilities to merge into (first call, or the server restarted and " +
+  "its saved copy is missing or expired), so only this output was used and it was not kept. If it is a search " +
+  "output, pass the full orchestrator_capabilities output too, as capabilities: [full, search].";
+
+const NO_CAPABILITIES =
+  "No capabilities yet: call orchestrator_capabilities and pass its full output as `capabilities` (later calls can omit it).";
 
 export interface ServerOptions {
   /** Loads the policy; called on every tool call so edits apply without a restart. */
   loadPolicy?: () => LoadedPolicy;
   usageSource?: UsageSource;
+  /** Data directory (log.jsonl, capabilities-cache.json): $T3_AUTOPILOT_HOME or ~/.t3-autopilot by default. */
+  dataDir?: () => string;
+  /** Log file; `<dataDir>/log.jsonl` by default. */
   logPath?: () => string;
+  /** Clock, for tests. */
+  now?: () => Date;
+}
+
+/** Whether `capabilities` was passed as a list of outputs (`[full, search, ...]`), which parseCapabilities merges. */
+function isOutputList(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length > 1 &&
+    value.every((v) => typeof v === "object" && v !== null && "providers" in v)
+  );
 }
 
 function ok(data: unknown): CallToolResult {
@@ -36,7 +60,10 @@ function fail(error: unknown): CallToolResult {
 
 export function createServer(opts: ServerOptions = {}): McpServer {
   const load = opts.loadPolicy ?? (() => loadPolicy());
-  const getLogPath = opts.logPath ?? defaultLogPath;
+  const dataDir = opts.dataDir ?? autopilotHome;
+  const getLogPath = opts.logPath ?? (() => join(dataDir(), DATA_FILES.log));
+  const cachePath = () => join(dataDir(), DATA_FILES.capabilitiesCache);
+  const now = opts.now ?? (() => new Date());
 
   // Read once at startup only to describe the task types; calls reload it.
   let typeList = "- code\n- debug\n- review\n- research\n- writing\n- design\n- plan\n- quick";
@@ -48,8 +75,9 @@ export function createServer(opts: ServerOptions = {}): McpServer {
     // An invalid policy is reported by each tool call.
   }
 
-  // Last capabilities received, so the orchestrator does not resend ~10 KB on every call.
-  let cached: Capabilities | undefined;
+  // Last capabilities received, so the orchestrator does not resend ~10 KB on every call. Also saved in
+  // capabilities-cache.json, so a restart between turns does not lose them (for capabilitiesCacheTtlHours).
+  let cached: (CapabilitiesEntry & { fromDisk: boolean }) | undefined;
 
   const requireTaskType = (policy: Policy, taskType: string | undefined) => {
     if (taskType !== undefined && !Object.hasOwn(policy.taskTypes, taskType)) {
@@ -103,31 +131,73 @@ export function createServer(opts: ServerOptions = {}): McpServer {
       try {
         const { policy } = load();
         const usageSource = opts.usageSource ?? createUsageSource(policy);
-        let capabilities: Capabilities;
-        let capabilitiesFrom: "call" | "cache" | "merged";
+        const at = now();
+        const ttl = policy.capabilitiesCacheTtlHours;
+        // The kept capabilities: in memory, else the saved copy if it is younger than the TTL.
+        const kept = () => {
+          if (cached) return cached;
+          const saved = loadCapabilitiesCache(cachePath(), ttl, at);
+          return saved && { ...saved, fromDisk: true };
+        };
+        let entry: NonNullable<typeof cached>;
+        let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
+        let keep = true;
         const notes: string[] = [];
         if (args.capabilities !== undefined) {
           const given = parseCapabilities(args.capabilities);
-          if (args.mergeCapabilities && cached) {
-            capabilities = mergeCapabilities([cached, given]);
+          const list = isOutputList(args.capabilities);
+          const base = args.mergeCapabilities ? kept() : undefined;
+          if (base) {
+            const capabilities = mergeCapabilities([base.capabilities, given]);
+            entry = { ...base, capabilities, merged: true };
             capabilitiesFrom = "merged";
           } else {
-            capabilities = given;
+            entry = { capabilities: given, receivedAt: at.toISOString(), merged: list, fromDisk: false };
             capabilitiesFrom = "call";
-            if (args.mergeCapabilities) notes.push(NOTHING_TO_MERGE);
+            // A lone output passed for merging is most likely a search: not a catalog to keep.
+            if (args.mergeCapabilities && !list) {
+              keep = false;
+              notes.push(NOTHING_TO_MERGE);
+            }
           }
-        } else if (cached) {
-          capabilities = cached;
-          capabilitiesFrom = "cache";
         } else {
-          throw new Error(
-            "No capabilities yet: call orchestrator_capabilities and pass its full output as `capabilities` (later calls can omit it).",
+          const base = kept();
+          if (!base) throw new Error(NO_CAPABILITIES);
+          entry = base;
+          capabilitiesFrom = base.fromDisk ? "disk-cache" : "cache";
+        }
+        const age = at.getTime() - Date.parse(entry.receivedAt);
+        if (entry.fromDisk) {
+          const caps = entry.capabilities;
+          const who = caps.inheritedProviderInstanceId
+            ? ` by an orchestrator on ${caps.inheritedProviderInstanceId}${caps.inheritedModel ? ` / ${caps.inheritedModel}` : ""}`
+            : "";
+          notes.push(
+            `Capabilities from the disk cache (the server restarted): received ${formatAge(age)} ago${who}. ` +
+              "If that is not you, or a child cannot start or its model id is rejected, call orchestrator_capabilities " +
+              "and pass its full output as capabilities.",
           );
         }
         const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
-        const result = await recommendModel({ ...rest, capabilities }, policy, usageSource);
-        cached = capabilities;
-        return ok({ ...result, warnings: [...notes, ...result.warnings], capabilitiesFrom });
+        const result = await recommendModel({ ...rest, capabilities: entry.capabilities }, policy, usageSource);
+        if (keep) {
+          const changed = cached !== entry;
+          cached = entry;
+          if (changed && ttl > 0 && capabilitiesFrom !== "disk-cache") {
+            try {
+              const { fromDisk: _fromDisk, ...saved } = entry;
+              saveCapabilitiesCache(cachePath(), saved);
+            } catch (e) {
+              notes.push(`Could not save the capabilities cache: ${e instanceof Error ? e.message : String(e)}`);
+            }
+          }
+        }
+        return ok({
+          ...result,
+          warnings: [...notes, ...result.warnings],
+          capabilitiesFrom,
+          ...(capabilitiesFrom === "call" ? {} : { capabilitiesAgeMinutes: Math.max(0, Math.floor(age / 60_000)) }),
+        });
       } catch (e) {
         return fail(e);
       }

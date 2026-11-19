@@ -47,12 +47,17 @@ export function policyWith(override: Record<string, unknown>): Policy {
 
 /**
  * An MCP client connected in memory to a fresh server whose data directory
- * (policy.yaml, log.jsonl) is `home`, a new temporary directory by default.
+ * (policy.yaml, log.jsonl, capabilities-cache.json, unavailable.json) is
+ * `home`, a new temporary directory by default. `now` replaces the clock.
  */
-export async function connectServer(home = tempDir()): Promise<{ client: Client; home: string }> {
+export async function connectServer(
+  home = tempDir(),
+  opts: { now?: () => Date } = {},
+): Promise<{ client: Client; home: string }> {
   const server = createServer({
     loadPolicy: () => loadPolicy({ userPath: join(home, "policy.yaml") }),
-    logPath: () => join(home, "log.jsonl"),
+    dataDir: () => home,
+    ...opts,
   });
   return { client: await connectClient(server), home };
 }

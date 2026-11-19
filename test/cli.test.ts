@@ -64,6 +64,7 @@ describe("CLI", () => {
     expect(INSTRUCTIONS_SNIPPET).toMatch(/delegate inheriting your own provider and model/);
     expect(INSTRUCTIONS_SNIPPET).toMatch(/Tell the user in one line which provider and model you picked/);
     expect(INSTRUCTIONS_SNIPPET).toMatch(/call `log_delegation`/);
+    expect(INSTRUCTIONS_SNIPPET).toMatch(/fails with "No capabilities yet", call `orchestrator_capabilities`/);
   });
 
   it("the README shows the same snippet the CLI prints, and no npx install before publishing (#1)", () => {

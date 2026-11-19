@@ -10,7 +10,7 @@ export const INSTRUCTIONS_SNIPPET = `## Model selection for delegated tasks (t3-
 You are authorized to pick the provider, model and options of every child task in T3 Code following the t3-autopilot MCP server. Switching provider or model as recommended by \`recommend_model\` counts as asked for by the user.
 
 1. For every child task, including the ones you would start with your native subagent tool, call \`recommend_model\` first with \`task\` (one line), \`taskType\` (always; choose from the types listed in the tool description) and, if you know them, \`size\` and \`criticality\`.
-2. Pass \`capabilities\` (the full output of \`orchestrator_capabilities\`) on the first call of the thread and again after an error or when providers change; the server keeps the last one, so other calls can omit it.
+2. Pass \`capabilities\` (the full output of \`orchestrator_capabilities\`) on the first call of the thread and again after an error or when providers change; the server keeps the last one, so other calls can omit it. If a call fails with "No capabilities yet", call \`orchestrator_capabilities\` and pass its full output again.
 3. Use the first candidate. If it has \`sameAsOrchestrator: true\`, your native subagent tool is fine; otherwise call \`delegate_task\` with its \`providerInstanceId\`, \`model\` and \`options\` as \`target\`. If that child cannot start or stops on a usage limit, use the next candidate.
 4. Tell the user in one line which provider and model you picked, and why (the candidate's \`reason\`).
 5. If \`recommend_model\` returns no candidate or fails, delegate inheriting your own provider and model, and say so.

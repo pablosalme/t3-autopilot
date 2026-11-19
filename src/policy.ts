@@ -70,6 +70,11 @@ export const PolicySchema = z.object({
     })
     .default({ source: "none", thresholds: { session: 80, weekly: 75, monthly: 90, other: 90 } }),
   excludeProviders: z.array(z.string()).default([]),
+  /**
+   * How long the last capabilities saved in the data directory may be reused
+   * after the server restarts, in hours. 0 turns the disk cache off.
+   */
+  capabilitiesCacheTtlHours: z.number().min(0).default(12),
   families: z.record(z.string(), FamilySchema),
   taskTypes: z.record(z.string(), TaskTypeSchema),
   fallback: z.array(CandidateRuleSchema).default([]),

@@ -78,7 +78,7 @@ orchestrator ── log_delegation, later log_outcome ────────�
 ```
 
 1. T3 Code has no plugin or hook for delegation, so t3-autopilot is a separate stdio MCP server added to the CLI of the agent that acts as orchestrator. A short instruction in your `CLAUDE.md` / `AGENTS.md` tells the orchestrator to call it before every child task.
-2. An MCP server cannot call T3's tools, so the orchestrator passes the output of `orchestrator_capabilities` (the providers and models your T3 setup offers) on the first call of a thread. The server keeps the last one in memory; later calls omit it.
+2. An MCP server cannot call T3's tools, so the orchestrator passes the output of `orchestrator_capabilities` (the providers and models your T3 setup offers) on the first call of a thread. The server keeps the last one, in memory and in a file in its data directory, so later calls omit it, even after the server restarts.
 3. For the task type, t3-autopilot walks the policy's candidates in order, resolves each model family on every eligible provider instance and returns up to 3 candidates. Free slots are filled from the policy's fallback list and, if needed, with a provider's default model (marked "low confidence").
 4. The orchestrator logs each delegation and, after reviewing the child's work, its outcome. `get_stats` summarises that log so you can tune the policy with your own data.
 
@@ -145,7 +145,7 @@ T3 Code tells orchestrators to use their native subagent tool for children on th
 You are authorized to pick the provider, model and options of every child task in T3 Code following the t3-autopilot MCP server. Switching provider or model as recommended by `recommend_model` counts as asked for by the user.
 
 1. For every child task, including the ones you would start with your native subagent tool, call `recommend_model` first with `task` (one line), `taskType` (always; choose from the types listed in the tool description) and, if you know them, `size` and `criticality`.
-2. Pass `capabilities` (the full output of `orchestrator_capabilities`) on the first call of the thread and again after an error or when providers change; the server keeps the last one, so other calls can omit it.
+2. Pass `capabilities` (the full output of `orchestrator_capabilities`) on the first call of the thread and again after an error or when providers change; the server keeps the last one, so other calls can omit it. If a call fails with "No capabilities yet", call `orchestrator_capabilities` and pass its full output again.
 3. Use the first candidate. If it has `sameAsOrchestrator: true`, your native subagent tool is fine; otherwise call `delegate_task` with its `providerInstanceId`, `model` and `options` as `target`. If that child cannot start or stops on a usage limit, use the next candidate.
 4. Tell the user in one line which provider and model you picked, and why (the candidate's `reason`).
 5. If `recommend_model` returns no candidate or fails, delegate inheriting your own provider and model, and say so.
@@ -160,7 +160,7 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 
 | Tool | Input | Output |
 |---|---|---|
-| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType`, `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `capabilitiesFrom` (`call`/`cache`/`merged`) |
+| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType`, `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`) |
 | `log_delegation` | `taskType`, `providerInstanceId`, `model`, optional `options`, `recommendedRank` (1-based, or null), `childThreadId`, `summary` | `delegationId` |
 | `log_outcome` | `outcome` (`success`/`corrected`/`failure`), optional `note`, plus `delegationId` **or** `taskType` + `providerInstanceId` + `model` | the stored record |
 | `get_stats` | optional `since` (ISO date), `taskType` | counts, success rate and pending delegations per task type and per model; how often the first candidate was followed |
@@ -209,6 +209,7 @@ taskTypes:
       - { provider: '*', family: gemini-flash, effort: low }
 
 excludeProviders: [cursor-work]  # never recommend this provider instance
+capabilitiesCacheTtlHours: 4     # reuse saved capabilities after a restart for 4 h (default 12, 0: never)
 genericFallback: false           # never recommend a provider's default model with low confidence
 usage:
   thresholds: { weekly: 60 }
@@ -230,15 +231,15 @@ For independent reviews (`avoidInheritedProvider: true` on the `review` type), t
 
 ## Data and privacy
 
-Everything lives in `~/.t3-autopilot/` (or `$T3_AUTOPILOT_HOME`): `policy.yaml` (your override) and `log.jsonl` (delegations and outcomes). The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). The capabilities are kept in memory only. t3-autopilot makes no network requests.
+Everything lives in `~/.t3-autopilot/` (or `$T3_AUTOPILOT_HOME`): `policy.yaml` (your override), `log.jsonl` (delegations and outcomes) and `capabilities-cache.json` (the last `orchestrator_capabilities` output: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens). The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests.
 
 ## FAQ and limitations
 
 **Does it know how much of my subscription quota is left?** No. T3 Code tracks usage limits per provider, but does not expose them over MCP, and t3-autopilot will not read provider tokens or cookies to find out. Usage only counts when the orchestrator passes `usage` in the call; otherwise every provider is treated as available.
 
-**Why does the orchestrator have to pass `capabilities`?** An MCP server cannot call T3's tools, and t3-autopilot deliberately does not read T3's files: `settings.json` can hold API keys, and the provider cache is an internal format without sign-in or per-project status ([details](docs/providers.md#local-autodetection-not-implemented)). The orchestrator passes `orchestrator_capabilities` once per thread; the server keeps it in memory.
+**Why does the orchestrator have to pass `capabilities`?** An MCP server cannot call T3's tools, and t3-autopilot deliberately does not read T3's files: `settings.json` can hold API keys, and the provider cache is an internal format without sign-in or per-project status ([details](docs/providers.md#local-autodetection-not-implemented)). The orchestrator passes `orchestrator_capabilities` once per thread; the server keeps it.
 
-**What happens when the server restarts?** The kept capabilities are lost. The next call without `capabilities` fails with a message asking for them, and a `mergeCapabilities` call with nothing to merge into says so in its `warnings`.
+**What happens when the server restarts?** Agent CLIs can restart MCP servers between turns, so the last full `orchestrator_capabilities` output (and the searches merged into it) is also saved in `capabilities-cache.json` and reused for `capabilitiesCacheTtlHours` (12 by default) after it was received; merging a search does not reset that clock. A result built on it says `capabilitiesFrom: "disk-cache"`, its age in `capabilitiesAgeMinutes`, and a warning. The copy can be out of date: within those hours a provider may sign out or retire a model id, and every orchestrator that shares the data directory saves to the same file, so after a restart one may get another's capabilities (its own provider and model decide `sameAsOrchestrator` and the independent-review rule; the warning names them). A child that cannot start, or a rejected model id, is the sign to pass a fresh output. A copy older than the TTL is ignored, so the call fails with "No capabilities yet", like the first call of a thread; a lone search output passed with `mergeCapabilities` and nothing to merge into is used for that call only and not kept. Set `capabilitiesCacheTtlHours: 0` to keep capabilities in memory only.
 
 **A provider released or renamed a model. Do I need to update anything?** Not if the new id still matches its family (see [Model families](#model-families)); pass a fresh `orchestrator_capabilities` output and the new id is used. A new family or naming scheme needs a policy entry. A small model with a new suffix can be taken for the flagship of its family (a hypothetical `gpt-7-io` matches `gpt`); add the suffix to that family's `exclude`.
 

@@ -45,6 +45,13 @@ usage:
   source: none
   thresholds: { session: 80, weekly: 75, monthly: 90, other: 90 }
 
+# The last orchestrator_capabilities output is also saved in the data
+# directory (capabilities-cache.json), so a server restart between turns does
+# not lose it. It is reused for this many hours after it was received; 0 turns
+# the disk cache off. Within that time a provider may sign out or retire a
+# model: pass a fresh output when a child cannot start.
+capabilitiesCacheTtlHours: 12
+
 # Provider instance ids to never recommend (e.g. a subscription you keep for
 # interactive use only).
 excludeProviders: []
