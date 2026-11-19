@@ -122,6 +122,18 @@ For Codex:
 npx -y t3-autopilot snippet >> ~/.codex/AGENTS.md
 ```
 
+For Grok CLI:
+
+```sh
+npx -y t3-autopilot snippet >> ~/.grok/AGENTS.md
+```
+
+For OpenCode:
+
+```sh
+npx -y t3-autopilot snippet >> ~/.config/opencode/AGENTS.md
+```
+
 Do not skip this step. Without it, your agent has the tool but does not know when to use it. The paragraph also gives your agent permission to switch model, which T3 Code otherwise tells it not to do on its own.
 
 <details>

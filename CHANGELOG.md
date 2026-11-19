@@ -29,7 +29,7 @@ Requires Node.js 22 or later.
 - One data directory, `~/.t3-autopilot` or `T3_AUTOPILOT_HOME` (a leading `~` is expanded, because MCP configurations pass it as written). On Linux and macOS the log, the marks and the capabilities cache are readable by their owner only. The JSON files are written atomically, with a short retry on Windows when another process has the file open.
 - CLI: `snippet` (instructions for `CLAUDE.md` / `AGENTS.md`), `init-policy`, `--help` (`-h`, `help`) and `--version` (`-v`). The snippet asks for the complete `orchestrator_capabilities` output, never a trimmed copy: one without the models' options loses the effort settings.
 - npm package `t3-autopilot`: the `t3-autopilot` command, the bundled default policy and the same functions as a typed ES module. A release workflow publishes it with provenance when a `v*` tag is pushed.
-- Documentation: a plain-language README in English (`README.md`) and Spanish (`docs/README.es.md`) that installs with `npx -y t3-autopilot`, the technical reference in `docs/reference.md` and the drivers in `docs/providers.md`.
+- Documentation: a plain-language README in English (`README.md`) and Spanish (`docs/README.es.md`) that installs with `npx -y t3-autopilot` and gives the rules file of Claude Code, Codex, Grok CLI and OpenCode, the technical reference in `docs/reference.md` and the drivers in `docs/providers.md`.
 - Tests: unit and in-memory MCP tests with coverage thresholds, an end-to-end test over stdio, and a check of the packed tarball; CI on Linux, macOS and Windows with Node 22 and 24, plus lint (Biome) and `npm audit`.
 
 ### Changed
