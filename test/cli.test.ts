@@ -67,11 +67,24 @@ describe("CLI", () => {
     expect(INSTRUCTIONS_SNIPPET).toMatch(/fails with "No capabilities yet", call `orchestrator_capabilities`/);
   });
 
-  it("the README shows the same snippet the CLI prints, and no npx install before publishing (#1)", () => {
-    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
-    expect(readme).toContain(INSTRUCTIONS_SNIPPET);
-    const blocks = readme.match(/```[a-z]*\n[\s\S]*?```/g) ?? [];
-    expect(blocks.some((b) => b.includes("npx"))).toBe(false);
-    expect(readme).toContain("node /path/to/t3-autopilot/dist/cli.js");
+  it("both READMEs show the same snippet the CLI prints and install with npx (#1)", () => {
+    for (const file of ["README.md", "docs/README.es.md"]) {
+      const readme = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+      // The copy of the snippet, word for word (it stays in English in the Spanish README).
+      expect(readme, file).toContain(`\`\`\`markdown\n${INSTRUCTIONS_SNIPPET}\`\`\``);
+      // Every npx line of a code block runs the published package by name: no path, version or other package.
+      const blocks = readme.match(/```[a-z]*\n[\s\S]*?```/g) ?? [];
+      const npxLines = blocks.flatMap((b) => b.split("\n")).filter((line) => line.includes("npx"));
+      expect(npxLines.length, file).toBeGreaterThan(0);
+      for (const line of npxLines) {
+        expect(line, file).toMatch(/npx(?: |", "args": \[")-y(?: |", ")t3-autopilot(?:"\]| |$)/);
+      }
+      // The registration commands, and the alternative from a source checkout.
+      expect(readme, file).toContain("claude mcp add --scope user t3-autopilot -- npx -y t3-autopilot\n");
+      expect(readme, file).toContain("npx -y t3-autopilot snippet\n");
+      expect(readme, file).toContain(
+        "claude mcp add --scope user t3-autopilot -- node /path/to/t3-autopilot/dist/cli.js",
+      );
+    }
   });
 });
