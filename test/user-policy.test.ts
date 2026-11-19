@@ -36,7 +36,7 @@ describe("an invalid user policy", () => {
 
     // Starting and listing tools does not depend on the policy.
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(4);
+    expect(tools).toHaveLength(5);
     expect(tools.find((t) => t.name === "recommend_model")!.description).toMatch(/\n- code/);
 
     const rec = await recommend(client);
@@ -56,7 +56,12 @@ describe("an invalid user policy", () => {
     });
     expect(out.isError).toBe(true);
 
-    // get_stats only reads the log.
+    // get_stats only reads the log, and mark_unavailable does not use the policy.
+    const mark = await client.callTool({
+      name: "mark_unavailable",
+      arguments: { providerInstanceId: "codex", reason: "weekly limit reached" },
+    });
+    expect(mark.isError, resultText(mark)).toBeFalsy();
     const stats = await client.callTool({ name: "get_stats", arguments: {} });
     expect(stats.isError).toBeFalsy();
     expect((stats.structuredContent as { total: { delegations: number } }).total.delegations).toBe(0);

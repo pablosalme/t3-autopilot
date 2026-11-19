@@ -51,7 +51,7 @@ Usage:
   t3-autopilot --help | --version
 
 Data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl,
-capabilities-cache.json).
+capabilities-cache.json, unavailable.json).
 `;
 
 export interface CliIo {

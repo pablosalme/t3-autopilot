@@ -10,6 +10,7 @@ import { classifyTask } from "./classify.js";
 import { buildOptions, shiftEffort } from "./effort.js";
 import { familyPattern, resolveFamily, resolveFamilyDetail } from "./families.js";
 import type { CandidateRule, Effort, Family, Policy } from "./policy.js";
+import { findMark, markTarget, type UnavailableMark } from "./unavailable.js";
 import { evaluateUsage, type ProviderUsage, type UsageSource, type UsageTier } from "./usage.js";
 
 export type Size = "small" | "medium" | "large";
@@ -24,6 +25,8 @@ export interface RecommendInput {
   capabilities: unknown;
   /** Usage percentages known by the caller; they override the configured usage source. */
   usage?: ProviderUsage[];
+  /** Marks in force (mark_unavailable): those candidates go last, with the reason. */
+  unavailable?: readonly UnavailableMark[];
 }
 
 /** Where a candidate came from: the task type's list, the policy fallback, the generic fallback, or the orchestrator itself. */
@@ -70,6 +73,8 @@ const GENERIC_DEFAULT_IDS = ["auto", "default"];
 
 interface Scored {
   candidate: Candidate;
+  /** Marked unavailable (a usage limit or plan): after every other candidate. */
+  unavailable?: UnavailableMark;
   usageTier: UsageTier;
   inheritedPenalty: 0 | 1;
   order: number;
@@ -140,6 +145,8 @@ function push(
   const verdict = evaluateUsage(ctx.usage.get(provider.providerInstanceId), model.id, policy);
   let usageTier = verdict.tier;
   const notes = [...(more.notes ?? []), ...built.notes];
+  const mark = findMark(ctx.input.unavailable ?? [], provider.providerInstanceId, model.id);
+  if (mark) notes.push(`marked unavailable until ${mark.until}: ${mark.reason}; moved to the end`);
   if (verdict.note) notes.push(verdict.note);
   if (usageTier === 1 && noDemote) {
     usageTier = 0;
@@ -160,6 +167,7 @@ function push(
       source,
       sameAsOrchestrator: provider.providerInstanceId === ctx.inherited && model.id === ctx.inheritedModel,
     },
+    ...(mark ? { unavailable: mark } : {}),
     usageTier,
     inheritedPenalty,
     order: ctx.out.length,
@@ -254,8 +262,13 @@ function scoreGeneric(ctx: Ctx, effort: Effort | undefined): void {
 }
 
 function rank(scored: Scored[]): Scored[] {
+  const marked = (s: Scored) => (s.unavailable ? 1 : 0);
   return [...scored].sort(
-    (a, b) => a.usageTier - b.usageTier || a.inheritedPenalty - b.inheritedPenalty || a.order - b.order,
+    (a, b) =>
+      marked(a) - marked(b) ||
+      a.usageTier - b.usageTier ||
+      a.inheritedPenalty - b.inheritedPenalty ||
+      a.order - b.order,
   );
 }
 
@@ -407,9 +420,13 @@ export async function recommendModel(
   scoreRules(policy.fallback, "fallback", "fallback", ctx, typeDef.candidates[0]?.effort);
   if (policy.genericFallback) scoreGeneric(ctx, typeDef.candidates[0]?.effort);
 
-  let candidates = rank(ctx.out)
-    .slice(0, policy.maxCandidates)
-    .map((s) => s.candidate);
+  const ranked = rank(ctx.out);
+  let candidates = ranked.slice(0, policy.maxCandidates).map((s) => s.candidate);
+  // Marked candidates that did not make the list are reported once per mark.
+  const cut = new Set(ranked.slice(policy.maxCandidates).flatMap((s) => (s.unavailable ? [s.unavailable] : [])));
+  for (const mark of cut) {
+    skipped.push(`${markTarget(mark)}: marked unavailable until ${mark.until} (${mark.reason})`);
+  }
 
   if (candidates.length === 0 && inherited !== undefined && caps.inheritedModel) {
     const parent = providers.find((p) => p.providerInstanceId === inherited);

@@ -75,12 +75,14 @@ orchestrator ── recommend_model(task, taskType, capabilities) ─▶ t3-auto
 orchestrator ◀─ candidates: providerInstanceId, model, options, reason
 orchestrator ── delegate_task(target = first candidate) ───────▶ T3 Code
 orchestrator ── log_delegation, later log_outcome ─────────────▶ t3-autopilot (log.jsonl)
+orchestrator ── mark_unavailable (child hit a limit or plan) ──▶ t3-autopilot (unavailable.json)
 ```
 
 1. T3 Code has no plugin or hook for delegation, so t3-autopilot is a separate stdio MCP server added to the CLI of the agent that acts as orchestrator. A short instruction in your `CLAUDE.md` / `AGENTS.md` tells the orchestrator to call it before every child task.
 2. An MCP server cannot call T3's tools, so the orchestrator passes the output of `orchestrator_capabilities` (the providers and models your T3 setup offers) on the first call of a thread. The server keeps the last one, in memory and in a file in its data directory, so later calls omit it, even after the server restarts.
 3. For the task type, t3-autopilot walks the policy's candidates in order, resolves each model family on every eligible provider instance and returns up to 3 candidates. Free slots are filled from the policy's fallback list and, if needed, with a provider's default model (marked "low confidence").
 4. The orchestrator logs each delegation and, after reviewing the child's work, its outcome. `get_stats` summarises that log so you can tune the policy with your own data.
+5. When a child cannot start because of a usage limit or its plan, the orchestrator marks that provider instance (or only that model) unavailable, and until the mark expires its candidates come last with the reason. A `failure` outcome, by contrast, is about quality and moves nothing.
 
 ## Install
 
@@ -146,12 +148,12 @@ You are authorized to pick the provider, model and options of every child task i
 
 1. For every child task, including the ones you would start with your native subagent tool, call `recommend_model` first with `task` (one line), `taskType` (always; choose from the types listed in the tool description) and, if you know them, `size` and `criticality`.
 2. Pass `capabilities` (the full output of `orchestrator_capabilities`) on the first call of the thread and again after an error or when providers change; the server keeps the last one, so other calls can omit it. If a call fails with "No capabilities yet", call `orchestrator_capabilities` and pass its full output again.
-3. Use the first candidate. If it has `sameAsOrchestrator: true`, your native subagent tool is fine; otherwise call `delegate_task` with its `providerInstanceId`, `model` and `options` as `target`. If that child cannot start or stops on a usage limit, use the next candidate.
+3. Use the first candidate. If it has `sameAsOrchestrator: true`, your native subagent tool is fine; otherwise call `delegate_task` with its `providerInstanceId`, `model` and `options` as `target`. If that child cannot start, or stops at once, because of a usage limit or its plan (for example "not included in your weekly usage"), call `mark_unavailable` with its `providerInstanceId`, its `model` (omit it if the whole provider is out), a short `reason` and `until` if you know when the limit resets, then use the next candidate.
 4. Tell the user in one line which provider and model you picked, and why (the candidate's `reason`).
 5. If `recommend_model` returns no candidate or fails, delegate inheriting your own provider and model, and say so.
 6. If the result has `warnings` about omitted models, call `orchestrator_capabilities` with the `search` they suggest and pass that output to `recommend_model` as `capabilities` with `mergeCapabilities: true`.
 7. If the user names a provider or model for a task, use theirs instead.
-8. Right after delegating, call `log_delegation` with the `taskType`, `providerInstanceId`, `model` and `options` you used, `recommendedRank` (1-based rank of the candidate, or null if you chose something else) and `childThreadId`; keep the `delegationId`. After you review the child's result, call `log_outcome` with that `delegationId` and `outcome`: `success` (accepted as is), `corrected` (you had to fix or redo part of it) or `failure`; add a short `note`.
+8. Right after delegating, call `log_delegation` with the `taskType`, `providerInstanceId`, `model` and `options` you used, `recommendedRank` (1-based rank of the candidate, or null if you chose something else) and `childThreadId`; keep the `delegationId`. After you review the child's result, call `log_outcome` with that `delegationId` and `outcome`: `success` (accepted as is), `corrected` (you had to fix or redo part of it) or `failure` (not usable; a child that could not start goes to `mark_unavailable` instead); add a short `note`.
 ```
 
 Whether the orchestrator follows it depends on the model; nothing enforces it. `get_stats` shows how often the first candidate was used.
@@ -163,7 +165,8 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 | `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType`, `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`) |
 | `log_delegation` | `taskType`, `providerInstanceId`, `model`, optional `options`, `recommendedRank` (1-based, or null), `childThreadId`, `summary` | `delegationId` |
 | `log_outcome` | `outcome` (`success`/`corrected`/`failure`), optional `note`, plus `delegationId` **or** `taskType` + `providerInstanceId` + `model` | the stored record |
-| `get_stats` | optional `since` (ISO date), `taskType` | counts, success rate and pending delegations per task type and per model; how often the first candidate was followed |
+| `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model), `reason`, `until` (ISO date; 24 h by default), or `clear: true` to remove marks | the mark (or the marks cleared) and every mark in force |
+| `get_stats` | optional `since` (ISO date), `taskType` | counts, success rate and pending delegations per task type and per model; how often the first candidate was followed; the `unavailable` marks in force |
 
 - `capabilities` accepts the object as T3 returns it, a JSON string, a bare `providers` array, or a list of several outputs (`[full, search1, ...]`), merged by `providerInstanceId`.
 - `source` is `taskType`, `fallback`, `generic` (a provider's default model, low confidence) or `inherited` (the orchestrator's own model, used only when nothing else resolves).
@@ -231,7 +234,7 @@ For independent reviews (`avoidInheritedProvider: true` on the `review` type), t
 
 ## Data and privacy
 
-Everything lives in `~/.t3-autopilot/` (or `$T3_AUTOPILOT_HOME`): `policy.yaml` (your override), `log.jsonl` (delegations and outcomes) and `capabilities-cache.json` (the last `orchestrator_capabilities` output: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens). The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests.
+Everything lives in `~/.t3-autopilot/` (or `$T3_AUTOPILOT_HOME`): `policy.yaml` (your override), `log.jsonl` (delegations and outcomes), `unavailable.json` (`mark_unavailable` marks: provider instance, model, a reason cut to 200 characters, until when) and `capabilities-cache.json` (the last `orchestrator_capabilities` output: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens). The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests.
 
 ## FAQ and limitations
 

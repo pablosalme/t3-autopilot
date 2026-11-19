@@ -13,6 +13,7 @@ import { computeStats, logDelegation, logOutcome, OUTCOMES, readLog } from "./lo
 import { autopilotHome, DATA_FILES } from "./paths.js";
 import { type LoadedPolicy, loadPolicy, type Policy } from "./policy.js";
 import { recommendModel } from "./recommend.js";
+import { activeMarks, clearUnavailable, markUnavailable, UNAVAILABLE_DEFAULT_HOURS } from "./unavailable.js";
 import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usage.js";
 
 export const VERSION = "0.1.0";
@@ -29,7 +30,10 @@ export interface ServerOptions {
   /** Loads the policy; called on every tool call so edits apply without a restart. */
   loadPolicy?: () => LoadedPolicy;
   usageSource?: UsageSource;
-  /** Data directory (log.jsonl, capabilities-cache.json): $T3_AUTOPILOT_HOME or ~/.t3-autopilot by default. */
+  /**
+   * Data directory (log.jsonl, capabilities-cache.json, unavailable.json):
+   * $T3_AUTOPILOT_HOME or ~/.t3-autopilot by default.
+   */
   dataDir?: () => string;
   /** Log file; `<dataDir>/log.jsonl` by default. */
   logPath?: () => string;
@@ -63,6 +67,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   const dataDir = opts.dataDir ?? autopilotHome;
   const getLogPath = opts.logPath ?? (() => join(dataDir(), DATA_FILES.log));
   const cachePath = () => join(dataDir(), DATA_FILES.capabilitiesCache);
+  const marksPath = () => join(dataDir(), DATA_FILES.unavailable);
   const now = opts.now ?? (() => new Date());
 
   // Read once at startup only to describe the task types; calls reload it.
@@ -94,8 +99,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
       description:
         "Call before every child task, including ones you would start with your native subagent tool. Returns 1-3 " +
         "candidates, best first; pass a candidate's providerInstanceId, model and options as delegate_task.target " +
-        "(sameAsOrchestrator: true means your native subagent tool also works). If the first cannot start or hits a " +
-        "usage limit, use the next. Always pass taskType, one of:\n" +
+        "(sameAsOrchestrator: true means your native subagent tool also works). If the first cannot start because of " +
+        "a usage limit or its plan, call mark_unavailable and use the next. Always pass taskType, one of:\n" +
         typeList,
       inputSchema: {
         task: z.string().min(1).describe("One line describing what the child will do."),
@@ -179,7 +184,12 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           );
         }
         const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
-        const result = await recommendModel({ ...rest, capabilities: entry.capabilities }, policy, usageSource);
+        const unavailable = activeMarks(marksPath(), at);
+        const result = await recommendModel(
+          { ...rest, capabilities: entry.capabilities, unavailable },
+          policy,
+          usageSource,
+        );
         if (keep) {
           const changed = cached !== entry;
           cached = entry;
@@ -267,10 +277,64 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   );
 
   server.registerTool(
+    "mark_unavailable",
+    {
+      title: "Mark a provider or model unavailable",
+      description:
+        'Call when a child cannot start, or stops at once, because of a usage limit or its plan (for example "not ' +
+        'included in your weekly usage"). Until `until` (' +
+        `${UNAVAILABLE_DEFAULT_HOURS} h from now by default), recommend_model moves that provider instance, or only ` +
+        "that model, after every other candidate and gives the reason. Not for poor results: those are log_outcome " +
+        "failure. clear: true removes marks instead.",
+      inputSchema: {
+        providerInstanceId: z.string().min(1),
+        model: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("Model id. Omit it when the whole provider instance is unavailable."),
+        reason: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("What failed, briefly (kept to 200 characters). Required unless clear is true."),
+        until: z
+          .string()
+          .optional()
+          .describe(
+            `ISO date when it should work again (for example the resetsAt of the usage window). Default: ${UNAVAILABLE_DEFAULT_HOURS} h from now.`,
+          ),
+        clear: z
+          .boolean()
+          .optional()
+          .describe("Remove the marks of this provider instance (only this model's when model is given)."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        const at = now();
+        const path = marksPath();
+        if (args.clear) {
+          const cleared = clearUnavailable(path, args, at);
+          return ok({ cleared, active: activeMarks(path, at) });
+        }
+        if (args.reason === undefined) throw new Error("mark_unavailable needs a reason (or clear: true)");
+        const marked = markUnavailable(path, { ...args, reason: args.reason }, at);
+        return ok({ marked, active: activeMarks(path, at) });
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
     "get_stats",
     {
       title: "Delegation statistics",
-      description: "Summary of the local delegation log by task type and model: counts, outcomes and success rate.",
+      description:
+        "Summary of the local delegation log by task type and model: counts, outcomes and success rate; also the " +
+        "mark_unavailable marks in force.",
       inputSchema: {
         since: z.string().optional().describe("ISO date (YYYY-MM-DD or full timestamp); only records from then on."),
         taskType: z.string().optional().describe("Only this task type."),
@@ -286,11 +350,12 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         }
         const path = getLogPath();
         const stats = computeStats(readLog(path), { since });
+        const unavailable = activeMarks(marksPath(), now());
         if (args.taskType !== undefined) {
           const only = Object.hasOwn(stats.byTaskType, args.taskType) ? stats.byTaskType[args.taskType] : undefined;
-          return ok({ log: path, taskType: args.taskType, stats: only ?? null });
+          return ok({ log: path, taskType: args.taskType, stats: only ?? null, unavailable });
         }
-        return ok({ log: path, ...stats });
+        return ok({ log: path, ...stats, unavailable });
       } catch (e) {
         return fail(e);
       }

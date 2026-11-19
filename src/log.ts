@@ -42,9 +42,10 @@ function append(path: string, record: LogRecord): void {
   appendFileSync(path, `${JSON.stringify(record)}\n`, "utf8");
 }
 
-function truncate(s: string | undefined): string | undefined {
-  if (s === undefined) return undefined;
-  return s.length > TEXT_MAX ? `${s.slice(0, TEXT_MAX - 1)}…` : s;
+/** Cut free text to {@link TEXT_MAX} characters. */
+export function truncateText<T extends string | undefined>(s: T): T {
+  if (s === undefined) return s;
+  return (s.length > TEXT_MAX ? `${s.slice(0, TEXT_MAX - 1)}…` : s) as T;
 }
 
 function newId(): string {
@@ -61,7 +62,7 @@ export function logDelegation(
     id: newId(),
     ts: now.toISOString(),
     ...entry,
-    summary: truncate(entry.summary),
+    summary: truncateText(entry.summary),
   };
   if (record.summary === undefined) delete record.summary;
   append(path, record);
@@ -100,7 +101,7 @@ export function logOutcome(path: string, input: OutcomeInput, now: Date = new Da
     ts: now.toISOString(),
     delegationId: input.delegationId ?? newId(),
     outcome: input.outcome,
-    ...(input.note !== undefined ? { note: truncate(input.note) } : {}),
+    ...(input.note !== undefined ? { note: truncateText(input.note) } : {}),
     ...(standalone
       ? { taskType: input.taskType, providerInstanceId: input.providerInstanceId, model: input.model }
       : {}),

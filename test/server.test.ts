@@ -4,10 +4,16 @@ import { connectServer, driverFixtureRaw, fixture } from "./helpers.js";
 const connect = async () => (await connectServer()).client;
 
 describe("MCP server", () => {
-  it("lists the four tools", async () => {
+  it("lists the five tools", async () => {
     const client = await connect();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(["get_stats", "log_delegation", "log_outcome", "recommend_model"]);
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "get_stats",
+      "log_delegation",
+      "log_outcome",
+      "mark_unavailable",
+      "recommend_model",
+    ]);
   });
 
   it("recommends, logs and reports stats end to end", async () => {

@@ -80,13 +80,14 @@ describe(`orchestrator flow over stdio (${bin ? "installed bin" : "dist/cli.js"}
     await client?.close();
   });
 
-  it("initializes and lists the four tools", async () => {
+  it("initializes and lists the five tools", async () => {
     assert.deepEqual(client.getServerVersion(), { name: "t3-autopilot", version: pkg.version });
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map((t) => t.name).sort(), [
       "get_stats",
       "log_delegation",
       "log_outcome",
+      "mark_unavailable",
       "recommend_model",
     ]);
     const description = tools.find((t) => t.name === "recommend_model").description;
@@ -226,7 +227,7 @@ describe("a broken user policy over stdio", () => {
 
   it("does not stop the server: tools report the file, and fixing it needs no restart", async () => {
     const { tools } = await client.listTools();
-    assert.equal(tools.length, 4);
+    assert.equal(tools.length, 5);
     const args = { task: "x", taskType: "code", capabilities: fixture("codex") };
     const broken = await client.callTool({ name: "recommend_model", arguments: args });
     assert.equal(broken.isError, true);

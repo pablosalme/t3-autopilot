@@ -10,7 +10,7 @@ First public version, planned as 0.1.0. Not tagged or published on npm yet.
 
 ### Added
 
-- stdio MCP server with four tools: `recommend_model`, `log_delegation`, `log_outcome` and `get_stats`.
+- stdio MCP server with five tools: `recommend_model`, `log_delegation`, `log_outcome`, `mark_unavailable` and `get_stats`.
 - Family-based policy (`policy/default.yaml`) with eight task types (`review`, `debug`, `plan`, `research`, `quick`, `code`, `design`, `writing`) and a user override in `~/.t3-autopilot/policy.yaml`, re-read on every call.
 - Model families resolved to the newest matching model id on every eligible provider instance, for the eleven drivers T3 Code ships and several instances of the same driver.
 - Up to three candidates per task, ready for `delegate_task.target`, with a reason each; policy fallback list, generic fallback (a provider's default model, low confidence) and the orchestrator's own model as a last resort.
@@ -18,6 +18,7 @@ First public version, planned as 0.1.0. Not tagged or published on npm yet.
 - Ordering by usage limits passed in the call, and a different provider than the orchestrator's for independent reviews.
 - Capabilities kept between calls, in memory and in `capabilities-cache.json` (written atomically) so a server restart between turns does not lose them; the saved copy is reused for `capabilitiesCacheTtlHours` (12 by default) and a result built on it says `capabilitiesFrom: "disk-cache"` with its age. Merging of `orchestrator_capabilities` `search` outputs, with warnings when T3 left models out of a short list.
 - JSONL delegation log with outcomes, and statistics by task type and model.
+- `mark_unavailable`: when a child cannot start because of a usage limit or its plan, the orchestrator marks the provider instance, or one model, until a given time (24 h by default). Marked candidates go after every other one, with the reason in theirs (or in `skipped` when they do not make the list); marks are saved in `unavailable.json` and listed by `get_stats`. A `failure` outcome still means poor quality and demotes nothing.
 - CLI: `snippet` (instructions for `CLAUDE.md` / `AGENTS.md`), `init-policy`, `--help` and `--version`.
 - Tests: unit and in-memory MCP tests with coverage thresholds, an end-to-end test over stdio, and a check of the packed tarball; CI on Linux, macOS and Windows with Node 20 and 22, plus lint (Biome) and `npm audit`.
 
