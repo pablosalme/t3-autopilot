@@ -31,3 +31,5 @@ jobs:
         if: matrix.node != 20
       - run: npm run build
       - run: npm run smoke
+      # End-to-end over stdio with the MCP SDK client (Node's test runner, so it runs on Node 20 too).
+      - run: npm run test:e2e
