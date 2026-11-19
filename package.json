@@ -1,7 +1,30 @@
 {
   "name": "t3-autopilot",
   "version": "0.1.0",
-  "description": "MCP server that recommends provider, model and effort for each delegate_task in T3 Code, from a family-based policy and the models you actually have.",
+  "description": "MCP server that recommends the provider, model and reasoning effort for each T3 Code child task, from a family-based policy and the models you actually have.",
+  "keywords": [
+    "t3code",
+    "t3-code",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "orchestrator",
+    "delegate_task",
+    "model-routing",
+    "model-selection",
+    "ai-agents",
+    "llm"
+  ],
+  "homepage": "https://github.com/pablosalme/t3-autopilot#readme",
+  "bugs": {
+    "url": "https://github.com/pablosalme/t3-autopilot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pablosalme/t3-autopilot.git"
+  },
+  "license": "MIT",
+  "author": "pablosalme",
   "type": "module",
   "bin": {
     "t3-autopilot": "dist/cli.js"
@@ -16,9 +39,7 @@
   },
   "files": [
     "dist",
-    "policy/default.yaml",
-    "README.md",
-    "LICENSE"
+    "policy/default.yaml"
   ],
   "engines": {
     "node": ">=20"
@@ -37,20 +58,6 @@
     "smoke": "node scripts/smoke.mjs",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
-  "keywords": [
-    "t3code",
-    "t3-code",
-    "mcp",
-    "model-context-protocol",
-    "orchestrator",
-    "model-routing",
-    "delegate_task"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pablosalme/t3-autopilot.git"
-  },
-  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
     "yaml": "^2.9.1",
@@ -58,7 +65,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.5",
-    "@types/node": "^22.20.5",
+    "@types/node": "^20.19.43",
     "@vitest/coverage-v8": "^5.1.1",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
