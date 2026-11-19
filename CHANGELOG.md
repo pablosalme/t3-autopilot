@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The release workflow publishes on npm with [trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) instead of an npm access token. The package is still published with provenance.
+
 ## [0.1.0] - 2026-11-19
 
 First public version.

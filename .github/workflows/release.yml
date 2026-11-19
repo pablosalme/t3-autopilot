@@ -1,7 +1,9 @@
 name: Release
 
 # Publishes the package on npm, with provenance, when a version tag is pushed.
-# Needs the repository secret NPM_TOKEN: an npm access token that may publish t3-autopilot.
+# It signs in with npm trusted publishing (OIDC) and uses no npm token: on npmjs.com, the package must list
+# this repository and this workflow file (release.yml, no environment) as a trusted publisher that may run
+# `npm publish`. See https://docs.npmjs.com/trusted-publishers
 on:
   push:
     tags: ["v*"]
@@ -19,7 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Lets npm sign the provenance statement with the workflow's OIDC token.
+      # Lets npm trade the workflow's OIDC token for a short-lived publish credential and sign the
+      # provenance statement with it.
       id-token: write
     steps:
       - uses: actions/checkout@v7
@@ -28,10 +31,20 @@ jobs:
           # Full history, to check that the tag is on main.
           fetch-depth: 0
       # No dependency cache here: the published files come from a clean install.
+      # Node 24 comes with an npm that can publish with OIDC (11.5.1 or later; Node 24.5.0 was the first).
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: Check that npm can publish with OIDC
+        shell: bash
+        run: |
+          required=11.5.1
+          current="$(npm --version)"
+          if [ "$(printf '%s\n' "$required" "$current" | sort -V | head -n 1)" != "$required" ]; then
+            echo "::error::npm $current cannot publish with OIDC: trusted publishing needs npm $required or later."
+            exit 1
+          fi
       - name: Check that the tag matches package.json, is on main and has a dated changelog entry
         shell: bash
         run: |
@@ -59,6 +72,6 @@ jobs:
       - run: npm run test:e2e
       - run: npm run test:pack
       # prepublishOnly runs lint, typecheck and the unit tests again; prepare rebuilds dist/ from scratch.
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # No NODE_AUTH_TOKEN: npm signs in with OIDC, and attaches the provenance statement on its own because
+      # the repository and the package are public.
+      - run: npm publish --access public
