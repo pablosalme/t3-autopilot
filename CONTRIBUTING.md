@@ -84,7 +84,7 @@ Releases are published on npm by `.github/workflows/release.yml` when a `v*` tag
 1. Move the **Unreleased** entries in `CHANGELOG.md` under the new version and date, and update the links at the end of the file.
 2. Set the version in `package.json` and `package-lock.json` (`npm version X.Y.Z --no-git-tag-version`) and `VERSION` in `src/server.ts` (the end-to-end test checks that they match).
 3. Merge that into `main` and wait for CI to pass.
-4. Tag `vX.Y.Z` on `main` and push the tag. The workflow checks that the tag matches `package.json` and is on `main`, runs every check and then `npm publish --provenance --access public`.
+4. Tag `vX.Y.Z` on `main` and push the tag. The workflow checks that the tag matches `package.json`, is on `main` and has a dated entry in `CHANGELOG.md` (`## [X.Y.Z] - YYYY-MM-DD`), runs every check and then `npm publish --provenance --access public`.
 5. Create the GitHub release for the tag with the changelog entry.
 
 To publish by hand instead, run `npm publish --access public` from a clean checkout of the tag: `prepublishOnly` runs the lint, the typecheck and the unit tests, and `prepare` rebuilds `dist/` from scratch before npm packs it. A package published by hand has no provenance.
