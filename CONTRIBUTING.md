@@ -75,7 +75,7 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `build:`, `ci:`, `chore:`, `style:`.
 - Keep pull requests small and focused, fill in the template, and make sure CI passes.
-- Add a line to [CHANGELOG.md](CHANGELOG.md) for changes users will notice: under **Unreleased**, or under **0.1.0** until that version is published.
+- Add a line to [CHANGELOG.md](CHANGELOG.md) for changes users will notice: under **Unreleased**. When the version is released, that heading becomes `## [X.Y.Z] - YYYY-MM-DD` (see Releasing below).
 
 ## Releasing (maintainers)
 
