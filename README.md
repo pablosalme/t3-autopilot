@@ -110,7 +110,7 @@ Agents read a rules file every time they start: `CLAUDE.md` for Claude Code, `AG
 npx -y t3-autopilot snippet
 ```
 
-Copy what it prints and paste it at the end of your rules file. Or let the terminal do it. For Claude Code:
+Copy what it prints and paste it at the end of your rules file. Or let the terminal do it (on macOS and Linux only; on Windows, copy and paste, because PowerShell can save the added text in a different encoding from the rest of the file). For Claude Code:
 
 ```sh
 npx -y t3-autopilot snippet >> ~/.claude/CLAUDE.md

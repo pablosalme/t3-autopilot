@@ -110,7 +110,7 @@ Los agentes leen un fichero de reglas cada vez que arrancan: `CLAUDE.md` en Clau
 npx -y t3-autopilot snippet
 ```
 
-Copia lo que imprime y pégalo al final de tu fichero de reglas. O deja que lo haga el terminal. Para Claude Code:
+Copia lo que imprime y pégalo al final de tu fichero de reglas. O deja que lo haga el terminal (solo en macOS y Linux; en Windows, copia y pega, porque PowerShell puede guardar el texto añadido con una codificación distinta de la del resto del fichero). Para Claude Code:
 
 ```sh
 npx -y t3-autopilot snippet >> ~/.claude/CLAUDE.md
