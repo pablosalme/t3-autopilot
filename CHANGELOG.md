@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-19
+
 ### Changed
 
 - The release workflow publishes on npm with [trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) instead of an npm access token. The package is still published with provenance.
@@ -44,5 +46,6 @@ For those who ran it from a source checkout before this version:
 - The instructions snippet changed. Replace the paragraph in your `CLAUDE.md` / `AGENTS.md` with the output of `t3-autopilot snippet`.
 - The technical part of the README moved to `docs/reference.md`.
 
-[Unreleased]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/pablosalme/t3-autopilot/releases/tag/v0.1.0
