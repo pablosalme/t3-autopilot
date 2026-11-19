@@ -34,7 +34,7 @@ With t3-autopilot:
 
 - **Each kind of task goes to a model that suits it.** There is a ready-made list for eight kinds of task: coding, reviewing, debugging, planning, research, quick edits, design and writing.
 - **You always get the newest version you have.** Preferences say "Claude Opus", not a version number, so a new version is used as soon as your account offers it.
-- **Reviews get a real second opinion,** from a different provider than the one that did the work.
+- **Reviews get a real second opinion,** from a different provider than the one your agent runs on.
 - **A subscription that runs out does not stop the work.** If a helper cannot start because a limit was reached, your agent moves on to the next option.
 - **You are told what was chosen.** Your agent says in one line which model it picked and why.
 

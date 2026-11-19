@@ -34,7 +34,7 @@ Con t3-autopilot:
 
 - **Cada tipo de tarea va a un modelo que le encaja.** Trae una lista ya hecha para ocho tipos de tarea: programar, revisar, depurar, planificar, investigar, cambios rápidos, diseño y redacción.
 - **Siempre usas la versión más reciente que tengas.** Las preferencias dicen «Claude Opus», no un número de versión, así que una versión nueva se usa en cuanto tu cuenta la ofrece.
-- **Las revisiones reciben una segunda opinión de verdad,** de un proveedor distinto del que hizo el trabajo.
+- **Las revisiones reciben una segunda opinión de verdad,** de un proveedor distinto del de tu agente.
 - **Una suscripción agotada no detiene el trabajo.** Si un ayudante no puede arrancar porque se ha alcanzado un límite, tu agente pasa a la siguiente opción.
 - **Te dicen qué se ha elegido.** Tu agente te cuenta en una línea qué modelo ha escogido y por qué.
 
