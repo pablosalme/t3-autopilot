@@ -45,10 +45,11 @@ export const POLICY_TEMPLATE = `# t3-autopilot policy override. Keys here replac
 export const HELP = `t3-autopilot ${VERSION}: model selection MCP server for T3 Code orchestrators.
 
 Usage:
-  t3-autopilot              Start the MCP server on stdio (what your agent CLI runs).
-  t3-autopilot snippet      Print the instructions to paste into CLAUDE.md / AGENTS.md.
-  t3-autopilot init-policy  Write a commented override template to the user policy path.
-  t3-autopilot --help | --version
+  t3-autopilot [serve]             Start the MCP server on stdio (what your agent CLI runs).
+  t3-autopilot snippet             Print the instructions to paste into CLAUDE.md / AGENTS.md.
+  t3-autopilot init-policy         Write a commented override template to the user policy path.
+  t3-autopilot --help | -h | help  Print this text.
+  t3-autopilot --version | -v      Print the version.
 
 Data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl,
 capabilities-cache.json, unavailable.json).

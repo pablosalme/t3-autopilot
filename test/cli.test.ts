@@ -29,6 +29,17 @@ describe("CLI", () => {
     expect((await run("--version")).out).toBe(`${VERSION}\n`);
   });
 
+  it("--help lists every alias, and each one does what it says", async () => {
+    for (const alias of ["[serve]", "--help | -h | help", "--version | -v"]) expect(HELP).toContain(alias);
+    for (const alias of ["--help", "-h", "help"]) expect(await run(alias)).toEqual({ code: 0, out: HELP, err: "" });
+    for (const alias of ["--version", "-v"]) {
+      expect(await run(alias)).toEqual({ code: 0, out: `${VERSION}\n`, err: "" });
+    }
+    // Every command of the usage text is one runCli knows (serve and the bare command start the server).
+    const commands = [...HELP.matchAll(/^ {2}t3-autopilot (\S+)/gm)].map((m) => m[1]);
+    expect(commands).toEqual(["[serve]", "snippet", "init-policy", "--help", "--version"]);
+  });
+
   it("rejects an unknown command with exit code 2", async () => {
     const r = await run("frobnicate");
     expect(r.code).toBe(2);
