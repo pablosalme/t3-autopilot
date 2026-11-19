@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { parse } from "yaml";
 import { parseCapabilities, type Capabilities } from "../src/capabilities.js";
 import { defaultPolicyPath } from "../src/paths.js";
@@ -50,8 +51,19 @@ export async function connectServer(home = tempDir()): Promise<{ client: Client;
     loadPolicy: () => loadPolicy({ userPath: join(home, "policy.yaml") }),
     logPath: () => join(home, "log.jsonl"),
   });
+  return { client: await connectClient(server), home };
+}
+
+/** An MCP client connected in memory to `server`. */
+export async function connectClient(server: McpServer): Promise<Client> {
   const client = new Client({ name: "test", version: "0.0.0" });
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(a), client.connect(b)]);
-  return { client, home };
+  return client;
+}
+
+/** Text of a tool result (the error message when isError is true). */
+export function resultText(res: object): string {
+  const content = ((res as { content?: unknown }).content ?? []) as { type: string; text?: string }[];
+  return content.map((c) => c.text ?? "").join("\n");
 }
