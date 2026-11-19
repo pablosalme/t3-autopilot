@@ -5,7 +5,7 @@
 // dependencies of the installed package.
 // Usage: npm run build && npm run test:pack
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,18 +42,28 @@ console.log(`packed ${packed.filename}: ${files.length} files, ${(packed.size / 
 const required = [
   "LICENSE",
   "README.md",
+  "CHANGELOG.md",
   "package.json",
   "policy/default.yaml",
   "dist/cli.js",
   "dist/index.js",
   "dist/index.d.ts",
+  // Every file listed in "files" that exists in the repository (a translated README, for example).
+  ...pkg.files.filter((f) => existsSync(join(root, f)) && !statSync(join(root, f)).isDirectory()),
 ];
-for (const f of required) if (!files.includes(f)) fail(`the package lacks ${f}`);
+for (const f of new Set(required)) if (!files.includes(f)) fail(`the package lacks ${f}`);
+// Nothing else: no sources, tests, coverage or source maps (they would point at local paths).
 const unexpected = files.filter(
   (f) =>
-    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(f),
+    !/^(?:LICENSE|README(?:\.[a-z]{2})?\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(
+      f,
+    ),
 );
 if (unexpected.length) fail(`the package has unexpected files: ${unexpected.join(", ")}`);
+// The bin must start with a shebang, or the installed command would not run on Unix.
+if (!/^#!\/usr\/bin\/env node\r?\n/.test(readFileSync(join(root, pkg.bin["t3-autopilot"]), "utf8"))) {
+  fail(`${pkg.bin["t3-autopilot"]} does not start with "#!/usr/bin/env node"`);
+}
 console.log("ok   file list");
 
 // 2. Install the tarball in an empty project, as a user would install it from npm.
