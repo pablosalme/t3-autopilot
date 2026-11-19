@@ -1,0 +1,43 @@
+name: Bug report
+description: Something does not work as the README or the tool descriptions say.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Do not paste secrets, API keys, emails or private paths. For a security problem, use [private reporting](https://github.com/pablosalme/t3-autopilot/security/advisories/new) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The tool call (arguments, with `capabilities` trimmed to the providers that matter) and the result or error message.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: policy
+    attributes:
+      label: Policy override
+      description: Your `~/.t3-autopilot/policy.yaml`, if you have one.
+      render: yaml
+  - type: input
+    id: version
+    attributes:
+      label: t3-autopilot version or commit
+      placeholder: 0.1.0 (node dist/cli.js --version) or a commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Node.js version, T3 Code version and the orchestrator's CLI (Claude Code, Codex, Grok, OpenCode...).
+    validations:
+      required: true

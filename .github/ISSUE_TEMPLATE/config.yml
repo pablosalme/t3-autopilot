@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/pablosalme/t3-autopilot/security/advisories/new
+    about: Report security problems privately, not in a public issue.
+  - name: T3 Code itself
+    url: https://github.com/pingdotgg/t3code/issues
+    about: Problems with T3 Code, its providers, orchestrator_capabilities or delegate_task belong there.

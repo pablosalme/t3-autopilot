@@ -1,0 +1,47 @@
+name: New provider or model
+description: A T3 Code provider, model family or model id that t3-autopilot does not handle well.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Policy families are regular expressions over model ids, so new versions of a known family are picked up without a release. Use this form when a model is not matched, is matched by the wrong family, gets the wrong effort or options, or a provider driver is missing.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong
+      options:
+        - A new model or version is not picked up
+        - A model is matched by the wrong family
+        - A model family should be in the default policy
+        - Effort or options are wrong for a model
+        - A T3 Code provider driver is not handled
+    validations:
+      required: true
+  - type: input
+    id: driver
+    attributes:
+      label: Driver
+      description: The `driverKind` from orchestrator_capabilities.
+      placeholder: cursor
+    validations:
+      required: true
+  - type: textarea
+    id: models
+    attributes:
+      label: Models as T3 lists them
+      description: The relevant entries of `providers[].models` from orchestrator_capabilities (ids and options). Trim the rest.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: Which family, task type or effort should apply, and why. Links to the provider's documentation or T3's source help.
+    validations:
+      required: true
+  - type: input
+    id: t3-version
+    attributes:
+      label: T3 Code version
