@@ -137,8 +137,11 @@ function listsModels(provider: Provider): boolean {
 
 /**
  * Merge several capabilities outputs by `providerInstanceId`. The first output
- * that lists a provider gives its eligibility and options; models from later
- * outputs are added when their id is new, in T3's order. `omittedModels` is reduced by the
+ * that lists a provider gives its eligibility; models from later outputs are
+ * added when their id is new, in T3's order, and a model listed again takes
+ * the fields the later output gives for it (its options: an output whose
+ * models were listed without them must not hide the ones a later one brings).
+ * `omittedModels` is reduced by the
  * number of models added (an estimate: T3 does not say which ones it omitted).
  * A later output that lists no model for a provider (a search that did not
  * select it) leaves that provider as it was, so its omitted-models warning
@@ -182,6 +185,11 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
           existing.models.splice(at, 0, structuredClone(m));
           known.add(m.id);
           added++;
+        } else {
+          // A model both list: the later output is the newer one, so what it says (its options, above all)
+          // replaces what was known; the fields it leaves out stay.
+          const old = existing.models.find((x) => x.id === m.id);
+          if (old) Object.assign(old, structuredClone(m));
         }
         anchor = m.id;
       });

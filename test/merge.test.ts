@@ -225,3 +225,62 @@ describe("merging, edge cases", () => {
     await expect(rec([full(), "{not json"])).rejects.toThrow(/^capabilities\[1\] is a string but not valid JSON/);
   });
 });
+
+// A later output is newer than the ones before it: what both say, the later one decides.
+describe("merging: the later output is the newer one", () => {
+  const EFFORT = { id: "effort", values: ["low", "medium", "high", "xhigh", "max", "ultrathink"], default: "medium" };
+  /** One Claude provider; `options` false lists the models bare, as a caller that trims the output would. */
+  const claude = (models: string[], options: boolean, extra: Record<string, unknown> = {}) => ({
+    inheritedProviderInstanceId: "claudeAgent",
+    inheritedModel: "claude-opus-9-2",
+    providers: [
+      {
+        providerInstanceId: "claudeAgent",
+        driverKind: "claudeAgent",
+        models: models.map((id) => (options ? { id, label: id, options: [EFFORT] } : { id })),
+        canRunChildTask: true,
+        ...extra,
+      },
+    ],
+  });
+  const plan = (capabilities: unknown) =>
+    recommendModel({ task: "x", taskType: "plan", capabilities }, policy, new NoneUsageSource());
+  const model = (caps: ReturnType<typeof mergeCapabilities>, id: string) =>
+    caps.providers[0]!.models.find((m) => m.id === id)!;
+
+  it("takes the options of a model both outputs list from the later one", async () => {
+    const bare = claude(["claude-opus-9-2", "claude-fable-8-3"], false);
+    const search = claude(["claude-fable-8-3", "claude-fable-8-2"], true);
+    const before = (await plan(bare)).candidates.find((c) => c.model === "claude-fable-8-3")!;
+    expect(before.reason).toMatch(/model has no effort option/);
+
+    const merged = mergeCapabilities([parseCapabilities(bare), parseCapabilities(search)]);
+    expect(merged.providers[0]!.models.map((m) => m.id)).toEqual([
+      "claude-opus-9-2",
+      "claude-fable-8-3",
+      "claude-fable-8-2",
+    ]);
+    expect(model(merged, "claude-fable-8-3")).toEqual({
+      id: "claude-fable-8-3",
+      label: "claude-fable-8-3",
+      options: [EFFORT],
+    });
+    expect(model(merged, "claude-opus-9-2").options).toBeUndefined();
+    const after = (await plan([bare, search])).candidates.find((c) => c.model === "claude-fable-8-3")!;
+    expect(after.options).toEqual([{ id: "effort", value: "high" }]);
+    expect(after.reason).not.toMatch(/no effort option/);
+  });
+
+  it("keeps the options it knows when a later output lists the model without them", () => {
+    const merged = mergeCapabilities([
+      parseCapabilities(claude(["claude-fable-8-3"], true)),
+      parseCapabilities(claude(["claude-fable-8-3"], false)),
+    ]);
+    expect(model(merged, "claude-fable-8-3").options).toEqual([EFFORT]);
+    // An explicit empty list says the model has none now.
+    const none = claude(["claude-fable-8-3"], false);
+    Object.assign(none.providers[0]!.models[0]!, { options: [] });
+    const cleared = mergeCapabilities([parseCapabilities(claude(["claude-fable-8-3"], true)), parseCapabilities(none)]);
+    expect(model(cleared, "claude-fable-8-3").options).toEqual([]);
+  });
+});
