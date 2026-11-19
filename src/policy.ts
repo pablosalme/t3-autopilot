@@ -188,5 +188,7 @@ export function loadPolicy(opts: { userPath?: string; defaultPath?: string } = {
     raw = mergePolicy(raw, readYaml(userPath));
     sources.push(userPath);
   }
-  return { policy: validatePolicy(raw, sources.join(" + ")), sources };
+  // The bundled default is valid on its own (tested), so errors after a merge come from the user's file.
+  const label = sources.length > 1 ? `${userPath}, on top of the default policy` : defaultPath;
+  return { policy: validatePolicy(raw, label), sources };
 }
