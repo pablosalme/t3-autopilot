@@ -44,7 +44,7 @@ t3-autopilot answers (real output, without the `classification`, `skipped` and `
       "providerInstanceId": "cursor",
       "model": "gemini-5.1-pro",
       "options": [{ "id": "reasoning_effort", "value": "high" }],
-      "reason": "review #3 (any provider): latest gemini on cursor is gemini-5.1-pro, effort high (effort xhigh not supported, using high)",
+      "reason": "review #3 (any provider): newest listed gemini on cursor is gemini-5.1-pro, effort high (31 models left out of the list, so a newer one may exist; effort xhigh not supported, using high)",
       "source": "taskType",
       "sameAsOrchestrator": false
     },
@@ -65,7 +65,7 @@ t3-autopilot answers (real output, without the `classification`, `skipped` and `
 }
 ```
 
-The review goes to another provider than the orchestrator's (Claude's own candidate is moved down), `criticality: "high"` raised the effort one step, and Cursor's Gemini, which tops out at `high`, got that instead. The orchestrator then delegates with the first candidate as `delegate_task.target` and tells you in one line which model it picked and why.
+The review goes to another provider than the orchestrator's (Claude's own candidate is moved down), `criticality: "high"` raised the effort one step, and Cursor's Gemini, which tops out at `high`, got that instead. Cursor and OpenCode list only part of their catalog, so the Gemini pick is the newest *listed* one and the warnings give the searches that would show the rest. The orchestrator then delegates with the first candidate as `delegate_task.target` and tells you in one line which model it picked and why.
 
 ## How it works
 
