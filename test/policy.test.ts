@@ -1,4 +1,5 @@
 import { writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { autopilotHome, logPath, userPolicyPath } from "../src/paths.js";
@@ -18,6 +19,22 @@ describe("paths", () => {
     expect(autopilotHome()).toBe(dir);
     expect(userPolicyPath()).toBe(join(dir, "policy.yaml"));
     expect(logPath()).toBe(join(dir, "log.jsonl"));
+  });
+
+  it("expands a leading ~ in T3_AUTOPILOT_HOME: an MCP config has no shell to do it", () => {
+    // Paths are only computed here; nothing is read or written.
+    process.env.T3_AUTOPILOT_HOME = "~/autopilot-work";
+    expect(autopilotHome()).toBe(join(homedir(), "autopilot-work"));
+    expect(logPath()).toBe(join(homedir(), "autopilot-work", "log.jsonl"));
+    process.env.T3_AUTOPILOT_HOME = "~\\autopilot-work";
+    expect(autopilotHome()).toBe(join(homedir(), "autopilot-work"));
+    process.env.T3_AUTOPILOT_HOME = "~";
+    expect(autopilotHome()).toBe(homedir());
+    // Another user's home (~name) is left to the caller, as is any other path.
+    process.env.T3_AUTOPILOT_HOME = "~name/data";
+    expect(autopilotHome()).toBe("~name/data");
+    process.env.T3_AUTOPILOT_HOME = "  ";
+    expect(autopilotHome()).toBe(join(homedir(), ".t3-autopilot"));
   });
 });
 

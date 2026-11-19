@@ -277,6 +277,26 @@ describe("a server restart over stdio", () => {
   });
 });
 
+describe("calls sent at once over stdio", () => {
+  it("the calls that omit capabilities use the ones the first call carries", async () => {
+    // An orchestrator that delegates several children sends its recommend_model calls together.
+    const { client } = await start(newHome());
+    try {
+      const call = (args) =>
+        client.callTool({ name: "recommend_model", arguments: { task: "x", taskType: "code", ...args } });
+      const results = await Promise.all([call({ capabilities: fixture("mixed") }), call({}), call({})]);
+      for (const res of results) assert.ok(!res.isError, text(res));
+      assert.deepEqual(
+        results.map((res) => res.structuredContent.capabilitiesFrom),
+        ["call", "cache", "cache"],
+      );
+      assert.deepEqual(ids(results[2].structuredContent), ids(results[0].structuredContent));
+    } finally {
+      await client.close();
+    }
+  });
+});
+
 describe("CLI commands", () => {
   it("--version, --help and snippet", () => {
     const home = newHome();

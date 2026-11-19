@@ -109,6 +109,15 @@ export function isOutputList(value: unknown): value is unknown[] {
  * plus `search` results), which are merged with `mergeCapabilities`.
  */
 export function parseCapabilities(input: unknown): Capabilities {
+  return parseCapabilitiesInput(input).capabilities;
+}
+
+/**
+ * {@link parseCapabilities}, plus how many outputs the input listed
+ * (`[full, search, ...]`, also when the list arrives as one JSON string);
+ * 0 for a single output.
+ */
+export function parseCapabilitiesInput(input: unknown): { capabilities: Capabilities; outputs: number } {
   let value = input;
   if (typeof value === "string") {
     try {
@@ -120,9 +129,10 @@ export function parseCapabilities(input: unknown): Capabilities {
     }
   }
   if (isOutputList(value)) {
-    return mergeCapabilities(value.map((v, i) => parseOne(v, `capabilities[${i}]`)));
+    const capabilities = mergeCapabilities(value.map((v, i) => parseOne(v, `capabilities[${i}]`)));
+    return { capabilities, outputs: value.length };
   }
-  return parseOne(value, "capabilities");
+  return { capabilities: parseOne(value, "capabilities"), outputs: 0 };
 }
 
 /**
@@ -136,26 +146,35 @@ function listsModels(provider: Provider): boolean {
 }
 
 /**
- * Merge several capabilities outputs by `providerInstanceId`. The first output
- * that lists a provider gives its eligibility and options; models from later
- * outputs are added when their id is new, in T3's order. `omittedModels` is reduced by the
+ * Merge several capabilities outputs by `providerInstanceId`. A later output
+ * is newer, so it decides what both say: whether a provider can run a child
+ * task (and why not), and the fields of a model listed again (its options: an
+ * output whose models were listed without them must not hide the ones a later
+ * one brings). Models from later outputs are added when their id is new, in
+ * T3's order. `omittedModels` is reduced by the
  * number of models added (an estimate: T3 does not say which ones it omitted).
  * A later output that lists no model for a provider (a search that did not
  * select it) leaves that provider as it was, so its omitted-models warning
  * stays until a search that lists its models is merged. The last output that
  * lists models for a provider is recorded in `lastOutput`: whether the list is
  * still truncated is decided by that output alone.
- * Thread-level fields (inherited provider, model, options) come from the first
- * output that has them.
+ * Thread-level fields (inherited provider, model, options) come from the last
+ * output that names the orchestrator's provider: they decide
+ * `sameAsOrchestrator` and the independent-review rule, so they must be the
+ * caller's own and not those of an older output.
  */
 export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
   if (list.length === 0) throw new Error("no capabilities to merge");
   const [first, ...rest] = list as [Capabilities, ...Capabilities[]];
   const out: Capabilities = structuredClone(first);
   for (const next of rest) {
-    out.inheritedProviderInstanceId ??= next.inheritedProviderInstanceId;
-    out.inheritedModel ??= next.inheritedModel;
-    out.inheritedOptions ??= next.inheritedOptions;
+    // The orchestrator that asked: the latest output that names one, as a unit (never one's provider with
+    // another's model). An earlier output may be another orchestrator's, read back from the disk cache.
+    if (next.inheritedProviderInstanceId != null) {
+      out.inheritedProviderInstanceId = next.inheritedProviderInstanceId;
+      out.inheritedModel = next.inheritedModel;
+      out.inheritedOptions = structuredClone(next.inheritedOptions);
+    }
     for (const p of next.providers) {
       const existing = out.providers.find((q) => q.providerInstanceId === p.providerInstanceId);
       if (!existing) {
@@ -182,6 +201,12 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
           existing.models.splice(at, 0, structuredClone(m));
           known.add(m.id);
           added++;
+        } else {
+          // A model both list: the later output is the newer one, so what it says (its options, above all)
+          // replaces what was known; the fields it leaves out stay.
+          const old = existing.models.find((x) => x.id === m.id);
+          const given = Object.entries(structuredClone(m)).filter(([, v]) => v !== undefined);
+          if (old) Object.assign(old, Object.fromEntries(given));
         }
         anchor = m.id;
       });
@@ -189,13 +214,19 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
         existing.omittedModels = Math.max(0, existing.omittedModels - added);
       }
       if (listsModels(p)) {
-        existing.mergedOutputs = (existing.mergedOutputs ?? 1) + 1;
-        existing.lastOutput = { models: p.models.map((m) => m.id), omittedModels: p.omittedModels ?? 0 };
+        // `p` may itself be a merge (a list of outputs merged into the kept capabilities): then its own last
+        // output is the latest one, not its whole merged list with what is left of the first output's count.
+        existing.mergedOutputs = (existing.mergedOutputs ?? 1) + (p.mergedOutputs ?? 1);
+        existing.lastOutput = p.lastOutput
+          ? structuredClone(p.lastOutput)
+          : { models: p.models.map((m) => m.id), omittedModels: p.omittedModels ?? 0 };
       }
-      // A provider that became unusable in a later output is unusable.
-      if (!p.canRunChildTask && existing.canRunChildTask) {
-        existing.canRunChildTask = false;
-        existing.constraints = [...(existing.constraints ?? []), ...(p.constraints ?? [])];
+      // Every output lists every provider with what it can do at that moment (a search too), so the later
+      // one decides both ways: a provider that signed out is unusable, one that was enabled is usable again.
+      existing.canRunChildTask = p.canRunChildTask;
+      if (p.constraints != null || p.canRunChildTask) existing.constraints = [...(p.constraints ?? [])];
+      if (p.canRunCrossProviderChildTask !== undefined) {
+        existing.canRunCrossProviderChildTask = p.canRunCrossProviderChildTask;
       }
     }
   }

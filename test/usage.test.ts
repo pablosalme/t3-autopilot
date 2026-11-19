@@ -102,6 +102,14 @@ describe("usage passed in the call, across several providers", () => {
     expect(r.candidates[0]!.reason).toMatch(/weekly usage exhausted \(100%, resets 2026-11-20T08:00:00Z\)/);
   });
 
+  it("adds up the windows of a provider passed in several entries, one per window", async () => {
+    // The busy window comes first: the entry after it must not replace it.
+    const r = await rec([at("claudeAgent", "weekly", 100), at("claudeAgent", "session", 10)]);
+    expect(ids(r)).toEqual(["codex/gpt-6.2-codex", "cursor/gemini-5.1-pro", "grok/grok-6"]);
+    const same = await rec([at("claudeAgent", "session", 10), at("claudeAgent", "weekly", 100)]);
+    expect(ids(same)).toEqual(ids(r));
+  });
+
   it("still recommends when every provider is exhausted, in policy order, each marked as exhausted", async () => {
     const r = await rec(ALL.map((id) => at(id, "session", 100)));
     expect(ids(r)).toEqual(["claudeAgent/claude-opus-7-1", "codex/gpt-6.2-codex", "cursor/gemini-5.1-pro"]);

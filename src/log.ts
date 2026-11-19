@@ -83,8 +83,8 @@ export interface OutcomeInput {
  * log_delegation) or `taskType` + `providerInstanceId` + `model` is required.
  */
 export function logOutcome(path: string, input: OutcomeInput, now: Date = new Date()): OutcomeRecord {
-  const standalone =
-    input.taskType !== undefined && input.providerInstanceId !== undefined && input.model !== undefined;
+  // Non-empty, as computeStats needs them: an outcome with an empty model would be logged and never counted.
+  const standalone = Boolean(input.taskType && input.providerInstanceId && input.model);
   if (input.delegationId === undefined && !standalone) {
     throw new Error("log_outcome needs delegationId, or taskType + providerInstanceId + model");
   }

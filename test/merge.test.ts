@@ -225,3 +225,119 @@ describe("merging, edge cases", () => {
     await expect(rec([full(), "{not json"])).rejects.toThrow(/^capabilities\[1\] is a string but not valid JSON/);
   });
 });
+
+// A later output is newer than the ones before it: what both say, the later one decides.
+describe("merging: the later output is the newer one", () => {
+  const EFFORT = { id: "effort", values: ["low", "medium", "high", "xhigh", "max", "ultrathink"], default: "medium" };
+  /** One Claude provider; `options` false lists the models bare, as a caller that trims the output would. */
+  const claude = (models: string[], options: boolean, extra: Record<string, unknown> = {}) => ({
+    inheritedProviderInstanceId: "claudeAgent",
+    inheritedModel: "claude-opus-9-2",
+    providers: [
+      {
+        providerInstanceId: "claudeAgent",
+        driverKind: "claudeAgent",
+        models: models.map((id) => (options ? { id, label: id, options: [EFFORT] } : { id })),
+        canRunChildTask: true,
+        ...extra,
+      },
+    ],
+  });
+  const plan = (capabilities: unknown) =>
+    recommendModel({ task: "x", taskType: "plan", capabilities }, policy, new NoneUsageSource());
+  const model = (caps: ReturnType<typeof mergeCapabilities>, id: string) =>
+    caps.providers[0]!.models.find((m) => m.id === id)!;
+
+  it("takes the options of a model both outputs list from the later one", async () => {
+    const bare = claude(["claude-opus-9-2", "claude-fable-8-3"], false);
+    const search = claude(["claude-fable-8-3", "claude-fable-8-2"], true);
+    const before = (await plan(bare)).candidates.find((c) => c.model === "claude-fable-8-3")!;
+    expect(before.reason).toMatch(/model has no effort option/);
+
+    const merged = mergeCapabilities([parseCapabilities(bare), parseCapabilities(search)]);
+    expect(merged.providers[0]!.models.map((m) => m.id)).toEqual([
+      "claude-opus-9-2",
+      "claude-fable-8-3",
+      "claude-fable-8-2",
+    ]);
+    expect(model(merged, "claude-fable-8-3")).toEqual({
+      id: "claude-fable-8-3",
+      label: "claude-fable-8-3",
+      options: [EFFORT],
+    });
+    expect(model(merged, "claude-opus-9-2").options).toBeUndefined();
+    const after = (await plan([bare, search])).candidates.find((c) => c.model === "claude-fable-8-3")!;
+    expect(after.options).toEqual([{ id: "effort", value: "high" }]);
+    expect(after.reason).not.toMatch(/no effort option/);
+  });
+
+  it("keeps the options it knows when a later output lists the model without them", () => {
+    const merged = mergeCapabilities([
+      parseCapabilities(claude(["claude-fable-8-3"], true)),
+      parseCapabilities(claude(["claude-fable-8-3"], false)),
+    ]);
+    expect(model(merged, "claude-fable-8-3").options).toEqual([EFFORT]);
+    // Also for a caller of the library whose object carries the key with no value.
+    const unset = parseCapabilities(claude(["claude-fable-8-3"], false));
+    unset.providers[0]!.models[0]!.options = undefined;
+    const kept = mergeCapabilities([parseCapabilities(claude(["claude-fable-8-3"], true)), unset]);
+    expect(model(kept, "claude-fable-8-3").options).toEqual([EFFORT]);
+    // An explicit empty list says the model has none now.
+    const none = claude(["claude-fable-8-3"], false);
+    Object.assign(none.providers[0]!.models[0]!, { options: [] });
+    const cleared = mergeCapabilities([parseCapabilities(claude(["claude-fable-8-3"], true)), parseCapabilities(none)]);
+    expect(model(cleared, "claude-fable-8-3").options).toEqual([]);
+  });
+
+  it("takes the orchestrator from the latest output that names one", async () => {
+    const mine = { ...claude(["claude-fable-8-3"], true), inheritedModel: "claude-fable-8-3", inheritedOptions: [] };
+    const merged = mergeCapabilities([
+      parseCapabilities(claude(["claude-opus-9-2", "claude-fable-8-3"], true)),
+      parseCapabilities(mine),
+      // A bare providers array names no orchestrator.
+      parseCapabilities(claude(["claude-fable-8-3"], true).providers),
+    ]);
+    expect(merged).toMatchObject({
+      inheritedProviderInstanceId: "claudeAgent",
+      inheritedModel: "claude-fable-8-3",
+      inheritedOptions: [],
+    });
+    const r = await plan([claude(["claude-opus-9-2", "claude-fable-8-3"], true), mine]);
+    expect(Object.fromEntries(r.candidates.map((c) => [c.model, c.sameAsOrchestrator]))).toEqual({
+      "claude-opus-9-2": false,
+      "claude-fable-8-3": true,
+    });
+  });
+
+  it("lets a provider that can run child tasks again be recommended again", async () => {
+    const off = claude(["claude-opus-9-2"], true, {
+      canRunChildTask: false,
+      canRunCrossProviderChildTask: false,
+      constraints: ["Provider is not authenticated."],
+    });
+    const on = claude(["claude-fable-8-3"], true, { canRunCrossProviderChildTask: true, constraints: [] });
+    await expect(plan(off)).rejects.toThrow(/No provider instance can run a child task/);
+    const merged = mergeCapabilities([parseCapabilities(off), parseCapabilities(on)]);
+    expect(merged.providers[0]).toMatchObject({
+      canRunChildTask: true,
+      canRunCrossProviderChildTask: true,
+      constraints: [],
+    });
+    const r = await plan([off, on]);
+    expect(ids(r)).toEqual(["claudeAgent/claude-opus-9-2", "claudeAgent/claude-fable-8-3"]);
+    expect(r.skipped).toEqual([]);
+  });
+
+  it("keeps what the last search said when a merged list is merged again", async () => {
+    // [full, search] passed with mergeCapabilities: true into capabilities the server already keeps.
+    const list = mergeCapabilities([driverFixture("mixed"), driverFixture("search-mixed-cursor-opus")]);
+    const again = mergeCapabilities([driverFixture("mixed"), list]);
+    const cursor = again.providers.find((p) => p.providerInstanceId === "cursor")!;
+    expect(cursor).toMatchObject({ omittedModels: 38, mergedOutputs: 3 });
+    expect(cursor.lastOutput).toEqual({
+      models: ["claude-opus-9-2", "claude-opus-9-1", "claude-opus-8-7"],
+      omittedModels: 0,
+    });
+    expect(warned(await rec(again))).toEqual(["opencode", "pi"]);
+  });
+});

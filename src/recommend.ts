@@ -396,7 +396,14 @@ export async function recommendModel(
 
   const ids = providers.map((p) => p.providerInstanceId);
   const usage = await usageSource.getUsage(ids);
-  for (const u of input.usage ?? []) usage.set(u.providerInstanceId, u);
+  // Usage passed in the call replaces the source's for that provider. A provider may come in several
+  // entries (one per window): their windows add up, or the last entry would hide a busy window before it.
+  const fromCall = new Map<string, ProviderUsage>();
+  for (const u of input.usage ?? []) {
+    const earlier = fromCall.get(u.providerInstanceId);
+    fromCall.set(u.providerInstanceId, earlier ? { ...u, windows: [...earlier.windows, ...u.windows] } : u);
+  }
+  for (const [id, u] of fromCall) usage.set(id, u);
 
   const ctx: Ctx = {
     providers,

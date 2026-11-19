@@ -41,6 +41,11 @@ describe("delegation log", () => {
     });
     expect(() => logOutcome(path, { delegationId: "d_nope", outcome: "success" })).toThrow(/Unknown delegationId/);
     expect(() => logOutcome(path, { outcome: "success" })).toThrow(/needs delegationId/);
+    // An empty model is no model: the stats could not count that outcome.
+    expect(() =>
+      logOutcome(path, { taskType: "code", providerInstanceId: "codex", model: "", outcome: "success" }),
+    ).toThrow(/needs delegationId/);
+    expect(readLog(path)).toHaveLength(1);
   });
 
   it("summarises by task type and model; the last outcome wins", () => {

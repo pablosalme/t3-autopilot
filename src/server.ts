@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { isOutputList, mergeCapabilities, parseCapabilities, SelectedOptionSchema } from "./capabilities.js";
+import { mergeCapabilities, parseCapabilitiesInput, SelectedOptionSchema } from "./capabilities.js";
 import {
   type CapabilitiesEntry,
   formatAge,
@@ -73,7 +73,18 @@ export function createServer(opts: ServerOptions = {}): McpServer {
 
   // Last capabilities received, so the orchestrator does not resend ~10 KB on every call. Also saved in
   // capabilities-cache.json, so a restart between turns does not lose them (for capabilitiesCacheTtlHours).
-  let cached: (CapabilitiesEntry & { fromDisk: boolean }) | undefined;
+  // `savedBy`: for a copy read from disk, the orchestrator it was saved for ("claudeAgent / claude-opus-9-2").
+  let cached: (CapabilitiesEntry & { fromDisk: boolean; savedBy?: string }) | undefined;
+
+  // recommend_model calls run one at a time, in the order they arrive. An orchestrator that delegates several
+  // children sends its calls together, the first one with the capabilities: handled at once, the others would
+  // read the kept capabilities before the first call stores them, and then store their older copy over them.
+  let lastCall: Promise<unknown> = Promise.resolve();
+  const inTurn = <T>(run: () => Promise<T>): Promise<T> => {
+    const result = lastCall.then(run);
+    lastCall = result.catch(() => undefined);
+    return result;
+  };
 
   const requireTaskType = (policy: Policy, taskType: string | undefined) => {
     if (taskType !== undefined && !Object.hasOwn(policy.taskTypes, taskType)) {
@@ -123,87 +134,91 @@ export function createServer(opts: ServerOptions = {}): McpServer {
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async (args) => {
-      try {
-        const { policy } = load();
-        const usageSource = opts.usageSource ?? createUsageSource(policy);
-        const at = now();
-        const ttl = policy.capabilitiesCacheTtlHours;
-        // The kept capabilities: in memory, else the saved copy if it is younger than the TTL.
-        const kept = () => {
-          if (cached) return cached;
-          const saved = loadCapabilitiesCache(cachePath(), ttl, at);
-          return saved && { ...saved, fromDisk: true };
-        };
-        let entry: NonNullable<typeof cached>;
-        let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
-        let keep = true;
-        const notes: string[] = [];
-        if (args.capabilities !== undefined) {
-          const given = parseCapabilities(args.capabilities);
-          // How many outputs were passed as a list ([full, search, ...]); 0 for a single output.
-          const listed = isOutputList(args.capabilities) ? args.capabilities.length : 0;
-          const base = args.mergeCapabilities ? kept() : undefined;
-          if (base) {
-            const capabilities = mergeCapabilities([base.capabilities, given]);
-            entry = { ...base, capabilities, merged: true };
-            capabilitiesFrom = "merged";
+    (args) =>
+      inTurn(async () => {
+        try {
+          const { policy } = load();
+          const usageSource = opts.usageSource ?? createUsageSource(policy);
+          const at = now();
+          const ttl = policy.capabilitiesCacheTtlHours;
+          // The kept capabilities: in memory, else the saved copy if it is younger than the TTL.
+          const kept = () => {
+            if (cached) return cached;
+            const saved = loadCapabilitiesCache(cachePath(), ttl, at);
+            if (!saved) return undefined;
+            const { inheritedProviderInstanceId: provider, inheritedModel: model } = saved.capabilities;
+            return {
+              ...saved,
+              fromDisk: true,
+              ...(provider ? { savedBy: `${provider}${model ? ` / ${model}` : ""}` } : {}),
+            };
+          };
+          let entry: NonNullable<typeof cached>;
+          let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
+          let keep = true;
+          const notes: string[] = [];
+          if (args.capabilities !== undefined) {
+            // `listed`: how many outputs were passed as a list ([full, search, ...]); 0 for a single output.
+            const { capabilities: given, outputs: listed } = parseCapabilitiesInput(args.capabilities);
+            const base = args.mergeCapabilities ? kept() : undefined;
+            if (base) {
+              const capabilities = mergeCapabilities([base.capabilities, given]);
+              entry = { ...base, capabilities, merged: true };
+              capabilitiesFrom = "merged";
+            } else {
+              entry = { capabilities: given, receivedAt: at.toISOString(), merged: listed > 1, fromDisk: false };
+              capabilitiesFrom = "call";
+              // A lone output passed for merging is most likely a search: not a catalog to keep.
+              if (args.mergeCapabilities && listed === 0) {
+                keep = false;
+                notes.push(NOTHING_TO_MERGE);
+              }
+            }
           } else {
-            entry = { capabilities: given, receivedAt: at.toISOString(), merged: listed > 1, fromDisk: false };
-            capabilitiesFrom = "call";
-            // A lone output passed for merging is most likely a search: not a catalog to keep.
-            if (args.mergeCapabilities && listed === 0) {
-              keep = false;
-              notes.push(NOTHING_TO_MERGE);
-            }
+            const base = kept();
+            if (!base) throw new Error(NO_CAPABILITIES);
+            entry = base;
+            capabilitiesFrom = base.fromDisk ? "disk-cache" : "cache";
           }
-        } else {
-          const base = kept();
-          if (!base) throw new Error(NO_CAPABILITIES);
-          entry = base;
-          capabilitiesFrom = base.fromDisk ? "disk-cache" : "cache";
-        }
-        const age = at.getTime() - Date.parse(entry.receivedAt);
-        if (entry.fromDisk) {
-          const caps = entry.capabilities;
-          const who = caps.inheritedProviderInstanceId
-            ? ` by an orchestrator on ${caps.inheritedProviderInstanceId}${caps.inheritedModel ? ` / ${caps.inheritedModel}` : ""}`
-            : "";
-          notes.push(
-            `Capabilities from the disk cache (the server restarted): received ${formatAge(age)} ago${who}. ` +
-              "If that is not you, or a child cannot start or its model id is rejected, call orchestrator_capabilities " +
-              "and pass its full output as capabilities.",
+          const age = at.getTime() - Date.parse(entry.receivedAt);
+          if (entry.fromDisk) {
+            // Who saved the copy, not who is asking: a merged output brings the caller's own provider and model.
+            const who = entry.savedBy ? ` by an orchestrator on ${entry.savedBy}` : "";
+            notes.push(
+              `Capabilities from the disk cache (the server restarted): received ${formatAge(age)} ago${who}. ` +
+                "If that is not you, or a child cannot start or its model id is rejected, call orchestrator_capabilities " +
+                "and pass its full output as capabilities.",
+            );
+          }
+          const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
+          const unavailable = activeMarks(marksPath(), at);
+          const result = await recommendModel(
+            { ...rest, capabilities: entry.capabilities, unavailable },
+            policy,
+            usageSource,
           );
-        }
-        const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
-        const unavailable = activeMarks(marksPath(), at);
-        const result = await recommendModel(
-          { ...rest, capabilities: entry.capabilities, unavailable },
-          policy,
-          usageSource,
-        );
-        if (keep) {
-          const changed = cached !== entry;
-          cached = entry;
-          if (changed && ttl > 0 && capabilitiesFrom !== "disk-cache") {
-            try {
-              const { fromDisk: _fromDisk, ...saved } = entry;
-              saveCapabilitiesCache(cachePath(), saved);
-            } catch (e) {
-              notes.push(`Could not save the capabilities cache: ${e instanceof Error ? e.message : String(e)}`);
+          if (keep) {
+            const changed = cached !== entry;
+            cached = entry;
+            if (changed && ttl > 0 && capabilitiesFrom !== "disk-cache") {
+              try {
+                const { fromDisk: _fromDisk, savedBy: _savedBy, ...saved } = entry;
+                saveCapabilitiesCache(cachePath(), saved);
+              } catch (e) {
+                notes.push(`Could not save the capabilities cache: ${e instanceof Error ? e.message : String(e)}`);
+              }
             }
           }
+          return ok({
+            ...result,
+            warnings: [...notes, ...result.warnings],
+            capabilitiesFrom,
+            ...(capabilitiesFrom === "call" ? {} : { capabilitiesAgeMinutes: Math.max(0, Math.floor(age / 60_000)) }),
+          });
+        } catch (e) {
+          return fail(e);
         }
-        return ok({
-          ...result,
-          warnings: [...notes, ...result.warnings],
-          capabilitiesFrom,
-          ...(capabilitiesFrom === "call" ? {} : { capabilitiesAgeMinutes: Math.max(0, Math.floor(age / 60_000)) }),
-        });
-      } catch (e) {
-        return fail(e);
-      }
-    },
+      }),
   );
 
   server.registerTool(
@@ -215,8 +230,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         "log_outcome also works without it.",
       inputSchema: {
         taskType: z.string(),
-        providerInstanceId: z.string(),
-        model: z.string(),
+        providerInstanceId: z.string().min(1),
+        model: z.string().min(1),
         options: z.array(SelectedOptionSchema).optional(),
         recommendedRank: z
           .number()
@@ -251,8 +266,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
       inputSchema: {
         delegationId: z.string().optional(),
         taskType: z.string().optional(),
-        providerInstanceId: z.string().optional(),
-        model: z.string().optional(),
+        providerInstanceId: z.string().min(1).optional(),
+        model: z.string().min(1).optional(),
         outcome: z.enum(OUTCOMES),
         note: z.string().optional().describe("Short note (kept to 200 characters). Avoid secrets."),
       },

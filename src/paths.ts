@@ -9,10 +9,18 @@ export const DATA_FILES = {
   unavailable: "unavailable.json",
 } as const;
 
-/** User data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot. */
+/**
+ * User data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot. A leading `~` is
+ * expanded: the `env` of an MCP server config is passed as written, with no
+ * shell, and `~/x` would otherwise be a directory named `~` under whatever
+ * directory the agent CLI started the server in.
+ */
 export function autopilotHome(): string {
   const fromEnv = process.env.T3_AUTOPILOT_HOME;
-  return fromEnv && fromEnv.trim() !== "" ? fromEnv : join(homedir(), ".t3-autopilot");
+  if (!fromEnv || fromEnv.trim() === "") return join(homedir(), ".t3-autopilot");
+  if (fromEnv === "~") return homedir();
+  if (fromEnv.startsWith("~/") || fromEnv.startsWith("~\\")) return join(homedir(), fromEnv.slice(2));
+  return fromEnv;
 }
 
 export function userPolicyPath(): string {
