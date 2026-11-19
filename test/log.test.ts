@@ -66,7 +66,9 @@ describe("review regressions", () => {
     expect(Object.keys(s.byTaskType).sort()).toEqual(["__proto__", "constructor", "toString"]);
     expect(Object.hasOwn(s.byTaskType, "__proto__")).toBe(true);
     expect(s.byTaskType.constructor).toMatchObject({ success: 1, delegations: 1 });
-    expect(JSON.parse(JSON.stringify(s)).byTaskType.__proto__.success).toBe(1);
+    // A "__proto__" task type survives JSON as an own key.
+    const parsed = JSON.parse(JSON.stringify(s)) as { byTaskType: object };
+    expect(Object.getOwnPropertyDescriptor(parsed.byTaskType, "__proto__")?.value.success).toBe(1);
   });
 
   it("truncates notes like summaries (#12)", () => {
@@ -100,7 +102,9 @@ describe("concurrent writers", () => {
     );
     const lines = readFileSync(path, "utf8").split("\n").filter(Boolean);
     expect(lines).toHaveLength(workers * perWorker * 2);
-    expect(() => lines.forEach((l) => JSON.parse(l))).not.toThrow();
+    expect(() => {
+      for (const l of lines) JSON.parse(l);
+    }).not.toThrow();
     const s = computeStats(readLog(path));
     expect(s.total).toMatchObject({ delegations: workers * perWorker, success: workers * perWorker / 2, corrected: workers * perWorker / 2, pending: 0 });
     expect(s.followedFirstRecommendation).toEqual({ followed: workers * perWorker, logged: workers * perWorker });

@@ -179,7 +179,10 @@ export function computeStats(records: LogRecord[], opts: { since?: Date } = {}):
   };
   const get = <T>(m: Map<string, T>, k: string, make: () => T): T => {
     let v = m.get(k);
-    if (v === undefined) m.set(k, (v = make()));
+    if (v === undefined) {
+      v = make();
+      m.set(k, v);
+    }
     return v;
   };
   for (const row of rows.values()) {

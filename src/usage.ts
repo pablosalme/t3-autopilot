@@ -53,7 +53,12 @@ export class StaticUsageSource implements UsageSource {
     this.data = new Map(entries.map((e) => [e.providerInstanceId, e]));
   }
   async getUsage(ids: readonly string[]): Promise<Map<string, ProviderUsage>> {
-    return new Map(ids.flatMap((id) => (this.data.has(id) ? [[id, this.data.get(id)!] as const] : [])));
+    return new Map(
+      ids.flatMap((id) => {
+        const usage = this.data.get(id);
+        return usage ? [[id, usage] as const] : [];
+      }),
+    );
   }
 }
 

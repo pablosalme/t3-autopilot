@@ -110,10 +110,6 @@ function eligibleProviders(providers: Provider[], policy: Policy, inherited: str
   });
 }
 
-function ruleTarget(rule: CandidateRule): string {
-  return rule.instance ?? rule.provider ?? "?";
-}
-
 function instancesFor(rule: CandidateRule, providers: Provider[]): Provider[] {
   if (rule.instance !== undefined) return providers.filter((p) => p.providerInstanceId === rule.instance);
   if (rule.provider === "*") return providers;
@@ -145,7 +141,7 @@ function push(ctx: Ctx, provider: Provider, model: Model, effort: Effort | undef
       providerInstanceId: provider.providerInstanceId,
       model: model.id,
       options: built.options,
-      reason: `${why}${effortText}` + (notes.length ? ` (${notes.join("; ")})` : ""),
+      reason: `${why}${effortText}${notes.length ? ` (${notes.join("; ")})` : ""}`,
       source,
       sameAsOrchestrator: provider.providerInstanceId === ctx.inherited && model.id === ctx.inheritedModel,
     },
@@ -193,19 +189,21 @@ function scoreRules(rules: CandidateRule[], label: string, source: CandidateSour
 function scoreGeneric(ctx: Ctx, effort: Effort | undefined): void {
   for (const provider of ctx.providers) {
     const driver = driverKindOf(provider);
-    const defaults = [...(Object.hasOwn(DRIVER_DEFAULT_MODELS, driver) ? DRIVER_DEFAULT_MODELS[driver]! : []), ...GENERIC_DEFAULT_IDS];
-    let model: Model | undefined;
-    let why: string;
+    const driverDefaults = (Object.hasOwn(DRIVER_DEFAULT_MODELS, driver) ? DRIVER_DEFAULT_MODELS[driver] : undefined) ?? [];
+    const defaults = [...driverDefaults, ...GENERIC_DEFAULT_IDS];
     const listedDefault = defaults.map((id) => provider.models.find((m) => m.id === id)).find((m) => m !== undefined);
+    const firstListed = provider.models[0];
+    let model: Model;
+    let why: string;
     if (listedDefault) {
       model = listedDefault;
       why = `the provider's default model`;
-    } else if (provider.models.length > 0) {
-      model = provider.models[0]!;
+    } else if (firstListed) {
+      model = firstListed;
       why = "the first model T3 lists for it";
-    } else if (Object.hasOwn(DRIVER_DEFAULT_MODELS, driver)) {
+    } else if (driverDefaults[0] !== undefined) {
       // T3 accepts any slug on a provider that lists no models.
-      model = { id: DRIVER_DEFAULT_MODELS[driver]![0]! };
+      model = { id: driverDefaults[0] };
       why = "the driver's default model (the provider lists no models)";
     } else {
       ctx.skipped.push(`generic: ${provider.providerInstanceId} lists no models and its driver "${driver}" has no known default`);
@@ -274,7 +272,8 @@ export async function recommendModel(input: RecommendInput, policy: Policy, usag
     input = { ...input, taskType: c.taskType };
   }
   const taskType = input.taskType as string;
-  const typeDef = policy.taskTypes[taskType]!;
+  const typeDef = policy.taskTypes[taskType];
+  if (!typeDef) throw new Error(`Unknown taskType "${taskType}". Known types: ${Object.keys(policy.taskTypes).join(", ")}`);
 
   if (caps.providers.length === 0) {
     throw new Error(
