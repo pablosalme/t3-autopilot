@@ -48,16 +48,17 @@ const required = [
   "dist/cli.js",
   "dist/index.js",
   "dist/index.d.ts",
-  // Every file listed in "files" that exists in the repository (a translated README, for example).
+  // Every file listed in "files" that exists in the repository.
   ...pkg.files.filter((f) => existsSync(join(root, f)) && !statSync(join(root, f)).isDirectory()),
 ];
 for (const f of new Set(required)) if (!files.includes(f)) fail(`the package lacks ${f}`);
-// Nothing else: no sources, tests, coverage or source maps (they would point at local paths).
+// Nothing else: no sources, tests, coverage or source maps (they would point at local paths). And one README
+// only: npm packs every README.* at the root whatever "files" says, and takes the first one its directory
+// listing returns as the package's front page, so a translation next to README.md (README.es.md) could
+// replace it on npmjs.com. Translations live in docs/.
 const unexpected = files.filter(
   (f) =>
-    !/^(?:LICENSE|README(?:\.[a-z]{2})?\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(
-      f,
-    ),
+    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(f),
 );
 if (unexpected.length) fail(`the package has unexpected files: ${unexpected.join(", ")}`);
 // The bin must start with a shebang, or the installed command would not run on Unix.
