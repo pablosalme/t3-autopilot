@@ -47,6 +47,39 @@ describe("recommend_model calls sent at once", () => {
     }
   });
 
+  it("capabilities brought by a call that then fails are kept for the calls sent with it", async () => {
+    const home = tempDir();
+    const call = await serverOn(home);
+    const [bad, second, third] = await Promise.all([
+      call({ capabilities: driverFixtureRaw("mixed"), taskType: "no-such-type" }),
+      call(),
+      call(),
+    ]);
+    expect((bad as { isError?: boolean }).isError).toBe(true);
+    expect(resultText(bad)).toMatch(/^Unknown taskType "no-such-type"/);
+    expect(okData(second).capabilitiesFrom).toBe("cache");
+    expect(okData(third).capabilitiesFrom).toBe("cache");
+    expect(ids(okData(second))).toEqual(ids(okData(await call({ capabilities: driverFixtureRaw("mixed") }))));
+
+    // They were saved too: a server restarted after the failed call finds them.
+    const other = tempDir();
+    const failing = await (await serverOn(other))({
+      capabilities: driverFixtureRaw("mixed"),
+      taskType: "no-such-type",
+    });
+    expect((failing as { isError?: boolean }).isError).toBe(true);
+    expect(okData(await (await serverOn(other))()).capabilitiesFrom).toBe("disk-cache");
+  });
+
+  it("a search merged by a call that then fails is kept as well", async () => {
+    const call = await serverOn(tempDir());
+    okData(await call({ capabilities: driverFixtureRaw("mixed") }));
+    const search = { capabilities: driverFixtureRaw("search-mixed-cursor-opus"), mergeCapabilities: true };
+    const [bad, next] = await Promise.all([call({ ...search, taskType: "no-such-type" }), call()]);
+    expect((bad as { isError?: boolean }).isError).toBe(true);
+    expect(ids(okData(next))).toContain("cursor/claude-opus-9-2");
+  });
+
   it("a failed call does not hold back the ones behind it", async () => {
     const call = await serverOn(tempDir());
     const [bad, good, cached] = await Promise.all([

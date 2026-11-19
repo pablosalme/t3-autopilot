@@ -191,13 +191,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
                 "and pass its full output as capabilities.",
             );
           }
-          const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
-          const unavailable = activeMarks(marksPath(), at);
-          const result = await recommendModel(
-            { ...rest, capabilities: entry.capabilities, unavailable },
-            policy,
-            usageSource,
-          );
+          // Kept before the recommendation: if that fails (an unknown taskType, say), the capabilities this call
+          // brought are still good, and the calls sent with it, which omit them, must find them.
           if (keep) {
             const changed = cached !== entry;
             cached = entry;
@@ -210,6 +205,13 @@ export function createServer(opts: ServerOptions = {}): McpServer {
               }
             }
           }
+          const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
+          const unavailable = activeMarks(marksPath(), at);
+          const result = await recommendModel(
+            { ...rest, capabilities: entry.capabilities, unavailable },
+            policy,
+            usageSource,
+          );
           return ok({
             ...result,
             warnings: [...notes, ...result.warnings],
