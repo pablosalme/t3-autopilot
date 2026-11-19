@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { isOutputList, mergeCapabilities, parseCapabilities, SelectedOptionSchema } from "./capabilities.js";
+import { mergeCapabilities, parseCapabilitiesInput, SelectedOptionSchema } from "./capabilities.js";
 import {
   type CapabilitiesEntry,
   formatAge,
@@ -158,9 +158,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           let keep = true;
           const notes: string[] = [];
           if (args.capabilities !== undefined) {
-            const given = parseCapabilities(args.capabilities);
-            // How many outputs were passed as a list ([full, search, ...]); 0 for a single output.
-            const listed = isOutputList(args.capabilities) ? args.capabilities.length : 0;
+            // `listed`: how many outputs were passed as a list ([full, search, ...]); 0 for a single output.
+            const { capabilities: given, outputs: listed } = parseCapabilitiesInput(args.capabilities);
             const base = args.mergeCapabilities ? kept() : undefined;
             if (base) {
               const capabilities = mergeCapabilities([base.capabilities, given]);

@@ -109,6 +109,15 @@ export function isOutputList(value: unknown): value is unknown[] {
  * plus `search` results), which are merged with `mergeCapabilities`.
  */
 export function parseCapabilities(input: unknown): Capabilities {
+  return parseCapabilitiesInput(input).capabilities;
+}
+
+/**
+ * {@link parseCapabilities}, plus how many outputs the input listed
+ * (`[full, search, ...]`, also when the list arrives as one JSON string);
+ * 0 for a single output.
+ */
+export function parseCapabilitiesInput(input: unknown): { capabilities: Capabilities; outputs: number } {
   let value = input;
   if (typeof value === "string") {
     try {
@@ -120,9 +129,10 @@ export function parseCapabilities(input: unknown): Capabilities {
     }
   }
   if (isOutputList(value)) {
-    return mergeCapabilities(value.map((v, i) => parseOne(v, `capabilities[${i}]`)));
+    const capabilities = mergeCapabilities(value.map((v, i) => parseOne(v, `capabilities[${i}]`)));
+    return { capabilities, outputs: value.length };
   }
-  return parseOne(value, "capabilities");
+  return { capabilities: parseOne(value, "capabilities"), outputs: 0 };
 }
 
 /**

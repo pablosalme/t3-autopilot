@@ -154,6 +154,13 @@ describe("capabilities saved on disk across a server restart", () => {
       expect.stringMatching(/^mergeCapabilities/),
     );
     expect(okData(await strings({})).capabilitiesFrom).toBe("cache");
+    // And the whole list as one JSON string.
+    const whole = tempDir();
+    const one = await serverAt(whole, T0);
+    const res = okData(await one({ capabilities: JSON.stringify(caps), mergeCapabilities: true }));
+    expect(res.warnings).not.toContainEqual(expect.stringMatching(/^mergeCapabilities/));
+    expect(okData(await one({})).capabilitiesFrom).toBe("cache");
+    expect(saved(whole)).toMatchObject({ merged: true });
   });
 
   it("writes atomically, ignores a corrupt copy and reports a failed save without failing", async () => {
