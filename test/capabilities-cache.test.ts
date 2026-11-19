@@ -104,6 +104,37 @@ describe("capabilities saved on disk across a server restart", () => {
     expect(resultText(await (await serverAt(home, hours(12.5)))({}))).toMatch(/^No capabilities yet/);
   });
 
+  it("merges another orchestrator's search as its own, and still says who saved the copy", async () => {
+    const home = tempDir();
+    // Saved by an orchestrator on codex / gpt-9-astra.
+    okData(await (await serverAt(home, T0))({ capabilities: driverFixtureRaw("mixed") }));
+    const call = await serverAt(home, hours(1));
+    const mine = {
+      ...driverFixtureRaw("search-mixed-cursor-opus"),
+      inheritedProviderInstanceId: "cursor",
+      inheritedModel: "claude-opus-9-2",
+    };
+    const merged = okData(await call({ capabilities: mine, mergeCapabilities: true }));
+    expect(merged.warnings[0]).toMatch(
+      /received 1 h ago by an orchestrator on codex \/ gpt-9-astra\. If that is not you/,
+    );
+    // The caller's own provider and model decide sameAsOrchestrator, not the saved copy's.
+    expect(merged.candidates.map((c) => [`${c.providerInstanceId}/${c.model}`, c.sameAsOrchestrator])).toEqual([
+      ["codex/gpt-9.1-sol", false],
+      ["cursor/claude-opus-9-2", true],
+      ["opencode/openrouter/anthropic/claude-opus-9.1", false],
+    ]);
+    const next = okData(await call({}));
+    expect(next.capabilitiesFrom).toBe("disk-cache");
+    expect(next.warnings[0]).toMatch(/by an orchestrator on codex \/ gpt-9-astra\./);
+    expect(next.candidates[1]).toMatchObject({ model: "claude-opus-9-2", sameAsOrchestrator: true });
+    expect(saved(home).capabilities).toMatchObject({
+      inheritedProviderInstanceId: "cursor",
+      inheritedModel: "claude-opus-9-2",
+    });
+    expect(Object.keys(saved(home)).sort()).toEqual(["capabilities", "merged", "receivedAt", "version"]);
+  });
+
   it("saves a list of outputs as a merge", async () => {
     const home = tempDir();
     const caps = [driverFixtureRaw("mixed"), driverFixtureRaw("search-mixed-cursor-opus")];

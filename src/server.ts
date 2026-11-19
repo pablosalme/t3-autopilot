@@ -73,7 +73,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
 
   // Last capabilities received, so the orchestrator does not resend ~10 KB on every call. Also saved in
   // capabilities-cache.json, so a restart between turns does not lose them (for capabilitiesCacheTtlHours).
-  let cached: (CapabilitiesEntry & { fromDisk: boolean }) | undefined;
+  // `savedBy`: for a copy read from disk, the orchestrator it was saved for ("claudeAgent / claude-opus-9-2").
+  let cached: (CapabilitiesEntry & { fromDisk: boolean; savedBy?: string }) | undefined;
 
   // recommend_model calls run one at a time, in the order they arrive. An orchestrator that delegates several
   // children sends its calls together, the first one with the capabilities: handled at once, the others would
@@ -144,7 +145,13 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const kept = () => {
             if (cached) return cached;
             const saved = loadCapabilitiesCache(cachePath(), ttl, at);
-            return saved && { ...saved, fromDisk: true };
+            if (!saved) return undefined;
+            const { inheritedProviderInstanceId: provider, inheritedModel: model } = saved.capabilities;
+            return {
+              ...saved,
+              fromDisk: true,
+              ...(provider ? { savedBy: `${provider}${model ? ` / ${model}` : ""}` } : {}),
+            };
           };
           let entry: NonNullable<typeof cached>;
           let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
@@ -176,10 +183,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           }
           const age = at.getTime() - Date.parse(entry.receivedAt);
           if (entry.fromDisk) {
-            const caps = entry.capabilities;
-            const who = caps.inheritedProviderInstanceId
-              ? ` by an orchestrator on ${caps.inheritedProviderInstanceId}${caps.inheritedModel ? ` / ${caps.inheritedModel}` : ""}`
-              : "";
+            // Who saved the copy, not who is asking: a merged output brings the caller's own provider and model.
+            const who = entry.savedBy ? ` by an orchestrator on ${entry.savedBy}` : "";
             notes.push(
               `Capabilities from the disk cache (the server restarted): received ${formatAge(age)} ago${who}. ` +
                 "If that is not you, or a child cannot start or its model id is rejected, call orchestrator_capabilities " +
@@ -198,7 +203,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
             cached = entry;
             if (changed && ttl > 0 && capabilitiesFrom !== "disk-cache") {
               try {
-                const { fromDisk: _fromDisk, ...saved } = entry;
+                const { fromDisk: _fromDisk, savedBy: _savedBy, ...saved } = entry;
                 saveCapabilitiesCache(cachePath(), saved);
               } catch (e) {
                 notes.push(`Could not save the capabilities cache: ${e instanceof Error ? e.message : String(e)}`);

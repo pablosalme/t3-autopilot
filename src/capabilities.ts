@@ -148,17 +148,23 @@ function listsModels(provider: Provider): boolean {
  * stays until a search that lists its models is merged. The last output that
  * lists models for a provider is recorded in `lastOutput`: whether the list is
  * still truncated is decided by that output alone.
- * Thread-level fields (inherited provider, model, options) come from the first
- * output that has them.
+ * Thread-level fields (inherited provider, model, options) come from the last
+ * output that names the orchestrator's provider: they decide
+ * `sameAsOrchestrator` and the independent-review rule, so they must be the
+ * caller's own and not those of an older output.
  */
 export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
   if (list.length === 0) throw new Error("no capabilities to merge");
   const [first, ...rest] = list as [Capabilities, ...Capabilities[]];
   const out: Capabilities = structuredClone(first);
   for (const next of rest) {
-    out.inheritedProviderInstanceId ??= next.inheritedProviderInstanceId;
-    out.inheritedModel ??= next.inheritedModel;
-    out.inheritedOptions ??= next.inheritedOptions;
+    // The orchestrator that asked: the latest output that names one, as a unit (never one's provider with
+    // another's model). An earlier output may be another orchestrator's, read back from the disk cache.
+    if (next.inheritedProviderInstanceId != null) {
+      out.inheritedProviderInstanceId = next.inheritedProviderInstanceId;
+      out.inheritedModel = next.inheritedModel;
+      out.inheritedOptions = structuredClone(next.inheritedOptions);
+    }
     for (const p of next.providers) {
       const existing = out.providers.find((q) => q.providerInstanceId === p.providerInstanceId);
       if (!existing) {

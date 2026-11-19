@@ -283,4 +283,24 @@ describe("merging: the later output is the newer one", () => {
     const cleared = mergeCapabilities([parseCapabilities(claude(["claude-fable-8-3"], true)), parseCapabilities(none)]);
     expect(model(cleared, "claude-fable-8-3").options).toEqual([]);
   });
+
+  it("takes the orchestrator from the latest output that names one", async () => {
+    const mine = { ...claude(["claude-fable-8-3"], true), inheritedModel: "claude-fable-8-3", inheritedOptions: [] };
+    const merged = mergeCapabilities([
+      parseCapabilities(claude(["claude-opus-9-2", "claude-fable-8-3"], true)),
+      parseCapabilities(mine),
+      // A bare providers array names no orchestrator.
+      parseCapabilities(claude(["claude-fable-8-3"], true).providers),
+    ]);
+    expect(merged).toMatchObject({
+      inheritedProviderInstanceId: "claudeAgent",
+      inheritedModel: "claude-fable-8-3",
+      inheritedOptions: [],
+    });
+    const r = await plan([claude(["claude-opus-9-2", "claude-fable-8-3"], true), mine]);
+    expect(Object.fromEntries(r.candidates.map((c) => [c.model, c.sameAsOrchestrator]))).toEqual({
+      "claude-opus-9-2": false,
+      "claude-fable-8-3": true,
+    });
+  });
 });
