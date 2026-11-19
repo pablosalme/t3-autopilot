@@ -203,8 +203,12 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
         existing.omittedModels = Math.max(0, existing.omittedModels - added);
       }
       if (listsModels(p)) {
-        existing.mergedOutputs = (existing.mergedOutputs ?? 1) + 1;
-        existing.lastOutput = { models: p.models.map((m) => m.id), omittedModels: p.omittedModels ?? 0 };
+        // `p` may itself be a merge (a list of outputs merged into the kept capabilities): then its own last
+        // output is the latest one, not its whole merged list with what is left of the first output's count.
+        existing.mergedOutputs = (existing.mergedOutputs ?? 1) + (p.mergedOutputs ?? 1);
+        existing.lastOutput = p.lastOutput
+          ? structuredClone(p.lastOutput)
+          : { models: p.models.map((m) => m.id), omittedModels: p.omittedModels ?? 0 };
       }
       // Every output lists every provider with what it can do at that moment (a search too), so the later
       // one decides both ways: a provider that signed out is unusable, one that was enabled is usable again.

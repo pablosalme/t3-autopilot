@@ -322,4 +322,17 @@ describe("merging: the later output is the newer one", () => {
     expect(ids(r)).toEqual(["claudeAgent/claude-opus-9-2", "claudeAgent/claude-fable-8-3"]);
     expect(r.skipped).toEqual([]);
   });
+
+  it("keeps what the last search said when a merged list is merged again", async () => {
+    // [full, search] passed with mergeCapabilities: true into capabilities the server already keeps.
+    const list = mergeCapabilities([driverFixture("mixed"), driverFixture("search-mixed-cursor-opus")]);
+    const again = mergeCapabilities([driverFixture("mixed"), list]);
+    const cursor = again.providers.find((p) => p.providerInstanceId === "cursor")!;
+    expect(cursor).toMatchObject({ omittedModels: 38, mergedOutputs: 3 });
+    expect(cursor.lastOutput).toEqual({
+      models: ["claude-opus-9-2", "claude-opus-9-1", "claude-opus-8-7"],
+      omittedModels: 0,
+    });
+    expect(warned(await rec(again))).toEqual(["opencode", "pi"]);
+  });
 });
