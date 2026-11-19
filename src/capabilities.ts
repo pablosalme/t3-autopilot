@@ -37,7 +37,10 @@ export const ProviderSchema = z
     canRunChildTask: z.boolean().default(false),
     canRunCrossProviderChildTask: z.boolean().optional(),
     constraints: z.array(z.string()).nullish(),
-    /** Set by t3-autopilot when the provider was completed with a second capabilities output (e.g. a `search`). */
+    /**
+     * Set by t3-autopilot: how many capabilities outputs listed models for this
+     * provider, when more than one did (the full output plus a `search` output).
+     */
     mergedOutputs: z.number().int().optional(),
   })
   .passthrough();
@@ -110,10 +113,23 @@ export function parseCapabilities(input: unknown): Capabilities {
 }
 
 /**
+ * Whether a capabilities output says anything about a provider's models. A
+ * `search` output lists every provider, but the ones the search does not
+ * select come back with no models and no `omittedModels`
+ * (`listCapabilityModels` in T3's OrchestratorMcpService).
+ */
+function listsModels(provider: Provider): boolean {
+  return provider.models.length > 0 || (provider.omittedModels ?? 0) > 0;
+}
+
+/**
  * Merge several capabilities outputs by `providerInstanceId`. The first output
  * that lists a provider gives its eligibility and options; models from later
  * outputs are added when their id is new. `omittedModels` is reduced by the
  * number of models added (an estimate: T3 does not say which ones it omitted).
+ * A later output that lists no model for a provider (a search that did not
+ * select it) leaves that provider as it was, so its omitted-models warning
+ * stays until a search that lists its models is merged.
  * Thread-level fields (inherited provider, model, options) come from the first
  * output that has them.
  */
@@ -142,7 +158,7 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
       if (added > 0 && existing.omittedModels !== undefined) {
         existing.omittedModels = Math.max(0, existing.omittedModels - added);
       }
-      existing.mergedOutputs = (existing.mergedOutputs ?? 1) + 1;
+      if (listsModels(p)) existing.mergedOutputs = (existing.mergedOutputs ?? 1) + 1;
       // A provider that became unusable in a later output is unusable.
       if (!p.canRunChildTask && existing.canRunChildTask) {
         existing.canRunChildTask = false;

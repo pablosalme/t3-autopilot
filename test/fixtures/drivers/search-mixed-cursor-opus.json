@@ -1,0 +1,141 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "codex",
+  "inheritedModel": "gpt-9-astra",
+  "inheritedOptions": [],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "codex",
+      "driverKind": "codex",
+      "displayName": "Codex",
+      "models": [],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "cursor",
+      "driverKind": "cursor",
+      "displayName": "Cursor",
+      "models": [
+        {
+          "id": "claude-opus-9-2",
+          "label": "Claude Opus 9.2",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-9-1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-8-7",
+          "label": "Claude Opus 8.7",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "opencode",
+      "driverKind": "opencode",
+      "displayName": "OpenCode",
+      "models": [],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "kiro",
+      "driverKind": "kiro",
+      "displayName": "Kiro",
+      "models": [],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "pi",
+      "driverKind": "pi",
+      "displayName": "Pi",
+      "models": [],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}

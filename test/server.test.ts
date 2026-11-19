@@ -1,22 +1,7 @@
-import { join } from "node:path";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it } from "vitest";
-import { loadPolicy } from "../src/policy.js";
-import { createServer } from "../src/server.js";
-import { driverFixtureRaw, fixture, tempDir } from "./helpers.js";
+import { connectServer, driverFixtureRaw, fixture } from "./helpers.js";
 
-async function connect() {
-  const dir = tempDir();
-  const server = createServer({
-    loadPolicy: () => loadPolicy({ userPath: join(dir, "policy.yaml") }),
-    logPath: () => join(dir, "log.jsonl"),
-  });
-  const client = new Client({ name: "test", version: "0.0.0" });
-  const [a, b] = InMemoryTransport.createLinkedPair();
-  await Promise.all([server.connect(a), client.connect(b)]);
-  return client;
-}
+const connect = async () => (await connectServer()).client;
 
 describe("MCP server", () => {
   it("lists the four tools", async () => {

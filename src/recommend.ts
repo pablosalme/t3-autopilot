@@ -229,13 +229,17 @@ function rank(scored: Scored[]): Scored[] {
   );
 }
 
-/** Warn about providers whose short list may hide a newer model of a family the policy would use. */
+/**
+ * Warn about providers whose short list may hide a newer model of a family the
+ * policy would use, until a search output that lists models for them is merged.
+ */
 function omittedWarnings(ctx: Ctx, rules: CandidateRule[]): string[] {
   const warnings: string[] = [];
   for (const p of ctx.providers) {
     const omitted = p.omittedModels ?? 0;
     const driver = driverKindOf(p);
-    if (omitted === 0 || FULL_CATALOG_DRIVERS.has(driver) || (p.mergedOutputs ?? 1) > 1) continue;
+    const searched = (p.mergedOutputs ?? 1) > 1;
+    if (omitted === 0 || FULL_CATALOG_DRIVERS.has(driver) || searched) continue;
     const terms = new Set<string>();
     for (const rule of rules) {
       const applies =
