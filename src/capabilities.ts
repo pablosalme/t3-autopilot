@@ -136,12 +136,12 @@ function listsModels(provider: Provider): boolean {
 }
 
 /**
- * Merge several capabilities outputs by `providerInstanceId`. The first output
- * that lists a provider gives its eligibility; models from later outputs are
- * added when their id is new, in T3's order, and a model listed again takes
- * the fields the later output gives for it (its options: an output whose
- * models were listed without them must not hide the ones a later one brings).
- * `omittedModels` is reduced by the
+ * Merge several capabilities outputs by `providerInstanceId`. A later output
+ * is newer, so it decides what both say: whether a provider can run a child
+ * task (and why not), and the fields of a model listed again (its options: an
+ * output whose models were listed without them must not hide the ones a later
+ * one brings). Models from later outputs are added when their id is new, in
+ * T3's order. `omittedModels` is reduced by the
  * number of models added (an estimate: T3 does not say which ones it omitted).
  * A later output that lists no model for a provider (a search that did not
  * select it) leaves that provider as it was, so its omitted-models warning
@@ -206,10 +206,12 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
         existing.mergedOutputs = (existing.mergedOutputs ?? 1) + 1;
         existing.lastOutput = { models: p.models.map((m) => m.id), omittedModels: p.omittedModels ?? 0 };
       }
-      // A provider that became unusable in a later output is unusable.
-      if (!p.canRunChildTask && existing.canRunChildTask) {
-        existing.canRunChildTask = false;
-        existing.constraints = [...(existing.constraints ?? []), ...(p.constraints ?? [])];
+      // Every output lists every provider with what it can do at that moment (a search too), so the later
+      // one decides both ways: a provider that signed out is unusable, one that was enabled is usable again.
+      existing.canRunChildTask = p.canRunChildTask;
+      if (p.constraints != null || p.canRunChildTask) existing.constraints = [...(p.constraints ?? [])];
+      if (p.canRunCrossProviderChildTask !== undefined) {
+        existing.canRunCrossProviderChildTask = p.canRunCrossProviderChildTask;
       }
     }
   }

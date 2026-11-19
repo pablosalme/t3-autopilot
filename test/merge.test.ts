@@ -303,4 +303,23 @@ describe("merging: the later output is the newer one", () => {
       "claude-fable-8-3": true,
     });
   });
+
+  it("lets a provider that can run child tasks again be recommended again", async () => {
+    const off = claude(["claude-opus-9-2"], true, {
+      canRunChildTask: false,
+      canRunCrossProviderChildTask: false,
+      constraints: ["Provider is not authenticated."],
+    });
+    const on = claude(["claude-fable-8-3"], true, { canRunCrossProviderChildTask: true, constraints: [] });
+    await expect(plan(off)).rejects.toThrow(/No provider instance can run a child task/);
+    const merged = mergeCapabilities([parseCapabilities(off), parseCapabilities(on)]);
+    expect(merged.providers[0]).toMatchObject({
+      canRunChildTask: true,
+      canRunCrossProviderChildTask: true,
+      constraints: [],
+    });
+    const r = await plan([off, on]);
+    expect(ids(r)).toEqual(["claudeAgent/claude-opus-9-2", "claudeAgent/claude-fable-8-3"]);
+    expect(r.skipped).toEqual([]);
+  });
 });
