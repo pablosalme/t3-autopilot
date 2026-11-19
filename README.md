@@ -70,11 +70,11 @@ The review goes to another provider than the orchestrator's (Claude's own candid
 ## How it works
 
 ```text
-orchestrator ── orchestrator_capabilities ──────────────────▶ T3 Code
-orchestrator ── recommend_model(task, taskType, capabilities) ▶ t3-autopilot
+orchestrator ── orchestrator_capabilities ─────────────────────▶ T3 Code
+orchestrator ── recommend_model(task, taskType, capabilities) ─▶ t3-autopilot
 orchestrator ◀─ candidates: providerInstanceId, model, options, reason
-orchestrator ── delegate_task(target = first candidate) ─────▶ T3 Code
-orchestrator ── log_delegation, later log_outcome ───────────▶ t3-autopilot (log.jsonl)
+orchestrator ── delegate_task(target = first candidate) ───────▶ T3 Code
+orchestrator ── log_delegation, later log_outcome ─────────────▶ t3-autopilot (log.jsonl)
 ```
 
 1. T3 Code has no plugin or hook for delegation, so t3-autopilot is a separate stdio MCP server added to the CLI of the agent that acts as orchestrator. A short instruction in your `CLAUDE.md` / `AGENTS.md` tells the orchestrator to call it before every child task.
@@ -176,7 +176,7 @@ t3-autopilot works with whatever provider instances you have in T3 Code, in any 
 
 - **Eligibility.** Only instances with `canRunChildTask: true` (enabled for the project, installed and signed in) are recommended. If none is, `recommend_model` fails with each instance's reason.
 - **Families across drivers.** Most families match on any driver, so Claude Opus is found as `claude-opus-5-5` on Claude or Cursor, `claude-opus-5.5` on Kiro, or `anthropic/claude-opus-5-5` on OpenCode and Pi.
-- **Short model lists.** For Cursor, OpenCode, Pi, Kiro, fx, Antigravity and ACP agents, T3 lists at most 8 models and counts the rest as `omittedModels`. Then the result has a `warning` with the `search` to run (for example `orchestrator_capabilities` with `search: "cursor opus"`); passing that output with `mergeCapabilities: true` merges it into the kept capabilities, and the warning goes away for the providers the search listed models for. Without it, the newest model is chosen among the listed ones only.
+- **Short model lists.** For Cursor, OpenCode, Pi, Kiro, fx, Antigravity and ACP agents, T3 lists at most 8 models and counts the rest as `omittedModels`. Then the result has a `warnings` entry with the `search` to run (for example `orchestrator_capabilities` with `search: "cursor opus"`); passing that output with `mergeCapabilities: true` merges it into the kept capabilities, and the warning goes away for the providers the search listed models for. Without it, the newest model is chosen among the listed ones only.
 - **Unknown providers.** A provider no family covers (an unknown driver, an ACP agent with its own model names) still gets a candidate: its default model (`default`, `auto`, `grok-build`, `antigravity-default`) or, failing that, the first model T3 lists for it, marked "low confidence".
 
 ## The policy
