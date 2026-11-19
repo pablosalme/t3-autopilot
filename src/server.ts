@@ -118,8 +118,9 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           .union([z.object({}).passthrough(), z.string(), z.array(z.unknown())])
           .optional()
           .describe(
-            "Output of T3 Code's orchestrator_capabilities, as returned (object, JSON string, providers array, or a " +
-              "list of outputs). Needed on the first call; later calls reuse the last one received.",
+            "The complete output of T3 Code's orchestrator_capabilities, exactly as returned and never trimmed " +
+              "(object, JSON string, providers array, or a list of outputs). Needed on the first call; later calls " +
+              "reuse the last one received.",
           ),
         mergeCapabilities: z
           .boolean()

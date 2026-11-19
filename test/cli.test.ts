@@ -67,6 +67,10 @@ describe("CLI", () => {
     expect(INSTRUCTIONS_SNIPPET).toMatch(/fails with "No capabilities yet", call `orchestrator_capabilities`/);
   });
 
+  it("the snippet asks for the whole capabilities output, never a trimmed copy", () => {
+    expect(INSTRUCTIONS_SNIPPET).toMatch(/Pass it whole, exactly as returned, never trimmed or summarised/);
+  });
+
   it("both READMEs show the same snippet the CLI prints and install with npx (#1)", () => {
     for (const file of ["README.md", "docs/README.es.md"]) {
       const readme = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
