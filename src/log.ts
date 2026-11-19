@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, chmodSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname } from "node:path";
 import type { SelectedOption } from "./capabilities.js";
 
@@ -37,9 +37,32 @@ export interface OutcomeRecord {
 
 export type LogRecord = DelegationRecord | OutcomeRecord;
 
+/**
+ * Mode of the log: summaries and notes are the user's work, so only the owner
+ * reads it (on POSIX; Windows ignores everything but the write bit). The same
+ * value as PRIVATE_FILE_MODE in store.ts, repeated because this module imports
+ * nothing of its own at run time: the concurrent-writers test runs it as it is.
+ */
+const LOG_FILE_MODE = 0o600;
+
+/**
+ * Narrow a log that was created with a wider mode (by an earlier version, or
+ * by hand). Best effort: a file the user does not own stays as it is.
+ */
+export function makePrivate(path: string, platform: NodeJS.Platform = process.platform): void {
+  if (platform === "win32") return;
+  try {
+    if ((statSync(path).mode & 0o077) !== 0) chmodSync(path, LOG_FILE_MODE);
+  } catch {
+    // Not ours to change, or gone: the append itself reports real problems.
+  }
+}
+
 function append(path: string, record: LogRecord): void {
   mkdirSync(dirname(path), { recursive: true });
-  appendFileSync(path, `${JSON.stringify(record)}\n`, "utf8");
+  // The mode of an append only counts when it creates the file, so an older log is narrowed afterwards.
+  appendFileSync(path, `${JSON.stringify(record)}\n`, { encoding: "utf8", mode: LOG_FILE_MODE });
+  makePrivate(path);
 }
 
 /** Cut free text to {@link TEXT_MAX} characters. */
