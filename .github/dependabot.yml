@@ -19,7 +19,7 @@ updates:
         dependency-type: production
         update-types: [minor, patch]
     ignore:
-      # Types follow the oldest supported Node.js (see engines and the CI matrix), not the newest.
+      # Stay on Node 22 types (Vitest needs 22 or later); the Node 20 jobs check the runtime.
       - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
