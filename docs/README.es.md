@@ -42,6 +42,11 @@ Solo aconseja. Nunca lanza agentes por su cuenta y nunca ve tus contraseñas ni 
 
 ## Cómo funciona
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pablosalme/t3-autopilot/main/docs/assets/how-it-works-es-dark.gif">
+  <img src="https://raw.githubusercontent.com/pablosalme/t3-autopilot/main/docs/assets/how-it-works-es-light.gif" alt="Animación en tres pasos. 1, Pregunta: tu agente, que funciona con Claude, tiene la tarea «Revisa el PR que mueve las comprobaciones de auth» y le pregunta a t3-autopilot qué modelo usar. 2, Decide: al revisar prefieres GPT, luego Gemini y luego Grok; de los modelos que tienes, Claude queda fuera porque es el de tu agente, y Cursor, sin cuota, pasa al final. 3, Responde: tres opciones, la mejor primero y cada una con su motivo: Codex con gpt-6.2-codex, Grok con grok-6 y Cursor con gemini-5.1-pro; el ayudante arranca con la primera. Los nombres de los modelos son inventados." width="880">
+</picture>
+
 1. **Tu agente pregunta.** Antes de encargar una tarea, le dice a t3-autopilot de qué tipo es y qué modelos tienes en T3 Code.
 2. **t3-autopilot responde.** Consulta tus preferencias y devuelve hasta tres opciones, la mejor primero, cada una con su motivo.
 3. **Tu agente usa la primera** y te dice en una línea qué modelo ha escogido y por qué. Si esa no puede arrancar, pasa a la siguiente.

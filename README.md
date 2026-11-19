@@ -42,6 +42,11 @@ It only gives advice. It never starts agents itself and never sees your password
 
 ## How it works
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pablosalme/t3-autopilot/main/docs/assets/how-it-works-en-dark.gif">
+  <img src="https://raw.githubusercontent.com/pablosalme/t3-autopilot/main/docs/assets/how-it-works-en-light.gif" alt="Animation in three steps. 1, Ask: your agent, running on Claude, has the task 'Review the PR that moves auth checks' and asks t3-autopilot which model to use. 2, Decide: for reviews you prefer GPT, then Gemini, then Grok; of the models you have, Claude is left out because it is your agent's own, and Cursor, out of quota, moves to the end. 3, Answer: three options, best first, each with its reason: Codex with gpt-6.2-codex, Grok with grok-6 and Cursor with gemini-5.1-pro; the helper starts on the first one. Model names are made up." width="880">
+</picture>
+
 1. **Your agent asks.** Before it hands off a task, it tells t3-autopilot what kind of task it is and which models you have in T3 Code.
 2. **t3-autopilot answers.** It checks your preferences and returns up to three options, best first, each with its reason.
 3. **Your agent uses the first one** and tells you in one line which model it picked and why. If that one cannot start, it goes on to the next.

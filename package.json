@@ -63,7 +63,8 @@
     "test:e2e": "node --test test/e2e/stdio.e2e.mjs",
     "test:pack": "node scripts/pack-check.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "prepublishOnly": "npm run lint && npm run typecheck && npm test"
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test",
+    "build:animation": "node scripts/build-readme-animation.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -74,6 +75,7 @@
     "@biomejs/biome": "2.6.8",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.1.1",
+    "playwright-core": "1.65.1",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
   }

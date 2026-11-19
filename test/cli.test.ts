@@ -102,4 +102,17 @@ describe("CLI", () => {
       );
     }
   });
+
+  it("both READMEs load their images from absolute URLs, which npm does not rewrite", () => {
+    for (const file of ["README.md", "docs/README.es.md"]) {
+      const readme = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+      const tags = readme.match(/<(?:img|source)\b[^>]*>/g) ?? [];
+      expect(tags.length, file).toBeGreaterThan(0);
+      for (const tag of tags) {
+        const urls = [...tag.matchAll(/\b(?:src|srcset)="([^"]*)"/g)].map((m) => m[1]);
+        expect(urls.length, `${file}: ${tag}`).toBeGreaterThan(0);
+        for (const url of urls) expect(url, `${file}: ${tag}`).toMatch(/^https:\/\//);
+      }
+    }
+  });
 });
