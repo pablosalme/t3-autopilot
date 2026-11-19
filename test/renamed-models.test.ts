@@ -65,9 +65,12 @@ describe("models renamed by the provider", () => {
       "gemini-4.1-neon",
     );
     expect(resolveFamily(family("gpt"), provider("codex", ["gpt-9.1-sol", "gpt-9.2-vega"]))?.id).toBe("gpt-9.2-vega");
-    expect(resolveFamily(family("muse"), provider("muse", ["muse-spark-3.1", "muse-dawn-3.2"]))?.id).toBe(
-      "muse-dawn-3.2",
-    );
+  });
+
+  it("Muse tiers are families of their own: a new tier is not taken for Spark or Wonder", () => {
+    const muse = provider("muse", ["muse-spark-3.1", "muse-wonder-2.0", "muse-dawn-3.2"]);
+    expect(resolveFamily(family("muse-spark"), muse)?.id).toBe("muse-spark-3.1");
+    expect(resolveFamily(family("muse-wonder"), muse)?.id).toBe("muse-wonder-2.0");
   });
 
   it("while both names are listed with the same version, T3's order (the user's preference) decides", () => {

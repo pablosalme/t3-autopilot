@@ -100,6 +100,24 @@ describe("review regressions", () => {
     expect(resolveFamily(family("gpt-mini"), p(ids, "codex"))?.id).toBe("gpt-6-luna");
   });
 
+  it("matches dated Gemini ids without counting the date as a version", () => {
+    const dated = ["gemini-2.5-pro-preview-06-05", "gemini-2.0-pro", "gemini-2.5-pro-exp-03-25"];
+    expect(resolveFamilyDetail(family("gemini"), p(dated, "cursor"))).toMatchObject({
+      model: { id: "gemini-2.5-pro-preview-06-05" },
+      ties: 1,
+    });
+    expect(resolveFamily(family("gemini"), p([...dated, "gemini-3-pro"], "cursor"))?.id).toBe("gemini-3-pro");
+    expect(resolveFamily(family("gemini"), p(["google/gemini-2.5-pro-preview-06-05"], "opencode"))?.id).toBe(
+      "google/gemini-2.5-pro-preview-06-05",
+    );
+    const flash = ["gemini-2.0-flash-001", "gemini-2.5-flash-preview-09-2025", "gemini-2.5-flash-lite-preview-06-17"];
+    expect(resolveFamily(family("gemini"), p(flash, "cursor"))).toBeUndefined();
+    expect(resolveFamily(family("gemini-flash"), p(flash, "cursor"))?.id).toBe("gemini-2.5-flash-preview-09-2025");
+    expect(resolveFamily(family("gemini-flash-lite"), p(flash, "cursor"))?.id).toBe(
+      "gemini-2.5-flash-lite-preview-06-17",
+    );
+  });
+
   it("breaks a version tie by T3's order and counts the tied models", () => {
     const tiers = ["gemini-9-neon", "gemini-9-carbon", "gemini-9-hydrogen", "gemini-9-argon", "gemini-8.5-pro"];
     expect(resolveFamilyDetail(family("gemini"), p(tiers, "cursor"))).toMatchObject({

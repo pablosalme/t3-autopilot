@@ -63,6 +63,7 @@ describe("a user with a single provider of each driver T3 ships", () => {
     ["kiro", "review", "kiro/gpt-8.6-sol", [{ id: "reasoningEffort", value: "high" }]],
     // Pi: provider/ prefix, effort via `thinking`.
     ["pi", "code", "pi/anthropic/claude-opus-9-1", [{ id: "thinking", value: "high" }]],
+    // Muse: Spark comes first by policy order, not because 3.1 > 2.0 (Wonder is its own family).
     ["muse", "code", "muse/muse-spark-3.1", [{ id: "reasoningEffort", value: "high" }]],
   ])("%s/%s -> %s", async (driver, taskType, expected, options) => {
     const r = await rec(driverFixture(driver), taskType);
@@ -79,6 +80,19 @@ describe("a user with a single provider of each driver T3 ships", () => {
     expect(ids(r)[0]).toBe(expected);
     expect(r.candidates[0]!.source).toBe("generic");
     expect(r.candidates[0]!.reason).toMatch(/low confidence/);
+  });
+
+  it("muse: Spark and Wonder are separate families, so a newer Wonder does not hide Spark", async () => {
+    expect(ids(await rec(driverFixture("muse")))).toEqual([
+      "muse/muse-spark-3.1",
+      "muse/muse-wonder-2.0",
+      "muse/default",
+    ]);
+    const caps = driverFixture("muse");
+    caps.providers[0]!.models.push({ id: "muse-wonder-9.0" });
+    const r = await rec(caps);
+    expect(ids(r)).toEqual(["muse/muse-spark-3.1", "muse/muse-wonder-9.0", "muse/default"]);
+    expect(r.candidates[1]!.reason).toMatch(/latest muse-wonder on muse is muse-wonder-9\.0/);
   });
 
   it("fx: the generic candidate still gets effort through fx's `effort` option", async () => {

@@ -93,20 +93,22 @@ families:
     match:
       '*': '^(?:[\w.-]+/)*(?:openai\.)?gpt-(\d{1,2})(?:\.(\d{1,2}))?(?:-codex)?-(?:mini|nano|luna|spark)$'
   # Gemini flagship (pro and Antigravity's named tiers); flash variants are separate families.
+  # Dated ids (gemini-2.5-pro-preview-06-05, gemini-2.0-flash-001) match; the
+  # date is not captured, so it never counts as a version.
   gemini:
     search: gemini
     match:
-      '*': '^(?:[\w.-]+/)*gemini-(\d{1,2})(?:\.(\d{1,2}))?(?:-[a-z]+)*$'
+      '*': '^(?:[\w.-]+/)*gemini-(\d{1,2})(?:\.(\d{1,2}))?(?:-(?:[a-z]+|\d{2,8}))*$'
     exclude: 'flash|lite|nano|image|tts|embedding|-(?:low|medium|minimal)$'
   gemini-flash:
     search: flash
     match:
-      '*': '^(?:[\w.-]+/)*gemini-(\d{1,2})(?:\.(\d{1,2}))?-flash(?:-[a-z]+)*$'
+      '*': '^(?:[\w.-]+/)*gemini-(\d{1,2})(?:\.(\d{1,2}))?-flash(?:-(?:[a-z]+|\d{2,8}))*$'
     exclude: 'lite|image|-(?:low|minimal)$'
   gemini-flash-lite:
     search: lite
     match:
-      '*': '^(?:[\w.-]+/)*gemini-(\d{1,2})(?:\.(\d{1,2}))?-flash-lite(?:-[a-z]+)*$'
+      '*': '^(?:[\w.-]+/)*gemini-(\d{1,2})(?:\.(\d{1,2}))?-flash-lite(?:-(?:[a-z]+|\d{2,8}))*$'
   grok:
     search: grok
     match:
@@ -148,11 +150,16 @@ families:
     search: minimax
     match:
       '*': '^(?:[\w.-]+/)*minimax-m(\d{1,2})(?:\.(\d{1,2}))?(?:-[a-z]+)*$'
-  # Meta's Muse Code models (muse-spark-1.3, muse-wonder-1.0).
-  muse:
-    search: muse
+  # Meta's Muse Code models. Spark and Wonder are separate tiers with their own
+  # version numbers (muse-spark-1.3, muse-wonder-1.0), so they are separate families.
+  muse-spark:
+    search: muse-spark
     match:
-      '*': '^(?:[\w.-]+/)*muse-[a-z]+-(\d{1,2})(?:\.(\d{1,2}))?$'
+      '*': '^(?:[\w.-]+/)*muse-spark-(\d{1,2})(?:\.(\d{1,2}))?$'
+  muse-wonder:
+    search: muse-wonder
+    match:
+      '*': '^(?:[\w.-]+/)*muse-wonder-(\d{1,2})(?:\.(\d{1,2}))?$'
   # OpenCode Zen / Go models that cost nothing (big-pickle, *-free).
   opencode-free:
     search: free
@@ -245,7 +252,8 @@ taskTypes:
       - { provider: '*', family: glm, effort: high }
       - { provider: '*', family: qwen-coder, effort: high }
       - { provider: '*', family: deepseek, effort: high }
-      - { provider: '*', family: muse, effort: high }
+      - { provider: '*', family: muse-spark, effort: high }
+      - { provider: '*', family: muse-wonder, effort: high }
       - { provider: opencode, family: opencode-free }
   design:
     description: UI, visual and UX work.
@@ -278,4 +286,5 @@ fallback:
   - { provider: '*', family: claude-sonnet, effort: medium }
   - { provider: '*', family: kimi, effort: high }
   - { provider: '*', family: glm, effort: high }
-  - { provider: '*', family: muse, effort: high }
+  - { provider: '*', family: muse-spark, effort: high }
+  - { provider: '*', family: muse-wonder, effort: high }
