@@ -83,4 +83,17 @@ describe("merging a search output", () => {
     // A second search, for opencode, clears its warning too.
     expect(warned(await call({ capabilities: opencodeOpus(), mergeCapabilities: true }))).toEqual(["pi"]);
   });
+
+  it("says so when there is nothing to merge into (first call, or the server restarted)", async () => {
+    const { client } = await connectServer();
+    const res = await client.callTool({
+      name: "recommend_model",
+      arguments: { task: "x", taskType: "code", capabilities: cursorOpus(), mergeCapabilities: true },
+    });
+    expect(res.isError).toBeFalsy();
+    const data = res.structuredContent as Recommendation & { capabilitiesFrom: string };
+    expect(data.capabilitiesFrom).toBe("call");
+    expect(data.warnings[0]).toMatch(/^mergeCapabilities: there were no earlier capabilities to merge into/);
+    expect(ids(data)[0]).toBe("cursor/claude-opus-9-2");
+  });
 });

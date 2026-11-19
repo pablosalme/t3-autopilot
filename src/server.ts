@@ -10,6 +10,11 @@ import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usag
 
 export const VERSION = "0.1.0";
 
+const NOTHING_TO_MERGE =
+  "mergeCapabilities: there were no earlier capabilities to merge into (first call, or the server restarted), so only " +
+  "this output was used. If it is a search output, pass the full orchestrator_capabilities output too, as " +
+  "capabilities: [full, search].";
+
 export interface ServerOptions {
   /** Loads the policy; called on every tool call so edits apply without a restart. */
   loadPolicy?: () => LoadedPolicy;
@@ -95,11 +100,21 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         const { policy } = load();
         const usageSource = opts.usageSource ?? createUsageSource(policy);
         let capabilities: Capabilities;
+        let capabilitiesFrom: "call" | "cache" | "merged";
+        const notes: string[] = [];
         if (args.capabilities !== undefined) {
           const given = parseCapabilities(args.capabilities);
-          capabilities = args.mergeCapabilities && cached ? mergeCapabilities([cached, given]) : given;
+          if (args.mergeCapabilities && cached) {
+            capabilities = mergeCapabilities([cached, given]);
+            capabilitiesFrom = "merged";
+          } else {
+            capabilities = given;
+            capabilitiesFrom = "call";
+            if (args.mergeCapabilities) notes.push(NOTHING_TO_MERGE);
+          }
         } else if (cached) {
           capabilities = cached;
+          capabilitiesFrom = "cache";
         } else {
           throw new Error(
             "No capabilities yet: call orchestrator_capabilities and pass its full output as `capabilities` (later calls can omit it).",
@@ -108,7 +123,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
         const result = await recommendModel({ ...rest, capabilities }, policy, usageSource);
         cached = capabilities;
-        return ok({ ...result, capabilitiesFrom: args.capabilities === undefined ? "cache" : args.mergeCapabilities ? "merged" : "call" });
+        return ok({ ...result, warnings: [...notes, ...result.warnings], capabilitiesFrom });
       } catch (e) {
         return fail(e);
       }
