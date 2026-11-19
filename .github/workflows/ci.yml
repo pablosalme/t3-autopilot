@@ -33,3 +33,5 @@ jobs:
       - run: npm run smoke
       # End-to-end over stdio with the MCP SDK client (Node's test runner, so it runs on Node 20 too).
       - run: npm run test:e2e
+      # npm pack, install the tarball in an empty project, run its bin and the end-to-end test against it.
+      - run: npm run test:pack
