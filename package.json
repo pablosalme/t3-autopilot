@@ -24,7 +24,10 @@
     "url": "git+https://github.com/pablosalme/t3-autopilot.git"
   },
   "license": "MIT",
-  "author": "pablosalme",
+  "author": {
+    "name": "pablosalme",
+    "url": "https://github.com/pablosalme"
+  },
   "type": "module",
   "bin": {
     "t3-autopilot": "dist/cli.js"
@@ -34,19 +37,24 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
-    "policy/default.yaml"
+    "policy/default.yaml",
+    "README.md",
+    "README.es.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "prepack": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
     "prepare": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "biome check .",
@@ -56,7 +64,7 @@
     "test:e2e": "node --test test/e2e/stdio.e2e.mjs",
     "test:pack": "node scripts/pack-check.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

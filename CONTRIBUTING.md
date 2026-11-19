@@ -11,7 +11,7 @@ By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md). Re
 
 ## Setup
 
-Development needs Node.js 22.12 or later (Vitest 5); the server itself runs on Node.js 20 or later.
+You need Node.js 22 or later, the same as the server; use the latest 22 or 24 release, because Vitest 5 needs 22.12 or later.
 
 ```sh
 git clone https://github.com/pablosalme/t3-autopilot.git
@@ -21,13 +21,13 @@ npm ci
 
 ## Checks
 
-CI runs these on Linux, macOS and Windows with Node 20 and 22 (lint and the dependency audit once, Vitest on Node 22). Run them before opening a pull request:
+CI runs these on Linux, macOS and Windows with Node 22 and 24 (lint and the dependency audit once, on Linux with Node 24). Run them before opening a pull request:
 
 ```sh
 npm run lint            # Biome: lint, format and import order (npm run format fixes them)
 npm run typecheck
 npm run test:coverage   # Vitest; fails below 90% statements, functions and lines or 85% branches
-npm run build
+npm run build           # removes dist/ and compiles src/ again
 npm run smoke           # the built server over stdio with several fixtures
 npm run test:e2e        # end-to-end over stdio with the MCP SDK client (node:test)
 npm run test:pack       # npm pack, install the tarball in a temporary project, run its bin
@@ -55,6 +55,7 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 | `test/e2e/stdio.e2e.mjs` | End-to-end test over stdio (Node's test runner) |
 | `test/fixtures/` | Invented `orchestrator_capabilities` outputs |
 | `scripts/` | Smoke test and packed-tarball check |
+| `.github/workflows/` | CI (`ci.yml`) and the npm release (`release.yml`) |
 | `docs/providers.md` | How each T3 Code driver is handled, with references to T3's source |
 
 ## Guidelines
@@ -71,13 +72,16 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `build:`, `ci:`, `chore:`, `style:`.
 - Keep pull requests small and focused, fill in the template, and make sure CI passes.
-- Add a line to [CHANGELOG.md](CHANGELOG.md) under **Unreleased** for changes users will notice.
+- Add a line to [CHANGELOG.md](CHANGELOG.md) for changes users will notice: under **Unreleased**, or under **0.1.0** until that version is published.
 
 ## Releasing (maintainers)
 
-The package is not on npm yet. To release:
+Releases are published on npm by `.github/workflows/release.yml` when a `v*` tag is pushed. It needs the repository secret `NPM_TOKEN`, an npm access token that may publish `t3-autopilot`.
 
-1. Move the **Unreleased** entries in `CHANGELOG.md` under the new version and date.
-2. Set the version in `package.json` and `VERSION` in `src/server.ts` (the end-to-end test checks that they match).
-3. Tag `vX.Y.Z` on `main` and create the GitHub release.
-4. `npm publish`: `prepublishOnly` runs the typecheck, tests and build, and `prepack` rebuilds `dist/` from scratch.
+1. Move the **Unreleased** entries in `CHANGELOG.md` under the new version and date, and update the links at the end of the file.
+2. Set the version in `package.json` and `package-lock.json` (`npm version X.Y.Z --no-git-tag-version`) and `VERSION` in `src/server.ts` (the end-to-end test checks that they match).
+3. Merge that into `main` and wait for CI to pass.
+4. Tag `vX.Y.Z` on `main` and push the tag. The workflow checks that the tag matches `package.json` and is on `main`, runs every check and then `npm publish --provenance --access public`.
+5. Create the GitHub release for the tag with the changelog entry.
+
+To publish by hand instead, run `npm publish --access public` from a clean checkout of the tag: `prepublishOnly` runs the lint, the typecheck and the unit tests, and `prepare` rebuilds `dist/` from scratch before npm packs it. A package published by hand has no provenance.

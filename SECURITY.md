@@ -2,11 +2,11 @@
 
 ## Supported versions
 
-t3-autopilot has not had a tagged release yet. Security fixes land on `main`; once releases exist, the latest release gets them too.
+Security fixes land on `main` and in a new release of the latest version line on npm. Older version lines get no fixes. t3-autopilot runs on the Node.js release lines that are still maintained (22 or later).
 
 | Version | Supported |
 |---|---|
-| `main` (0.1.x) | Yes |
+| 0.1.x and `main` | Yes |
 
 ## Reporting a vulnerability
 
