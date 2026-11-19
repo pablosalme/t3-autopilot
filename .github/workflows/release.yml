@@ -1,0 +1,58 @@
+name: Release
+
+# Publishes the package on npm, with provenance, when a version tag is pushed.
+# Needs the repository secret NPM_TOKEN: an npm access token that may publish t3-autopilot.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Lets npm sign the provenance statement with the workflow's OIDC token.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          # Full history, to check that the tag is on main.
+          fetch-depth: 0
+      # No dependency cache here: the published files come from a clean install.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Check that the tag matches package.json and is on main
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match version $version in package.json."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag $GITHUB_REF_NAME is not on main."
+            exit 1
+          fi
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npm run smoke
+      - run: npm run test:e2e
+      - run: npm run test:pack
+      # prepublishOnly runs lint, typecheck and the unit tests again; prepare rebuilds dist/ from scratch.
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
