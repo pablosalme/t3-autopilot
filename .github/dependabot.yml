@@ -19,7 +19,8 @@ updates:
         dependency-type: production
         update-types: [minor, patch]
     ignore:
-      # Stay on Node 22 types (Vitest needs 22 or later); the Node 20 jobs check the runtime.
+      # Keep the types of the oldest supported Node.js (22, "engines" in package.json), so the code
+      # cannot use an API that only a newer Node has. Raise it by hand together with "engines".
       - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
   - package-ecosystem: github-actions

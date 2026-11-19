@@ -10,13 +10,30 @@ permissions:
   contents: read
 
 jobs:
+  # Lint, format and the dependency audit do not depend on the OS or the Node version: run them once.
+  lint:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm audit --audit-level=high
+
   test:
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node: [20, 22]
+        # The supported Node.js release lines ("engines" in package.json starts at 22).
+        node: [22, 24]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -27,19 +44,12 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
-      # Lint, format and dependency audit do not depend on the OS or Node version: run them once.
-      - run: npm run lint
-        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
-      - run: npm audit --audit-level=high
-        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
       - run: npm run typecheck
-      # Unit tests with coverage thresholds (vitest.config.ts). Vitest 5 needs Node 22.12+, so on
-      # Node 20 the runtime is checked by build, smoke, the end-to-end test and the pack check.
+      # Unit tests with coverage thresholds (vitest.config.ts).
       - run: npm run test:coverage
-        if: matrix.node != 20
       - run: npm run build
       - run: npm run smoke
-      # End-to-end over stdio with the MCP SDK client (Node's test runner, so it runs on Node 20 too).
+      # End-to-end over stdio with the MCP SDK client (Node's test runner).
       - run: npm run test:e2e
       # npm pack, install the tarball in an empty project, run its bin and the end-to-end test against it.
       - run: npm run test:pack
