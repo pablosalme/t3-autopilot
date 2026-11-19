@@ -28,6 +28,22 @@ describe("buildOptions", () => {
     });
   });
 
+  it("sets the effort option once when a rule also names it under options", () => {
+    // `effort` wins: it is the value shifted by size and criticality and clamped to what the model supports.
+    expect(buildOptions(model, ["effort"], "max", { effort: "low", fastMode: true })).toEqual({
+      options: [
+        { id: "effort", value: "high" },
+        { id: "fastMode", value: true },
+      ],
+      effort: "high",
+      notes: ["effort max not supported, using high"],
+    });
+    // With no `effort`, the entry under `options` is an ordinary option.
+    expect(buildOptions(model, ["effort"], undefined, { effort: "low" }).options).toEqual([
+      { id: "effort", value: "low" },
+    ]);
+  });
+
   it("notes a model without an effort option", () => {
     expect(buildOptions({ id: "m" }, ["effort"], "high", undefined).notes).toEqual([
       "model has no effort option; using its default",

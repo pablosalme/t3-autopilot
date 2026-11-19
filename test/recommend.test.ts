@@ -201,6 +201,29 @@ describe("recommendModel", () => {
     expect(ids(r)).toEqual(["cursor/gemini-5.1-pro", "grok/grok-6", "claudeAgent/claude-opus-7-1"]);
   });
 
+  it("does not repeat the effort option of a rule that sets effort and options.effort", async () => {
+    const p = policyWith({
+      taskTypes: {
+        code: {
+          candidates: [
+            {
+              provider: "claudeAgent",
+              family: "claude-opus",
+              effort: "high",
+              options: { effort: "low", fastMode: true },
+            },
+          ],
+        },
+      },
+    });
+    const r = await rec({ criticality: "high" }, p);
+    expect(ids(r)[0]).toBe("claudeAgent/claude-opus-7-1");
+    expect(r.candidates[0]!.options).toEqual([
+      { id: "effort", value: "xhigh" },
+      { id: "fastMode", value: true },
+    ]);
+  });
+
   it("uses the fallback list when no candidate of the type is available", async () => {
     const p = policyWith({
       taskTypes: { code: { candidates: [{ provider: "pi", family: "claude-opus", effort: "low" }] } },

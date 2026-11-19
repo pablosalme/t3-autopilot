@@ -63,7 +63,9 @@ export interface BuiltOptions {
 
 /**
  * Build the `options` array for delegate_task.target. Only options the model
- * declares are set; values are checked against the declared values.
+ * declares are set; values are checked against the declared values. Each
+ * option id appears once: `effort` wins over an `extra` entry with the id of
+ * the effort option.
  */
 export function buildOptions(
   model: Model,
@@ -91,6 +93,9 @@ export function buildOptions(
   }
 
   for (const [id, value] of Object.entries(extra ?? {})) {
+    // The effort option is set once: a rule with `effort` and the same id under `options` keeps the
+    // effort computed above (shifted and clamped), not a second entry for delegate_task to choose from.
+    if (options.some((o) => o.id === id)) continue;
     const opt = declared.find((o) => o.id === id);
     if (!opt) continue;
     if (opt.values && !opt.values.includes(value)) continue;
