@@ -141,6 +141,21 @@ describe("MCP server", () => {
     await bad("get_stats", { since: "not a date" });
   });
 
+  it("rejects an empty provider or model instead of logging a record the stats cannot count", async () => {
+    const client = await connect();
+    const call = (name: string, args: Record<string, unknown>) =>
+      client.callTool({ name, arguments: args }).catch((e: unknown) => ({ isError: true, thrown: e }));
+    const rejected = [
+      await call("log_outcome", { taskType: "code", providerInstanceId: "codex", model: "", outcome: "success" }),
+      await call("log_outcome", { taskType: "code", providerInstanceId: "", model: "m", outcome: "success" }),
+      await call("log_delegation", { taskType: "code", providerInstanceId: "", model: "m" }),
+      await call("log_delegation", { taskType: "code", providerInstanceId: "codex", model: "" }),
+    ];
+    expect(rejected.map((r) => r.isError)).toEqual([true, true, true, true]);
+    const stats = await client.callTool({ name: "get_stats", arguments: {} });
+    expect((stats.structuredContent as { total: { delegations: number } }).total.delegations).toBe(0);
+  });
+
   it("ignores invalid usage windows instead of failing (#11)", async () => {
     const client = await connect();
     const res = await client.callTool({

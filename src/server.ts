@@ -230,8 +230,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         "log_outcome also works without it.",
       inputSchema: {
         taskType: z.string(),
-        providerInstanceId: z.string(),
-        model: z.string(),
+        providerInstanceId: z.string().min(1),
+        model: z.string().min(1),
         options: z.array(SelectedOptionSchema).optional(),
         recommendedRank: z
           .number()
@@ -266,8 +266,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
       inputSchema: {
         delegationId: z.string().optional(),
         taskType: z.string().optional(),
-        providerInstanceId: z.string().optional(),
-        model: z.string().optional(),
+        providerInstanceId: z.string().min(1).optional(),
+        model: z.string().min(1).optional(),
         outcome: z.enum(OUTCOMES),
         note: z.string().optional().describe("Short note (kept to 200 characters). Avoid secrets."),
       },
