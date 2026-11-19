@@ -31,21 +31,40 @@ export function familyPattern(family: Family, provider: Provider): RegExp | unde
   return pattern === undefined ? undefined : new RegExp(pattern, "i");
 }
 
+export interface Resolved {
+  model: Model;
+  /** Other models of the family with the same version (gemini-4-neon and gemini-4-argon are both 4). */
+  ties: number;
+}
+
 /**
  * Resolve a family to the most recent matching model of a provider.
- * On equal versions the model listed first by T3 wins.
+ * On equal versions the model listed first by T3 (the user's order) wins, and
+ * `ties` counts the others with that version.
  */
-export function resolveFamily(family: Family, provider: Provider): Model | undefined {
+export function resolveFamilyDetail(family: Family, provider: Provider): Resolved | undefined {
   const re = familyPattern(family, provider);
   if (!re) return undefined;
   const exclude = family.exclude ? new RegExp(family.exclude, "i") : undefined;
   let best: { model: Model; key: number[] } | undefined;
+  let ties = 0;
   for (const model of provider.models) {
     if (exclude?.test(model.id)) continue;
     const m = re.exec(model.id);
     if (!m) continue;
     const key = versionKey(model.id, m);
-    if (!best || compareVersions(key, best.key) > 0) best = { model, key };
+    const cmp = best ? compareVersions(key, best.key) : 1;
+    if (cmp > 0) {
+      best = { model, key };
+      ties = 0;
+    } else if (cmp === 0) {
+      ties++;
+    }
   }
-  return best?.model;
+  return best && { model: best.model, ties };
+}
+
+/** The model {@link resolveFamilyDetail} picks. */
+export function resolveFamily(family: Family, provider: Provider): Model | undefined {
+  return resolveFamilyDetail(family, provider)?.model;
 }

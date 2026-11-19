@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeCapabilities } from "../src/capabilities.js";
+import { mergeCapabilities, parseCapabilities } from "../src/capabilities.js";
 import { type Recommendation, recommendModel } from "../src/recommend.js";
 import { NoneUsageSource } from "../src/usage.js";
 import { connectServer, defaultPolicy, driverFixture, driverFixtureRaw } from "./helpers.js";
@@ -157,15 +157,25 @@ describe("a truncated search (more than 8 matches)", () => {
     const gemini = r.candidates.find((c) => c.model.startsWith("gemini-"))!;
     expect(gemini.model).toBe("gemini-9-argon");
     expect(gemini.reason).not.toMatch(/latest/);
-    expect(gemini.reason).toMatch(/newest listed gemini on cursor is gemini-9-argon/);
-    expect(gemini.reason).toMatch(/12 models left out of the list/);
+    expect(gemini.reason).toMatch(/: gemini on cursor is gemini-9-argon/);
+    expect(gemini.reason).toMatch(/same version as 2 others, T3 lists this one first; 12 models left out of the list/);
+    // Without a tie, the truncated list still rules out "latest".
+    const one = await design([driverFixtureRaw("cursor"), cursorSearch(["gemini-9-argon", "gemini-8-pro"], 12)]);
+    const only = one.candidates.find((c) => c.model.startsWith("gemini-"))!;
+    expect(only.reason).toMatch(/newest listed gemini on cursor is gemini-9-argon/);
   });
 
-  it("drops the warning once a narrower search lists every match", async () => {
+  it("drops the warning once a narrower search lists every match, and keeps T3's order for ties", async () => {
     const narrower = cursorSearch(["gemini-9-neon", "gemini-9-argon", "gemini-9-carbon", "gemini-9-hydrogen"]);
     const r = await design([driverFixtureRaw("cursor"), cursorSearch(EIGHT_GEMINI, 12), narrower]);
     expect(r.warnings).toEqual([]);
     expect(r.candidates.map((c) => c.reason).join("\n")).not.toMatch(/newest listed|left out/);
+    // T3 lists neon before argon, so the merge puts it there and neon wins the tie.
+    const gemini = r.candidates.find((c) => c.model.startsWith("gemini-"))!;
+    expect(gemini.model).toBe("gemini-9-neon");
+    expect(gemini.reason).toMatch(
+      /: gemini on cursor is gemini-9-neon \(same version as 3 others, T3 lists this one first/,
+    );
   });
 
   it("also says newest listed on the full output's short list", async () => {
@@ -178,6 +188,26 @@ describe("a truncated search (more than 8 matches)", () => {
     const r = await design([driverFixtureRaw("cursor"), cursorSearch(["composer-9", "composer-8"], 3)]);
     expect(r.warnings[0]).toMatch(/listed 2 models and left out 3 more/);
     expect(r.warnings[0]).toMatch(/Narrow the search with a more specific term/);
+  });
+});
+
+describe("merging keeps T3's order", () => {
+  const ordered = (outputs: unknown[]) =>
+    mergeCapabilities(outputs.map((o) => parseCapabilities(o)))
+      .providers.find((p) => p.providerInstanceId === "cursor")!
+      .models.map((m) => m.id);
+
+  it("puts a new model after the one listed before it, or before the next known one", () => {
+    expect(ordered([cursorSearch(["a", "b", "c"]), cursorSearch(["x", "b", "y", "z", "c", "w"])])).toEqual([
+      "a",
+      "x",
+      "b",
+      "y",
+      "z",
+      "c",
+      "w",
+    ]);
+    expect(ordered([cursorSearch(["a"]), cursorSearch(["p", "q"])])).toEqual(["a", "p", "q"]);
   });
 });
 

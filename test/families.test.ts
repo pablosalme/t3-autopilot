@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareVersions, resolveFamily, versionKey } from "../src/families.js";
+import { compareVersions, resolveFamily, resolveFamilyDetail, versionKey } from "../src/families.js";
 import { defaultPolicy, fixture } from "./helpers.js";
 
 const policy = defaultPolicy();
@@ -98,6 +98,23 @@ describe("review regressions", () => {
     const ids = ["gpt-6-astra", "gpt-6.1-sol", "gpt-6-luna", "gpt-5.4-mini", "gpt-5.3-codex-spark"];
     expect(resolveFamily(family("gpt"), p(ids, "codex"))?.id).toBe("gpt-6.1-sol");
     expect(resolveFamily(family("gpt-mini"), p(ids, "codex"))?.id).toBe("gpt-6-luna");
+  });
+
+  it("breaks a version tie by T3's order and counts the tied models", () => {
+    const tiers = ["gemini-9-neon", "gemini-9-carbon", "gemini-9-hydrogen", "gemini-9-argon", "gemini-8.5-pro"];
+    expect(resolveFamilyDetail(family("gemini"), p(tiers, "cursor"))).toMatchObject({
+      model: { id: "gemini-9-neon" },
+      ties: 3,
+    });
+    expect(resolveFamilyDetail(family("gemini"), p(tiers.slice(3), "cursor"))).toMatchObject({
+      model: { id: "gemini-9-argon" },
+      ties: 0,
+    });
+    // A newer version clears the count of the old tie.
+    expect(resolveFamilyDetail(family("gemini"), p([...tiers, "gemini-9.1-pro"], "cursor"))).toMatchObject({
+      model: { id: "gemini-9.1-pro" },
+      ties: 0,
+    });
   });
 
   it("matches Kiro's dotted ids and Bedrock-style prefixes", () => {

@@ -8,7 +8,7 @@ import {
 } from "./capabilities.js";
 import { classifyTask } from "./classify.js";
 import { buildOptions, shiftEffort } from "./effort.js";
-import { familyPattern, resolveFamily } from "./families.js";
+import { familyPattern, resolveFamily, resolveFamilyDetail } from "./families.js";
 import type { CandidateRule, Effort, Family, Policy } from "./policy.js";
 import { evaluateUsage, type ProviderUsage, type UsageSource, type UsageTier } from "./usage.js";
 
@@ -187,8 +187,8 @@ function scoreRules(
     const targets = instancesFor(rule, ctx.providers);
     for (const provider of targets) {
       if (!familyPattern(family, provider)) continue;
-      const model = resolveFamily(family, provider);
-      if (!model) {
+      const resolved = resolveFamilyDetail(family, provider);
+      if (!resolved) {
         if (rule.provider !== "*") {
           ctx.skipped.push(`${tag}: no ${rule.family} model listed on ${provider.providerInstanceId}`);
         }
@@ -197,13 +197,15 @@ function scoreRules(
       const wanted = baseEffort ?? rule.effort;
       const effort = wanted ? shiftEffort(wanted, ctx.shift) : undefined;
       const where = rule.provider === "*" && rule.instance === undefined ? " (any provider)" : "";
-      // A truncated list may hide a newer model, so the pick is only the newest listed one.
+      const { model, ties } = resolved;
+      // A tie is not "the latest" (T3's order broke it), and a truncated list may hide a newer model.
       const truncated = truncatedBy(provider);
-      const newest = truncated > 0 ? "newest listed" : "latest";
-      const why = `${tag}${where}: ${newest} ${rule.family} on ${provider.providerInstanceId} is ${model.id}`;
-      push(ctx, provider, model, effort, rule.options, source, why, rule.noDemote, {
-        notes: truncated > 0 ? [`${truncated} models left out of the list, so a newer one may exist`] : [],
-      });
+      const newest = ties > 0 ? "" : truncated > 0 ? "newest listed " : "latest ";
+      const why = `${tag}${where}: ${newest}${rule.family} on ${provider.providerInstanceId} is ${model.id}`;
+      const notes: string[] = [];
+      if (ties > 0) notes.push(`same version as ${ties} other${ties === 1 ? "" : "s"}, T3 lists this one first`);
+      if (truncated > 0) notes.push(`${truncated} models left out of the list, so a newer one may exist`);
+      push(ctx, provider, model, effort, rule.options, source, why, rule.noDemote, { notes });
     }
   });
 }

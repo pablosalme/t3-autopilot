@@ -191,7 +191,7 @@ Merge rules: entries under `families` and `taskTypes` replace the default entry 
 
 ### Model families
 
-A family maps driver kinds (`driverKind` in `orchestrator_capabilities`; `*` for any driver without its own entry) to a case-insensitive regular expression over model ids, plus an optional `exclude` regex and a `search` hint. When several ids match, the highest version wins (numeric capture groups compared in order; numbers of 5 or more digits are snapshot dates and are ignored); on a tie, the model T3 lists first (your preferred order) wins. A new version or a renamed tier that still matches the family (`claude-opus-5-5` → `claude-opus-5-6`, `gemini-4-carbon` → `gemini-4-neon`) is picked up with no change to code or policy.
+A family maps driver kinds (`driverKind` in `orchestrator_capabilities`; `*` for any driver without its own entry) to a case-insensitive regular expression over model ids, plus an optional `exclude` regex and a `search` hint. When several ids match, the highest version wins (numeric capture groups compared in order; numbers of 5 or more digits are snapshot dates and are ignored); on a tie (`gemini-4-neon` and `gemini-4-argon` are both version 4), the model T3 lists first (your preferred order) wins, and its reason says "same version as N others, T3 lists this one first" instead of calling it the latest. A new version or a renamed tier that still matches the family (`claude-opus-5-5` → `claude-opus-5-6`, `gemini-4-carbon` → `gemini-4-neon`) is picked up with no change to code or policy.
 
 ```yaml
 families:

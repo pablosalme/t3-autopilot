@@ -24,6 +24,7 @@ First public version, planned as 0.1.0. Not tagged or published on npm yet.
 ### Fixed
 
 - The omitted-models warning of a provider stays while its latest list is truncated, including a `search` output with more than 8 matches, and suggests a narrower search; a candidate from a truncated list says "newest listed" instead of "latest".
+- A model picked over others with the same version is no longer called the latest: its reason says how many share the version and that T3 lists it first. Merged outputs keep T3's model order, so that tie-break still follows the user's order.
 - Merging a `search` output no longer clears the omitted-models warning of providers the search did not list.
 - `mergeCapabilities: true` with nothing to merge into now reports `capabilitiesFrom: "call"` with a warning instead of claiming a merge.
 - Policy validation errors name the user's policy file instead of listing both files.

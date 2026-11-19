@@ -133,7 +133,7 @@ function listsModels(provider: Provider): boolean {
 /**
  * Merge several capabilities outputs by `providerInstanceId`. The first output
  * that lists a provider gives its eligibility and options; models from later
- * outputs are added when their id is new. `omittedModels` is reduced by the
+ * outputs are added when their id is new, in T3's order. `omittedModels` is reduced by the
  * number of models added (an estimate: T3 does not say which ones it omitted).
  * A later output that lists no model for a provider (a search that did not
  * select it) leaves that provider as it was, so its omitted-models warning
@@ -159,12 +159,27 @@ export function mergeCapabilities(list: readonly Capabilities[]): Capabilities {
       }
       const known = new Set(existing.models.map((m) => m.id));
       let added = 0;
-      for (const m of p.models) {
-        if (known.has(m.id)) continue;
-        existing.models.push(structuredClone(m));
-        known.add(m.id);
-        added++;
-      }
+      // Every T3 output lists models in the same order (the user's model order,
+      // then the catalog's), so a new model goes right after the one this output
+      // lists before it, or before the first known one it lists after it. Ties
+      // between versions then still follow the user's order.
+      let anchor: string | undefined;
+      p.models.forEach((m, i) => {
+        if (!known.has(m.id)) {
+          const after = anchor;
+          const next = after === undefined ? p.models.slice(i + 1).find((x) => known.has(x.id)) : undefined;
+          const at =
+            after !== undefined
+              ? existing.models.findIndex((x) => x.id === after) + 1
+              : next !== undefined
+                ? existing.models.findIndex((x) => x.id === next.id)
+                : existing.models.length;
+          existing.models.splice(at, 0, structuredClone(m));
+          known.add(m.id);
+          added++;
+        }
+        anchor = m.id;
+      });
       if (added > 0 && existing.omittedModels !== undefined) {
         existing.omittedModels = Math.max(0, existing.omittedModels - added);
       }
