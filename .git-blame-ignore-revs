@@ -1,0 +1,3 @@
+# Commits that only reformat code; GitHub and `git blame --ignore-revs-file` skip them.
+# style: format the code with Biome
+bbab86ff4205339368859a6bb1447c4c6a4e36bd
