@@ -8,6 +8,7 @@ export const DATA_FILES = {
   capabilitiesCache: "capabilities-cache.json",
   unavailable: "unavailable.json",
   subscriptions: "subscriptions.yaml",
+  orcaModels: "orca-models.yaml",
 } as const;
 
 /**

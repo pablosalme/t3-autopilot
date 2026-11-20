@@ -187,6 +187,10 @@ claude mcp add --scope user t3-autopilot -- node /path/to/t3-autopilot/dist/cli.
 
 Para actualizarlo más adelante, ejecuta `git pull` y luego otra vez `npm ci`.
 
+## Uso en Orca
+
+t3-autopilot también funciona para un orquestador en [Orca](https://github.com/stablyai/orca): pasa la salida de `orca agent installed --json` en lugar de `orchestrator_capabilities` y arranca cada hijo con el comando `orca agent launch` que trae el candidato. En el paso 2, usa `npx -y t3-autopilot snippet --host orca`. Detalles, y cómo declarar tus modelos: [orca.md](orca.md) (en inglés).
+
 ## Comprueba que funciona
 
 1. **El programa arranca.** Este comando muestra un número de versión:

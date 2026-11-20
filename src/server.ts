@@ -10,6 +10,14 @@ import {
   saveCapabilitiesCache,
 } from "./capabilitiesCache.js";
 import { computeStats, logDelegation, logOutcome, OUTCOMES, readLog } from "./log.js";
+import {
+  agentsWithoutModels,
+  isOrcaCapabilities,
+  orcaLaunch,
+  orcaToCapabilities,
+  readOrcaInput,
+  readOrcaModels,
+} from "./orca.js";
 import { autopilotHome, DATA_FILES } from "./paths.js";
 import { type LoadedPolicy, loadPolicy, type Policy } from "./policy.js";
 import { eligibleProviders, recommendModel } from "./recommend.js";
@@ -72,6 +80,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   const cachePath = () => join(dataDir(), DATA_FILES.capabilitiesCache);
   const marksPath = () => join(dataDir(), DATA_FILES.unavailable);
   const subscriptionsPath = () => join(dataDir(), DATA_FILES.subscriptions);
+  const orcaModelsPath = () => join(dataDir(), DATA_FILES.orcaModels);
   const now = opts.now ?? (() => new Date());
 
   // Read once at startup only to describe the task types; calls reload it.
@@ -154,8 +163,10 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           .optional()
           .describe(
             "The complete output of T3 Code's orchestrator_capabilities, exactly as returned and never trimmed " +
-              "(object, JSON string, providers array, or a list of outputs). Needed on the first call; later calls " +
-              "reuse the last one received.",
+              "(object, JSON string, providers array, or a list of outputs). In Orca, pass the output of " +
+              "`orca agent installed --json` instead, adding `orchestrator: { agent, model }` (your own agent id and " +
+              "model id) and optionally `models: { <agentId>: [modelId, ...] }`; candidates then carry an `orca` " +
+              "launch command. Needed on the first call; later calls reuse the last one received.",
           ),
         mergeCapabilities: z
           .boolean()
@@ -184,7 +195,21 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const notes: string[] = [...policyWarnings];
           if (args.capabilities !== undefined) {
             // `listed`: how many outputs were passed as a list ([full, search, ...]); 0 for a single output.
-            const { capabilities: given, outputs: listed } = parseCapabilitiesInput(args.capabilities);
+            // Orca: `orca agent installed --json` (plus orchestrator and models) becomes T3-shaped capabilities.
+            const orca = readOrcaInput(args.capabilities);
+            let input: unknown = args.capabilities;
+            if (orca) {
+              const fileModels = readOrcaModels(orcaModelsPath());
+              input = orcaToCapabilities(orca, fileModels);
+              const missing = agentsWithoutModels(orca, fileModels);
+              if (missing.length > 0) {
+                notes.push(
+                  `Orca: no models declared for ${missing.join(", ")}, so they can only be launched with their CLI's ` +
+                    `default model (low confidence). Declare them in ${orcaModelsPath()} or pass \`models\` in capabilities.`,
+                );
+              }
+            }
+            const { capabilities: given, outputs: listed } = parseCapabilitiesInput(input);
             const base = args.mergeCapabilities ? kept() : undefined;
             if (base) {
               const capabilities = mergeCapabilities([base.capabilities, given]);
@@ -248,8 +273,12 @@ export function createServer(opts: ServerOptions = {}): McpServer {
             policy,
             usageSource,
           );
+          const orcaHost = isOrcaCapabilities(entry.capabilities);
           return ok({
             ...result,
+            ...(orcaHost
+              ? { host: "orca", candidates: result.candidates.map((c) => ({ ...c, orca: orcaLaunch(c) })) }
+              : {}),
             warnings: [...notes, ...result.warnings],
             capabilitiesFrom,
             ...(capabilitiesFrom === "call" ? {} : { capabilitiesAgeMinutes: Math.max(0, Math.floor(age / 60_000)) }),
