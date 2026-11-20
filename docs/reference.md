@@ -12,6 +12,7 @@ The technical side of t3-autopilot: the tools, the policy file, the data it keep
 - [Supported providers](#supported-providers)
 - [The policy](#the-policy)
 - [Unavailable marks](#unavailable-marks)
+- [Subscription profiles](#subscription-profiles)
 - [Log and statistics](#log-and-statistics)
 - [Data directory](#data-directory)
 - [Capabilities and restarts](#capabilities-and-restarts)
@@ -86,6 +87,7 @@ orchestrator ◀─ candidates: providerInstanceId, model, options, reason
 orchestrator ── delegate_task(target = first candidate) ───────▶ T3 Code
 orchestrator ── log_delegation, later log_outcome ─────────────▶ t3-autopilot (log.jsonl)
 orchestrator ── mark_unavailable (child hit a limit or plan) ──▶ t3-autopilot (unavailable.json)
+orchestrator ── set_subscription (answers to setupNeeded) ─────▶ t3-autopilot (subscriptions.yaml)
 ```
 
 1. T3 Code has no plugin or hook for delegation, so t3-autopilot is a separate stdio MCP server added to the CLI of the agent that acts as orchestrator. A short instruction in your `CLAUDE.md` / `AGENTS.md` tells the orchestrator to call it before every child task.
@@ -93,8 +95,9 @@ orchestrator ── mark_unavailable (child hit a limit or plan) ──▶ t3-au
 3. For the task type, t3-autopilot walks the policy's candidates in order, resolves each model family on every eligible provider instance and returns up to 3 candidates (`maxCandidates`). Free slots are filled from the policy's `fallback` list and, if needed, with a provider's default model (marked "low confidence"). If nothing at all resolves, the single candidate is the orchestrator's own provider, model and options (`source: "inherited"`).
 4. The orchestrator logs each delegation and, after reviewing the child's work, its outcome. `get_stats` summarises that log so you can tune the policy with your own data.
 5. When a child cannot start because of a usage limit or its plan, the orchestrator marks that provider instance (or only that model) unavailable, and until the mark expires its candidates come last with the reason. A `failure` outcome, by contrast, is about quality and moves nothing.
+6. Each provider instance can have a [subscription profile](#subscription-profiles): the plan behind it, how much quota it has, what the user keeps it for, which models it includes and whether it shares its quota with another instance. While an eligible provider has none, the result lists it in `setupNeeded` with the questions to ask the user, and the orchestrator saves the answers with `set_subscription`.
 
-Candidates are ranked by, in this order: not marked unavailable, usage tier (see [Usage limits](#usage-limits)), not the orchestrator's provider when the task type asks for an independent review, and the order in the policy.
+Candidates that break their provider's subscription profile, or cost extra on its plan, are dropped while any other candidate can run. The rest are ranked by, in this order: not marked unavailable, usage tier (see [Usage limits](#usage-limits)), not the orchestrator's provider when the task type asks for an independent review, the profile's tier (primary, then secondary or tight, experimental, lastResort), and the order in the policy.
 
 ## Command line
 
@@ -180,7 +183,8 @@ In short, it tells the orchestrator to:
 5. inherit its own provider and model if there is no candidate or the call fails;
 6. run the `search` a warning suggests and merge it with `mergeCapabilities: true`;
 7. use the provider or model the user names, when they name one;
-8. call `log_delegation` after delegating and `log_outcome` after reviewing the result.
+8. call `log_delegation` after delegating and `log_outcome` after reviewing the result;
+9. when the result has `setupNeeded`, ask the user its questions, all at once and without holding up the task, save the answers with `set_subscription`, and ask the user before delegating to a candidate that a warning says costs extra or is outside its profile.
 
 Whether the orchestrator follows it depends on the model; nothing enforces it. `get_stats` shows how often the first candidate was used.
 
@@ -188,10 +192,12 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 
 | Tool | Input | Output |
 |---|---|---|
-| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType`, `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `usageSource`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`) |
+| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType`, `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `usageSource`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`), `setupNeeded` (only when an eligible provider has no subscription profile) |
 | `log_delegation` | `taskType`, `providerInstanceId`, `model`, optional `options`, `recommendedRank` (1-based, or null), `childThreadId`, `summary` | `delegationId` and `logged` (the stored record) |
 | `log_outcome` | `outcome` (`success`/`corrected`/`failure`), optional `note`, plus `delegationId` **or** `taskType` + `providerInstanceId` + `model` | `logged` (the stored record) |
-| `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model), `reason` (required unless clearing), `until` (ISO date; 24 h by default), or `clear: true` to remove marks | `marked` (or `cleared`) and `active`, every mark in force |
+| `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model; `prefix*` for every id that starts with `prefix`), `reason` (required unless clearing), `until` (ISO date; by default the provider's `quotaWindow`, else 24 h), or `clear: true` to remove marks | `marked` and `untilFrom` (`until`, the `quotaWindow` used, or `default 24 h`), or `cleared`; `active`, every mark in force |
+| `set_subscription` | `providerInstanceId`, `plan`, `quota` (`generous`/`standard`/`tight`), optional `purpose`, `role`, `quotaPool`, `quotaWindow` (`5h`/`weekly`/`monthly`), `includedFamilies` or `paidFamilies`, `onlyFamilies` or `avoidFamilies`, `onlyTaskTypes`; or `remove: true` alone | `saved` (or `removed`, null if there was none), `file`, `subscriptions` (every profile), `missing` (eligible providers of the kept capabilities without a profile; null if none are kept), `warnings` |
+| `get_subscriptions` | none | `file`, `subscriptions`, `missing` |
 | `get_stats` | optional `since` (ISO date), `taskType` | `log` (the file path), counts, success rate and pending delegations in total, per task type and per model; `followedFirstRecommendation`; the `unavailable` marks in force. With `taskType`: `stats` for that type only (or `null`) |
 
 - `capabilities` accepts the object as T3 returns it, a JSON string, a bare `providers` array, or a list of several outputs (`[full, search1, ...]`), merged by `providerInstanceId` (see [Merging outputs](#merging-outputs)). Pass each output complete: the server keeps what it gets.
@@ -200,6 +206,7 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 - `sameAsOrchestrator` is `true` when the candidate is the orchestrator's own provider instance and model, so its native subagent tool does the same job.
 - `skipped` says why providers or policy entries were left out (disabled, not signed in, excluded, marked unavailable); `warnings` are things the orchestrator can act on: models left out of a short list, capabilities read from the disk cache, an unknown key in the policy file.
 - `usageSource` is `none`, or `none+call` when the call passed `usage`.
+- `setupNeeded` has `providers[]` (`providerInstanceId`, `driverKind`, `displayName`, `families`: the policy families with a model listed on it, and `questions` for the user) and `instructions` for the orchestrator. It never blocks the recommendation.
 - Errors (unknown `taskType`, no capabilities yet, no eligible provider, an invalid policy file) come back as tool errors with a message that says what to fix; the server keeps running.
 
 ## Supported providers
@@ -287,7 +294,7 @@ If you pass `usage` (percentages per provider instance, in the same shape as T3'
 
 ## Unavailable marks
 
-`mark_unavailable` records that a provider instance, or one of its models, cannot run children for a while (a usage limit, a plan that does not include the model). Until the mark's `until` (24 hours from now when not given; it must be in the future), `recommend_model` puts those candidates after every other one, with the reason in theirs, or in `skipped` when they do not make the list. A new mark for the same provider instance and model replaces the old one, and `clear: true` removes the marks of a provider instance (only one model's when `model` is given). Marks live in `unavailable.json`:
+`mark_unavailable` records that a provider instance, or one of its models, cannot run children for a while (a usage limit, a plan that does not include the model). A `model` that ends in `*` covers every model id that starts with what comes before it: `opencode-go/*` marks the OpenCode Go plan's models and leaves the instance's other models (`opencode/*` from Zen credits, `openai/*`) alone. For a model, its own mark wins over a `prefix*` one (the longest prefix first), and that over a mark on the whole instance. Until the mark's `until` (it must be in the future; when not given, the [`quotaWindow`](#subscription-profiles) of the provider's subscription profile or, failing that, of another instance of its quota pool: 5 hours, 7 days or 30 days; else 24 hours), `recommend_model` puts those candidates after every other one, with the reason in theirs, or in `skipped` when they do not make the list. A new mark for the same provider instance and model replaces the old one, and `clear: true` removes the marks of a provider instance (only one model's when `model` is given). Marks live in `unavailable.json`:
 
 ```json
 {
@@ -298,7 +305,98 @@ If you pass `usage` (percentages per provider instance, in the same shape as T3'
 }
 ```
 
-A mark says nothing about quality. A poor result is a `failure` in `log_outcome`, which changes no ordering.
+A mark says nothing about quality. A poor result is a `failure` in `log_outcome`, which changes no ordering. A mark on a whole provider instance also applies to the instances that share its [quota pool](#shared-quota-quotapool), for the models their plan includes.
+
+## Subscription profiles
+
+The policy says which model families suit each task; a subscription profile says what each provider instance is worth to the user. Profiles are kept per `providerInstanceId` in `subscriptions.yaml` in the [data directory](#data-directory), written by `set_subscription` (atomically, mode `600`) and re-read on every call. Without the file, recommendations are what they were before, plus `setupNeeded`.
+
+| Key | Required | Meaning |
+|---|---|---|
+| `plan` | yes | The plan in the user's words (`Claude Max`, `OpenCode Go`, `pay per use`), up to 100 characters. Shown in reasons. |
+| `quota` | yes | `generous` (rarely hits the limit), `standard` or `tight` (runs out quickly). |
+| `purpose` | no | What the user wants it for, in their words, up to 300 characters. Informative: the keys below are what the ranking reads. |
+| `role` | no | `primary` (the default), `secondary`, `experimental` or `lastResort`. |
+| `quotaPool` | no | A name shared by every instance that draws from one quota. |
+| `quotaWindow` | no | How often the limit resets: `5h`, `weekly` or `monthly`. A `mark_unavailable` without `until` lasts that long (5 hours, 7 days, 30 days) instead of 24 hours; instances of a quota pool without their own use a pool mate's. The longest the limit can last: pass `until` when the reset time is known. |
+| `includedFamilies` | no | Policy families the plan covers; every other family costs extra on this instance. |
+| `paidFamilies` | no | Policy families billed apart from the plan. Can be combined with `includedFamilies` (no family in both). |
+| `onlyFamilies` | no | The instance is only for these families. Not together with `avoidFamilies`. |
+| `avoidFamilies` | no | Never these families on this instance. |
+| `onlyTaskTypes` | no | The instance is only for these task types. |
+| `updatedAt` | set by the server | When `set_subscription` saved it. |
+
+Family and task type names are checked against the policy in force (your override included) when the profile is saved; if the policy later drops one, `recommend_model` warns. Lists cannot be empty or repeat a name, and a profile with an unknown key is rejected. `set_subscription` replaces the instance's whole profile; `get_subscriptions` shows the current one. An invalid file (bad YAML, an unknown key, a wrong value) is never overwritten: `set_subscription` and `get_subscriptions` fail with the reason, and `recommend_model` ignores every profile, says so in `warnings` and omits `setupNeeded` until it is fixed.
+
+### How a profile changes the recommendation
+
+- **Rules.** A candidate breaks its profile when its family is not in `onlyFamilies`, is in `avoidFamilies`, or the task type is not in `onlyTaskTypes`. A generic-fallback model is checked under the first policy family it matches; one that matches none fails `onlyFamilies` and passes the rest.
+- **Restricted instances.** With `quota: tight` or `role: experimental`, a candidate also breaks the profile when the task is `size: large` or `criticality: high`, or when its family is offered by another eligible instance that is not restricted, does not rule the family out, does not bill it apart and is not marked unavailable as a whole (the user "already has" it there). A family the profile names in `onlyFamilies` is exempt from that last check.
+- **Extra cost.** A candidate whose family is in `paidFamilies`, or missing from `includedFamilies`, costs extra. A model of no policy family (a provider's `auto` or `default`) never counts as paid.
+- **Only option.** Candidates that break their profile or cost extra are dropped, each named in `skipped`, while any other candidate is usable (not marked unavailable, usage below 100%). If none is, they stay, their reason ends with "Used only because no candidate within the subscription profiles can run", and `warnings` has one entry per provider instance (per model for extra cost) telling the orchestrator to ask the user first.
+- **Tier.** Among the rest, `primary` and no role rank first, then `secondary` and `quota: tight`, then `experimental`, then `lastResort`.
+- **Reasons.** When the profile changed anything (a tier, a rule it fits, a family it includes), the candidate's reason says so, starting with `subscription <plan>, quota <quota>` and the pool, window and role when set.
+
+### Shared quota (`quotaPool`)
+
+Instances with the same `quotaPool` draw from one quota: one plan that covers several apps. For the models their plan includes (not those that cost extra):
+
+- a [mark](#unavailable-marks) on a whole instance of the pool applies to the others, with a reason that names it (`shares quota pool "x-premium" with grok, marked unavailable until ...`);
+- usage windows passed for one instance (those not scoped to `modelIds`) count for the others.
+
+### Example: the author's setup
+
+Claude Max; an X Premium plan ($30) whose weekly quota covers the Grok apps and Cursor Pro, where only Grok and Composer are included and Claude, GPT and Gemini are billed at API prices (`paidFamilies` says so explicitly, although `includedFamilies` already implies it); and OpenCode Go, a cheap plan with a tight quota that resets every 5 hours, to try models the other plans lack. No ChatGPT or Gemini plan.
+
+```yaml
+version: 1
+subscriptions:
+  claudeAgent:
+    plan: Claude Max
+    quota: generous
+    role: primary
+  grok:
+    plan: X Subscription Premium ($30)
+    quota: standard
+    purpose: main provider for Grok models
+    role: primary
+    quotaPool: x-premium
+    quotaWindow: weekly
+  cursor:
+    plan: X Subscription Premium ($30), includes Cursor Pro
+    quota: standard
+    purpose: Grok and Composer from the shared weekly quota; Claude, GPT and Gemini cost extra
+    quotaPool: x-premium
+    quotaWindow: weekly
+    includedFamilies: [composer, grok, grok-build, grok-fast]
+    paidFamilies: [claude-opus, claude-sonnet, claude-haiku, claude-fable, gpt, gpt-mini, gemini, gemini-flash, gemini-flash-lite]
+  opencode:
+    plan: OpenCode Go
+    quota: tight
+    purpose: only models that are not in my other subscriptions
+    role: experimental
+    quotaWindow: 5h
+```
+
+For a `review`, with the orchestrator on Claude, the default policy without profiles proposes GPT on Cursor (billed at API prices), GPT on OpenCode (the tight quota) and Gemini on Cursor. With these profiles (invented model names; the fixture is `test/fixtures/subscriptions-setup.json`):
+
+```json
+{
+  "candidates": [
+    { "providerInstanceId": "grok", "model": "grok-8.1", "reason": "review #4: latest grok on grok is grok-8.1, effort high" },
+    { "providerInstanceId": "cursor", "model": "grok-8", "reason": "review #7 (any provider): latest grok on cursor is grok-8 (model has no effort option; using its default; subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: fits its profile (included in the plan: grok))" },
+    { "providerInstanceId": "grok", "model": "grok-8-build", "reason": "fallback #4 (any provider): latest grok-build on grok is grok-8-build, effort high" }
+  ],
+  "skipped": [
+    "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+    "cursor/gemini-7-pro: left out by its subscription profile (...): extra cost: gemini is billed apart from the plan (paidFamilies)",
+    "cursor/claude-opus-9-1: left out by its subscription profile (...): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+    "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent"
+  ]
+}
+```
+
+OpenCode's GPT and Gemini still fit its profile (the user has them nowhere else at no extra cost), but rank after the unrestricted instances, so they come up only when those cannot fill the list, and never for a large or highly critical task. When OpenCode runs out of Zen credits and hits the Go plan's 5-hour limit, `mark_unavailable` with `model: "opencode/*"` and `model: "opencode-go/*"` (the second lasts 5 hours by default, from `quotaWindow`) moves those models to the end, and `skipped` names both marks.
 
 ## Log and statistics
 
@@ -325,10 +423,11 @@ Everything lives in `~/.t3-autopilot/` (or the directory named by the `T3_AUTOPI
 | `log.jsonl` | Delegations and outcomes. |
 | `unavailable.json` | `mark_unavailable` marks: provider instance, model, a reason cut to 200 characters, until when. |
 | `capabilities-cache.json` | The last `orchestrator_capabilities` output: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens. |
+| `subscriptions.yaml` | [Subscription profiles](#subscription-profiles): plan, quota, purpose and rules per provider instance, as the user described them. |
 
 The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests.
 
-On Linux and macOS, `log.jsonl`, `unavailable.json` and `capabilities-cache.json` are readable by their owner only (mode `600`); a log created with a wider mode is narrowed the next time it is written. `policy.yaml` is yours and keeps the mode you give it. The JSON files are written atomically (to a temporary file, then renamed), so another server process never reads a half-written one; on Windows, where a rename fails while another process has the file open, it is tried again a few times over 150 ms before the error is reported.
+On Linux and macOS, `log.jsonl`, `unavailable.json`, `capabilities-cache.json` and `subscriptions.yaml` are readable by their owner only (mode `600`); a log created with a wider mode is narrowed the next time it is written. `policy.yaml` is yours and keeps the mode you give it. The JSON files and `subscriptions.yaml` are written atomically (to a temporary file, then renamed), so another server process never reads a half-written one; on Windows, where a rename fails while another process has the file open, it is tried again a few times over 150 ms before the error is reported.
 
 ## Capabilities and restarts
 
@@ -347,7 +446,7 @@ Outputs are merged by `providerInstanceId`, whether one is passed with `mergeCap
 
 ## FAQ and limitations
 
-**Does it know how much of my subscription quota is left?** No. T3 Code tracks usage limits per provider, but does not expose them over MCP, and t3-autopilot will not read provider tokens or cookies to find out. Usage only counts when the orchestrator passes `usage` in the call; otherwise every provider is treated as available.
+**Does it know how much of my subscription quota is left?** No. T3 Code tracks usage limits per provider, but does not expose them over MCP, and t3-autopilot will not read provider tokens or cookies to find out. Usage only counts when the orchestrator passes `usage` in the call; otherwise every provider is treated as available. What it can know is what the user says: a [subscription profile](#subscription-profiles) with `quota: tight` keeps a provider for what it is for, and `quotaPool` makes a limit on one app count for the others on the same plan.
 
 **Why does the orchestrator have to pass `capabilities`?** An MCP server cannot call T3's tools, and t3-autopilot deliberately does not read T3's files: `settings.json` can hold API keys, and the provider cache is an internal format without sign-in or per-project status ([details](providers.md#local-autodetection-not-implemented)). The orchestrator passes `orchestrator_capabilities` once per thread; the server keeps it.
 

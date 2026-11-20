@@ -35,6 +35,7 @@ With t3-autopilot:
 - **Each kind of task goes to a model that suits it.** There is a ready-made list for eight kinds of task: coding, reviewing, debugging, planning, research, quick edits, design and writing.
 - **You always get the newest version you have.** Preferences say "Claude Opus", not a version number, so a new version is used as soon as your account offers it.
 - **Reviews get a real second opinion,** from a different provider than the one your agent runs on.
+- **Your plans are respected.** A cheap plan with little room is kept for what you bought it for, and models your plan charges extra for are left alone while something included can do the job.
 - **A subscription that runs out does not stop the work.** If a helper cannot start because a limit was reached, your agent moves on to the next option.
 - **You are told what was chosen.** Your agent says in one line which model it picked and why.
 
@@ -157,6 +158,7 @@ You are authorized to pick the provider, model and options of every child task i
 6. If the result has `warnings` about omitted models, call `orchestrator_capabilities` with the `search` they suggest and pass that output to `recommend_model` as `capabilities` with `mergeCapabilities: true`.
 7. If the user names a provider or model for a task, use theirs instead.
 8. Right after delegating, call `log_delegation` with the `taskType`, `providerInstanceId`, `model` and `options` you used, `recommendedRank` (1-based rank of the candidate, or null if you chose something else) and `childThreadId`; keep the `delegationId`. After you review the child's result, call `log_outcome` with that `delegationId` and `outcome`: `success` (accepted as is), `corrected` (you had to fix or redo part of it) or `failure` (not usable; a child that could not start goes to `mark_unavailable` instead); add a short `note`.
+9. If the result has `setupNeeded`, ask the user its questions for every provider listed, all at once, without holding up the current task, and save each answer with `set_subscription` (plan, quota, purpose and, if they apply, quotaWindow, quotaPool, includedFamilies or paidFamilies, role, onlyFamilies or avoidFamilies, onlyTaskTypes). If a `warnings` entry says a candidate costs extra or is outside its subscription profile, ask the user before delegating to it.
 ```
 
 </details>
@@ -222,6 +224,49 @@ You can also change which models are preferred for each kind of task, or add a m
 
 If you make a mistake in the file, nothing breaks: your agent gets a message that says what to fix, and carries on with its own model in the meantime. A setting whose name it does not know (a typo, for example) is ignored, and your agent is told which one.
 
+## Your subscriptions
+
+Not every subscription is the same. One has plenty of room, another runs out in minutes, and some apps charge extra for certain models. The first time your agent meets a provider t3-autopilot knows nothing about, it asks you a few short questions: which plan you have, whether its limit is generous or tight and how often it resets (every 5 hours, weekly or monthly), whether it shares that limit with another app, which models it includes, and what you want it for. Your answers are saved, and from then on:
+
+- **A plan with a tight limit is kept for what you said it is for.** It is not used for big or delicate tasks, nor for models you already have elsewhere.
+- **Models your plan charges extra for are left alone** while an included one can do the job. If one is the only option, your agent asks you first.
+- **Two apps on one plan share one limit.** When one runs out, the other moves to the back of the queue too.
+- **A provider that runs out waits as long as its limit lasts:** 5 hours, a week or a month, as you said, instead of a guess of 24 hours.
+
+Until you answer, everything works as before. For example, with Claude Max, an X Premium plan that covers both Grok and Cursor (in Cursor only Grok and Composer are included; Claude, GPT and Gemini are charged apart) and OpenCode Go to try models you have nowhere else, the saved answers look like this:
+
+```yaml
+version: 1
+subscriptions:
+  claudeAgent:
+    plan: Claude Max
+    quota: generous
+    role: primary
+  grok:
+    plan: X Subscription Premium ($30)
+    quota: standard
+    purpose: main provider for Grok models
+    role: primary
+    quotaPool: x-premium
+    quotaWindow: weekly
+  cursor:
+    plan: X Subscription Premium ($30), includes Cursor Pro
+    quota: standard
+    purpose: Grok and Composer from the shared weekly quota; Claude, GPT and Gemini cost extra
+    quotaPool: x-premium
+    quotaWindow: weekly
+    includedFamilies: [composer, grok, grok-build, grok-fast]
+    paidFamilies: [claude-opus, claude-sonnet, claude-haiku, claude-fable, gpt, gpt-mini, gemini, gemini-flash, gemini-flash-lite]
+  opencode:
+    plan: OpenCode Go
+    quota: tight
+    purpose: only models that are not in my other subscriptions
+    role: experimental
+    quotaWindow: 5h
+```
+
+They live in `subscriptions.yaml`, in the `.t3-autopilot` folder. To change one, tell your agent, or edit the file. The details are in the [reference](docs/reference.md#subscription-profiles).
+
 ## Privacy
 
 Everything t3-autopilot keeps is in one folder on your computer: `.t3-autopilot`, inside your home folder.
@@ -232,6 +277,7 @@ Everything t3-autopilot keeps is in one folder on your computer: `.t3-autopilot`
 | `log.jsonl` | The handoffs your agent noted: kind of task, provider, model, the settings used, the id of the helper's conversation and how it went. A short summary or note only if your agent adds one (200 characters at most). |
 | `unavailable.json` | Providers or models that are out for a while because a limit was reached, with the reason and until when. |
 | `capabilities-cache.json` | The last list of providers and models T3 Code gave your agent, and whether each can be used. No passwords or tokens. |
+| `subscriptions.yaml` | What you told your agent about each subscription: the plan, how much room it has, what it is for and which models it includes. |
 
 What it never does:
 
@@ -264,7 +310,7 @@ Yes. It is built around the way T3 Code hands off tasks.
 All the ones T3 Code offers: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse and ACP agents. Any combination works, including two accounts of the same provider. [docs/providers.md](docs/providers.md) has the details of each.
 
 **Does it know how much of my subscription is left?**
-No. T3 Code does not share that with add-ons, and t3-autopilot will not read your account tokens to find out. What it does: when a helper cannot start because a limit was reached, your agent notes it, and that provider goes to the back of the queue until the limit resets (24 hours if the date is not known).
+No. T3 Code does not share that with add-ons, and t3-autopilot will not read your account tokens to find out. What it does: when a helper cannot start because a limit was reached, your agent notes it, and that provider goes to the back of the queue until the limit resets (24 hours if the date is not known). If you told it how often a plan's limit resets, it waits that long instead (see [Your subscriptions](#your-subscriptions)), and you can tell it which plans run out quickly.
 
 **A new model came out. Do I have to update anything?**
 Usually not. Preferences name families ("Claude Opus", "GPT", "Gemini"), and the newest version you have is picked each time. Only a brand-new family needs a line in your settings file.

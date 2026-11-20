@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Subscription profiles per provider instance, in `subscriptions.yaml` in the data directory (mode `600`, written atomically): `plan`, `quota` (`generous`, `standard`, `tight`), `purpose`, `role` (`primary`, `secondary`, `experimental`, `lastResort`), `quotaPool`, `quotaWindow` (`5h`, `weekly`, `monthly`), `includedFamilies` or `paidFamilies`, `onlyFamilies` or `avoidFamilies`, and `onlyTaskTypes`. `recommend_model` applies them: a provider with a tight quota or the experimental role is not proposed for a model family the user has on another provider, nor for large or highly critical tasks; models billed apart from the plan (Claude, GPT or Gemini on a Cursor plan that only includes Grok and Composer, for example) and anything outside a profile's rules are used only when nothing else can run, and then with a warning; providers with the same `quotaPool` share unavailable marks and usage; each candidate's reason says when its profile changed anything. Without profiles the ranking is unchanged.
+- `setupNeeded` in the `recommend_model` result: the eligible providers without a subscription profile, with the questions the orchestrator should ask the user (plan, quota and how often it resets, a shared quota, models billed apart, purpose). It never blocks the recommendation.
+- `mark_unavailable` without `until` lasts the provider's `quotaWindow` (5 hours, 7 days or 30 days; a quota pool mate's when it has none) instead of 24 hours, and says which in `untilFrom`.
+- `mark_unavailable` accepts a `model` that ends in `*` to mark every model id that starts with it, such as `opencode-go/*` for the OpenCode Go plan's models inside the `opencode` instance. Before, such a mark matched no model.
+- Two tools: `set_subscription` saves (or, with `remove: true`, deletes) a provider's profile with strict validation against the policy's families and task types, and `get_subscriptions` reads them back with the providers still missing one.
+- The orchestrator snippet has a ninth step: ask the user about the providers in `setupNeeded`, save the answers with `set_subscription`, and ask before delegating to a candidate that costs extra or is outside its profile. Paste the new snippet (`npx -y t3-autopilot snippet`) over the old one in your rules file.
 - An animated GIF in both READMEs (light and dark, English and Spanish) that shows how a recommendation is made, generated from `docs/assets/animation/` with `npm run build:animation`.
 
 ## [0.1.1] - 2026-11-19

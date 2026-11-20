@@ -48,8 +48,9 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 | `src/policy.ts`, `policy/default.yaml` | Policy schema, merge rules and the bundled default |
 | `src/log.ts` | JSONL delegation log and stats |
 | `src/unavailable.ts` | Marks for providers and models that hit a usage limit or plan |
+| `src/subscriptions.ts` | Subscription profiles per provider instance (`subscriptions.yaml`) and how they rank candidates |
 | `src/capabilitiesCache.ts`, `src/store.ts` | Capabilities saved for a restart; atomic JSON writes |
-| `src/server.ts` | The five MCP tools |
+| `src/server.ts` | The seven MCP tools |
 | `src/cli.ts`, `src/cliMain.ts`, `src/snippet.ts` | CLI commands and the orchestrator snippet |
 | `test/` | Vitest unit and in-memory MCP tests |
 | `test/e2e/stdio.e2e.mjs` | End-to-end test over stdio (Node's test runner) |
