@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-20
+
 ### Added
 
 - Subscription profiles per provider instance, in `subscriptions.yaml` in the data directory (mode `600`, written atomically): `plan`, `quota` (`generous`, `standard`, `tight`), `purpose`, `role` (`primary`, `secondary`, `experimental`, `lastResort`), `quotaPool`, `quotaWindow` (`5h`, `weekly`, `monthly`), `includedFamilies` or `paidFamilies`, `onlyFamilies` or `avoidFamilies`, and `onlyTaskTypes`. `recommend_model` applies them: a provider with a tight quota or the experimental role is not proposed for a model family the user has on another provider, nor for large or highly critical tasks; models billed apart from the plan (Claude, GPT or Gemini on a Cursor plan that only includes Grok and Composer, for example) and anything outside a profile's rules are used only when nothing else can run, and then with a warning; providers with the same `quotaPool` share unavailable marks and usage; each candidate's reason says when its profile changed anything. Without profiles the ranking is unchanged.
@@ -56,6 +58,7 @@ For those who ran it from a source checkout before this version:
 - The instructions snippet changed. Replace the paragraph in your `CLAUDE.md` / `AGENTS.md` with the output of `t3-autopilot snippet`.
 - The technical part of the README moved to `docs/reference.md`.
 
-[Unreleased]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/pablosalme/t3-autopilot/releases/tag/v0.1.0

@@ -27,7 +27,7 @@ import {
 import { activeMarks, clearUnavailable, markUnavailable, UNAVAILABLE_DEFAULT_HOURS } from "./unavailable.js";
 import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usage.js";
 
-export const VERSION = "0.1.1";
+export const VERSION = "0.1.2";
 
 const NOTHING_TO_MERGE =
   "mergeCapabilities: there were no earlier capabilities to merge into (first call, or the server restarted and " +
