@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { userPolicyPath } from "./paths.js";
 import { createServer, VERSION } from "./server.js";
-import { INSTRUCTIONS_SNIPPET } from "./snippet.js";
+import { INSTRUCTIONS_SNIPPET, ORCA_INSTRUCTIONS_SNIPPET } from "./snippet.js";
 
 /**
  * What `init-policy` writes: a short commented template. Everything not set
@@ -46,13 +46,15 @@ export const HELP = `t3-autopilot ${VERSION}: model selection MCP server for T3 
 
 Usage:
   t3-autopilot [serve]             Start the MCP server on stdio (what your agent CLI runs).
-  t3-autopilot snippet             Print the instructions to paste into CLAUDE.md / AGENTS.md.
+  t3-autopilot snippet [--host orca]
+                                   Print the instructions to paste into CLAUDE.md / AGENTS.md
+                                   (--host orca: for an orchestrator in Orca).
   t3-autopilot init-policy         Write a commented override template to the user policy path.
   t3-autopilot --help | -h | help  Print this text.
   t3-autopilot --version | -v      Print the version.
 
 Data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl,
-capabilities-cache.json, unavailable.json).
+capabilities-cache.json, unavailable.json, orca-models.yaml).
 `;
 
 export interface CliIo {
@@ -72,9 +74,19 @@ export async function runCli(argv: string[], io: CliIo = stdio): Promise<number>
       await server.connect(new StdioServerTransport());
       return 0;
     }
-    case "snippet":
-      io.out(INSTRUCTIONS_SNIPPET);
-      return 0;
+    case "snippet": {
+      const host = argv[1] === "--host" ? argv[2] : argv[1]?.startsWith("--host=") ? argv[1].slice(7) : undefined;
+      if (host === undefined || host === "t3") {
+        io.out(INSTRUCTIONS_SNIPPET);
+        return 0;
+      }
+      if (host === "orca") {
+        io.out(ORCA_INSTRUCTIONS_SNIPPET);
+        return 0;
+      }
+      io.err(`Unknown host "${host}": use t3 or orca.\n`);
+      return 2;
+    }
     case "init-policy": {
       const target = userPolicyPath();
       if (existsSync(target)) {

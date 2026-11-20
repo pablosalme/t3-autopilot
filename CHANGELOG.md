@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Orca support: `recommend_model` accepts the output of `orca agent installed --json` (with `orchestrator` and optional `models`) as `capabilities`, reads models from `orca-models.yaml` in the data directory, and adds to each candidate an `orca` field with the `orca agent launch` command. `t3-autopilot snippet --host orca` prints the instructions for an Orca orchestrator. See docs/orca.md.
+
 ## [0.1.3] - 2026-11-20
 
 ### Added
