@@ -7,6 +7,7 @@ export const DATA_FILES = {
   log: "log.jsonl",
   capabilitiesCache: "capabilities-cache.json",
   unavailable: "unavailable.json",
+  subscriptions: "subscriptions.yaml",
 } as const;
 
 /**

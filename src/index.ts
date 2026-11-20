@@ -19,9 +19,21 @@ export {
   type Recommendation,
   type RecommendInput,
   recommendModel,
+  type SetupNeeded,
+  type SetupProvider,
 } from "./recommend.js";
 export { createServer, VERSION } from "./server.js";
 export { INSTRUCTIONS_SNIPPET } from "./snippet.js";
+export {
+  QUOTAS,
+  type Quota,
+  ROLES,
+  type Role,
+  readSubscriptions,
+  type SubscriptionProfile,
+  type Subscriptions,
+  writeSubscriptions,
+} from "./subscriptions.js";
 export {
   createUsageSource,
   evaluateUsage,

@@ -89,6 +89,21 @@ describe("the marks file", () => {
     expect(findMark(marks, "cursor", "m2")?.reason).toBe("all");
     expect(findMark(marks, "codex", "m1")).toBeUndefined();
   });
+
+  it("a model ending in * covers every id that starts with it; the model's own mark and the longest prefix win", () => {
+    const marks = [
+      mark("opencode", undefined, "all"),
+      mark("opencode", "opencode-go/*", "go plan"),
+      mark("opencode", "opencode-go/kimi*", "kimi"),
+      mark("opencode", "opencode-go/glm-8", "glm"),
+    ];
+    expect(findMark(marks, "opencode", "opencode-go/glm-8")?.reason).toBe("glm");
+    expect(findMark(marks, "opencode", "opencode-go/kimi-k5")?.reason).toBe("kimi");
+    expect(findMark(marks, "opencode", "opencode-go/minimax-m3")?.reason).toBe("go plan");
+    expect(findMark(marks, "opencode", "openai/gpt-9.1-sol")?.reason).toBe("all");
+    expect(findMark([mark("opencode", "opencode-go/*")], "opencode", "opencode/big-pickle")).toBeUndefined();
+    expect(findMark([mark("opencode", "opencode-go/*")], "opencode", "opencode-go/*")?.model).toBe("opencode-go/*");
+  });
 });
 
 describe("recommend_model with unavailable marks", () => {

@@ -36,7 +36,7 @@ describe("an invalid user policy", () => {
 
     // Starting and listing tools does not depend on the policy.
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(5);
+    expect(tools).toHaveLength(7);
     expect(tools.find((t) => t.name === "recommend_model")!.description).toMatch(/\n- code/);
 
     const rec = await recommend(client);

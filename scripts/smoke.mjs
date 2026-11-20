@@ -93,6 +93,36 @@ await recommend("usage-aware (claudeAgent weekly 88%)", {
   usage: [{ providerInstanceId: "claudeAgent", windows: [{ kind: "weekly", usedPercent: 88 }] }],
 });
 
+// 7. Subscription profiles: setupNeeded asks for them, set_subscription saves one, and it applies.
+const subsCaps = load("subscriptions-setup.json");
+const before = await recommend("setupNeeded before any profile", {
+  task: "Research the export formats",
+  taskType: "research",
+  capabilities: subsCaps,
+});
+check("setupNeeded lists every provider", before?.setupNeeded?.providers?.length === 4);
+const saved = await client.callTool({
+  name: "set_subscription",
+  arguments: {
+    providerInstanceId: "cursor",
+    plan: "X Subscription Premium, includes Cursor Pro",
+    quota: "standard",
+    quotaPool: "x-premium",
+    includedFamilies: ["composer", "grok", "grok-build", "grok-fast"],
+  },
+});
+check("set_subscription", !saved.isError, saved.isError ? saved.content[0].text : "");
+const after = await recommend("Cursor's paid models left out", { task: "Review the PR", taskType: "review" });
+check(
+  "no paid Cursor model",
+  after !== undefined &&
+    !after.candidates.some((c) => c.providerInstanceId === "cursor" && /gpt|gemini|claude/.test(c.model)),
+);
+check(
+  "setupNeeded no longer lists cursor",
+  !after?.setupNeeded?.providers?.some((p) => p.providerInstanceId === "cursor"),
+);
+
 const out = await client.callTool({
   name: "log_outcome",
   arguments: {

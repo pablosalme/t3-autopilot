@@ -26,7 +26,7 @@ export interface MarkInput {
   providerInstanceId: string;
   model?: string;
   reason: string;
-  /** ISO date when it should be available again; {@link UNAVAILABLE_DEFAULT_HOURS} from now by default. */
+  /** ISO date when it should be available again; `defaultHours` from now by default. */
   until?: string;
 }
 
@@ -48,9 +48,19 @@ function write(path: string, marks: UnavailableMark[]): void {
 const sameTarget = (a: { providerInstanceId: string; model?: string }, b: typeof a) =>
   a.providerInstanceId === b.providerInstanceId && a.model === b.model;
 
-/** Add a mark (replacing one for the same provider instance and model) and drop expired ones. */
-export function markUnavailable(path: string, input: MarkInput, now: Date = new Date()): UnavailableMark {
-  let until = new Date(now.getTime() + UNAVAILABLE_DEFAULT_HOURS * 3_600_000);
+/**
+ * Add a mark (replacing one for the same provider instance and model) and drop
+ * expired ones. Without `until` it lasts `defaultHours`: the provider's quota
+ * window when its subscription profile has one, else
+ * {@link UNAVAILABLE_DEFAULT_HOURS}.
+ */
+export function markUnavailable(
+  path: string,
+  input: MarkInput,
+  now: Date = new Date(),
+  defaultHours: number = UNAVAILABLE_DEFAULT_HOURS,
+): UnavailableMark {
+  let until = new Date(now.getTime() + defaultHours * 3_600_000);
   if (input.until !== undefined) {
     until = new Date(input.until);
     if (Number.isNaN(until.getTime())) throw new Error(`Invalid date in until: "${input.until}"`);
@@ -88,16 +98,29 @@ export function clearUnavailable(
   return marks.filter(hit);
 }
 
-/** The mark that applies to a model of a provider instance: one for that model, else one for the whole instance. */
+/**
+ * Whether a mark's `model` covers a model id: the same id, or, for a `model`
+ * that ends in `*`, every id that starts with what comes before it
+ * (`opencode-go/*`: the models of one plan inside a provider instance).
+ */
+export function markCovers(markModel: string, model: string): boolean {
+  return markModel.endsWith("*") ? model.startsWith(markModel.slice(0, -1)) : markModel === model;
+}
+
+/**
+ * The mark that applies to a model of a provider instance: one for that model,
+ * else the longest `prefix*` that covers it, else one for the whole instance.
+ */
 export function findMark(
   marks: readonly UnavailableMark[],
   providerInstanceId: string,
   model: string,
 ): UnavailableMark | undefined {
-  return (
-    marks.find((m) => m.providerInstanceId === providerInstanceId && m.model === model) ??
-    marks.find((m) => m.providerInstanceId === providerInstanceId && m.model === undefined)
-  );
+  const own = marks.filter((m) => m.providerInstanceId === providerInstanceId);
+  const prefixes = own
+    .filter((m) => m.model?.endsWith("*") && markCovers(m.model, model))
+    .sort((a, b) => (b.model?.length ?? 0) - (a.model?.length ?? 0));
+  return own.find((m) => m.model === model) ?? prefixes[0] ?? own.find((m) => m.model === undefined);
 }
 
 /** "cursor/gemini-4-neon" or "cursor (every model)". */

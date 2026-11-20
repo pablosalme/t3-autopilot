@@ -12,7 +12,18 @@ import {
 import { computeStats, logDelegation, logOutcome, OUTCOMES, readLog } from "./log.js";
 import { autopilotHome, DATA_FILES } from "./paths.js";
 import { type LoadedPolicy, loadPolicy, type Policy } from "./policy.js";
-import { recommendModel } from "./recommend.js";
+import { eligibleProviders, recommendModel } from "./recommend.js";
+import {
+  QUOTA_WINDOW_HOURS,
+  QUOTA_WINDOWS,
+  QUOTAS,
+  quotaWindowOf,
+  ROLES,
+  readSubscriptions,
+  type Subscriptions,
+  validateProfile,
+  writeSubscriptions,
+} from "./subscriptions.js";
 import { activeMarks, clearUnavailable, markUnavailable, UNAVAILABLE_DEFAULT_HOURS } from "./unavailable.js";
 import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usage.js";
 
@@ -59,6 +70,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   const getLogPath = opts.logPath ?? (() => join(dataDir(), DATA_FILES.log));
   const cachePath = () => join(dataDir(), DATA_FILES.capabilitiesCache);
   const marksPath = () => join(dataDir(), DATA_FILES.unavailable);
+  const subscriptionsPath = () => join(dataDir(), DATA_FILES.subscriptions);
   const now = opts.now ?? (() => new Date());
 
   // Read once at startup only to describe the task types; calls reload it.
@@ -75,6 +87,29 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   // capabilities-cache.json, so a restart between turns does not lose them (for capabilitiesCacheTtlHours).
   // `savedBy`: for a copy read from disk, the orchestrator it was saved for ("claudeAgent / claude-opus-9-2").
   let cached: (CapabilitiesEntry & { fromDisk: boolean; savedBy?: string }) | undefined;
+
+  // The kept capabilities: in memory, else the saved copy if it is younger than the TTL.
+  const keptCapabilities = (ttl: number, at: Date) => {
+    if (cached) return cached;
+    const saved = loadCapabilitiesCache(cachePath(), ttl, at);
+    if (!saved) return undefined;
+    const { inheritedProviderInstanceId: provider, inheritedModel: model } = saved.capabilities;
+    return {
+      ...saved,
+      fromDisk: true,
+      ...(provider ? { savedBy: `${provider}${model ? ` / ${model}` : ""}` } : {}),
+    };
+  };
+
+  /** Eligible providers of the kept capabilities with no subscription profile; null when none are kept. */
+  const withoutProfile = (policy: Policy, subscriptions: Subscriptions): string[] | null => {
+    const caps = keptCapabilities(policy.capabilitiesCacheTtlHours, now())?.capabilities;
+    if (!caps) return null;
+    const inherited = caps.inheritedProviderInstanceId ?? undefined;
+    return eligibleProviders(caps.providers, policy, inherited, [])
+      .map((p) => p.providerInstanceId)
+      .filter((id) => !Object.hasOwn(subscriptions, id));
+  };
 
   // recommend_model calls run one at a time, in the order they arrive. An orchestrator that delegates several
   // children sends its calls together, the first one with the capabilities: handled at once, the others would
@@ -142,18 +177,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const usageSource = opts.usageSource ?? createUsageSource(policy);
           const at = now();
           const ttl = policy.capabilitiesCacheTtlHours;
-          // The kept capabilities: in memory, else the saved copy if it is younger than the TTL.
-          const kept = () => {
-            if (cached) return cached;
-            const saved = loadCapabilitiesCache(cachePath(), ttl, at);
-            if (!saved) return undefined;
-            const { inheritedProviderInstanceId: provider, inheritedModel: model } = saved.capabilities;
-            return {
-              ...saved,
-              fromDisk: true,
-              ...(provider ? { savedBy: `${provider}${model ? ` / ${model}` : ""}` } : {}),
-            };
-          };
+          const kept = () => keptCapabilities(ttl, at);
           let entry: NonNullable<typeof cached>;
           let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
           let keep = true;
@@ -207,8 +231,20 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           }
           const { mergeCapabilities: _merge, capabilities: _caps, ...rest } = args;
           const unavailable = activeMarks(marksPath(), at);
+          const subs = readSubscriptions(subscriptionsPath());
+          if (subs.error) {
+            notes.push(
+              `Subscription profiles are ignored until the file is fixed: ${subs.error}. Tell the user; ` +
+                "set_subscription cannot save over an invalid file.",
+            );
+          }
           const result = await recommendModel(
-            { ...rest, capabilities: entry.capabilities, unavailable },
+            {
+              ...rest,
+              capabilities: entry.capabilities,
+              unavailable,
+              ...(subs.error ? {} : { subscriptions: subs.subscriptions }),
+            },
             policy,
             usageSource,
           );
@@ -292,17 +328,20 @@ export function createServer(opts: ServerOptions = {}): McpServer {
       title: "Mark a provider or model unavailable",
       description:
         'Call when a child cannot start, or stops at once, because of a usage limit or its plan (for example "not ' +
-        'included in your weekly usage"). Until `until` (' +
-        `${UNAVAILABLE_DEFAULT_HOURS} h from now by default), recommend_model moves that provider instance, or only ` +
-        "that model, after every other candidate and gives the reason. Not for poor results: those are log_outcome " +
-        "failure. clear: true removes marks instead.",
+        "included in your weekly usage\"). Until `until` (by default the quotaWindow of the provider's subscription " +
+        `profile, 5h, weekly or monthly, else ${UNAVAILABLE_DEFAULT_HOURS} h from now), recommend_model moves that ` +
+        "provider instance, or only that model, after every other candidate and gives the reason. Not for poor " +
+        "results: those are log_outcome failure. clear: true removes marks instead.",
       inputSchema: {
         providerInstanceId: z.string().min(1),
         model: z
           .string()
           .min(1)
           .optional()
-          .describe("Model id. Omit it when the whole provider instance is unavailable."),
+          .describe(
+            'Model id, or a prefix ending in * for every model id that starts with it (e.g. "opencode-go/*" for one ' +
+              "plan's models inside a provider instance). Omit it when the whole provider instance is unavailable.",
+          ),
         reason: z
           .string()
           .min(1)
@@ -312,7 +351,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           .string()
           .optional()
           .describe(
-            `ISO date when it should work again (for example the resetsAt of the usage window). Default: ${UNAVAILABLE_DEFAULT_HOURS} h from now.`,
+            "ISO date when it should work again (for example the resetsAt of the usage window). Default: the " +
+              `quotaWindow of the provider's subscription profile (or of its quotaPool), else ${UNAVAILABLE_DEFAULT_HOURS} h from now.`,
           ),
         clear: z
           .boolean()
@@ -330,8 +370,141 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           return ok({ cleared, active: activeMarks(path, at) });
         }
         if (args.reason === undefined) throw new Error("mark_unavailable needs a reason (or clear: true)");
-        const marked = markUnavailable(path, { ...args, reason: args.reason }, at);
-        return ok({ marked, active: activeMarks(path, at) });
+        let hours = UNAVAILABLE_DEFAULT_HOURS;
+        let untilFrom = args.until === undefined ? `default ${UNAVAILABLE_DEFAULT_HOURS} h` : "until";
+        if (args.until === undefined) {
+          const subs = readSubscriptions(subscriptionsPath());
+          const found = subs.error ? undefined : quotaWindowOf(subs.subscriptions, args.providerInstanceId);
+          if (found) {
+            hours = QUOTA_WINDOW_HOURS[found.window];
+            untilFrom = `quotaWindow ${found.window} of ${found.from}'s subscription profile`;
+          }
+        }
+        const marked = markUnavailable(path, { ...args, reason: args.reason }, at, hours);
+        return ok({ marked, untilFrom, active: activeMarks(path, at) });
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "set_subscription",
+    {
+      title: "Save a provider's subscription profile",
+      description:
+        "Save what the user told you about the plan behind a provider instance, usually after recommend_model " +
+        "returned setupNeeded. Replaces that provider's whole profile (pass every field to keep; get_subscriptions " +
+        "shows it); remove: true deletes it. recommend_model then ranks and filters with it: a tight quota or the " +
+        "experimental role keeps a provider for families the user has nowhere else and for tasks that are neither " +
+        "large nor highly critical; models billed apart (paidFamilies, or not in includedFamilies) and anything " +
+        "outside onlyFamilies, avoidFamilies or onlyTaskTypes are used only when nothing else can run; providers " +
+        "with the same quotaPool share usage limits.",
+      inputSchema: {
+        providerInstanceId: z.string().min(1).describe("Provider instance id, as in orchestrator_capabilities."),
+        plan: z
+          .string()
+          .optional()
+          .describe('The plan in the user\'s words, e.g. "Claude Max", "OpenCode Go". Required unless remove.'),
+        quota: z
+          .enum(QUOTAS)
+          .optional()
+          .describe("generous (rarely hits the limit), standard, or tight (runs out quickly). Required unless remove."),
+        purpose: z.string().optional().describe("What the user wants it for, in their words (300 characters at most)."),
+        role: z
+          .enum(ROLES)
+          .optional()
+          .describe(
+            "primary (any task; the default), secondary (after primary ones), experimental (only what its rules " +
+              "allow, like a tight quota) or lastResort (after every other candidate).",
+          ),
+        quotaPool: z
+          .string()
+          .optional()
+          .describe("Same name on every provider instance that shares one quota (one plan for several apps)."),
+        quotaWindow: z
+          .enum(QUOTA_WINDOWS)
+          .optional()
+          .describe("How often the plan's limit resets: 5h, weekly or monthly. Sets how long mark_unavailable lasts."),
+        includedFamilies: z
+          .array(z.string())
+          .optional()
+          .describe("Policy families the plan covers; every other family is billed apart."),
+        paidFamilies: z
+          .array(z.string())
+          .optional()
+          .describe("Policy families billed apart from the plan (API prices, prepaid credit)."),
+        onlyFamilies: z.array(z.string()).optional().describe("Use this provider only for these policy families."),
+        avoidFamilies: z.array(z.string()).optional().describe("Never use these policy families on this provider."),
+        onlyTaskTypes: z.array(z.string()).optional().describe("Use this provider only for these task types."),
+        remove: z.boolean().optional().describe("Delete this provider's profile instead (takes no other field)."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        const { policy } = load();
+        const path = subscriptionsPath();
+        const current = readSubscriptions(path);
+        if (current.error) throw new Error(`${current.error}\nFix or delete that file first; it was not changed.`);
+        const subscriptions: Subscriptions = { ...current.subscriptions };
+        const { remove, ...fields } = args;
+        const id = fields.providerInstanceId;
+        if (remove) {
+          const extra = Object.keys(fields).filter((k) => k !== "providerInstanceId");
+          if (extra.length) throw new Error(`remove: true takes only providerInstanceId, not ${extra.join(", ")}`);
+          const removed = Object.hasOwn(subscriptions, id) ? subscriptions[id] : undefined;
+          if (removed) {
+            delete subscriptions[id];
+            writeSubscriptions(path, subscriptions);
+          }
+          return ok({ removed: removed ? { providerInstanceId: id, ...removed } : null, file: path, subscriptions });
+        }
+        const profile = validateProfile(fields, policy, now());
+        subscriptions[id] = profile;
+        writeSubscriptions(path, subscriptions);
+        const missing = withoutProfile(policy, subscriptions);
+        const warnings: string[] = [];
+        const caps = keptCapabilities(policy.capabilitiesCacheTtlHours, now())?.capabilities;
+        if (caps && !caps.providers.some((p) => p.providerInstanceId === id)) {
+          warnings.push(
+            `${id} is not in the last orchestrator_capabilities output; check the providerInstanceId (saved anyway).`,
+          );
+        }
+        if (profile.quotaPool !== undefined) {
+          const mates = Object.keys(subscriptions).filter(
+            (other) => other !== id && subscriptions[other]?.quotaPool === profile.quotaPool,
+          );
+          if (mates.length === 0) {
+            warnings.push(
+              `No other provider has quotaPool "${profile.quotaPool}" yet; save the same name on the providers that share it.`,
+            );
+          }
+        }
+        return ok({ saved: { providerInstanceId: id, ...profile }, file: path, subscriptions, missing, warnings });
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_subscriptions",
+    {
+      title: "Read the subscription profiles",
+      description:
+        "The saved subscription profiles by provider instance, and `missing`: providers of the last " +
+        "orchestrator_capabilities output that have none (null if no capabilities are kept).",
+      inputSchema: {},
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async () => {
+      try {
+        const { policy } = load();
+        const path = subscriptionsPath();
+        const { subscriptions, error } = readSubscriptions(path);
+        if (error) throw new Error(error);
+        return ok({ file: path, subscriptions, missing: withoutProfile(policy, subscriptions) });
       } catch (e) {
         return fail(e);
       }

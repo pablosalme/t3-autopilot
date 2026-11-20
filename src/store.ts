@@ -3,8 +3,9 @@ import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node
 import { dirname } from "node:path";
 
 /**
- * Mode of the data files (log, capabilities cache, unavailable marks): they
- * hold task summaries and the user's providers, so only the owner reads them.
+ * Mode of the data files (log, capabilities cache, unavailable marks,
+ * subscriptions): they hold task summaries, the user's providers and their
+ * plans, so only the owner reads them.
  * It applies on POSIX; Windows ignores everything but the write bit.
  */
 export const PRIVATE_FILE_MODE = 0o600;
@@ -47,20 +48,25 @@ export function renameWithRetry(from: string, to: string, deps: RenameDeps = {})
 }
 
 /**
- * Write JSON atomically: to a temporary file in the same directory, then
+ * Write text atomically: to a temporary file in the same directory, then
  * renamed over the target, so a reader (another server process included)
  * never sees a half-written file. The file is readable by its owner only.
  */
-export function writeJsonAtomic(path: string, data: unknown, indent?: number): void {
+export function writeTextAtomic(path: string, text: string): void {
   mkdirSync(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.${randomUUID().slice(0, 8)}.tmp`;
   try {
-    writeFileSync(tmp, `${JSON.stringify(data, null, indent)}\n`, { encoding: "utf8", mode: PRIVATE_FILE_MODE });
+    writeFileSync(tmp, text, { encoding: "utf8", mode: PRIVATE_FILE_MODE });
     renameWithRetry(tmp, path);
   } catch (e) {
     rmSync(tmp, { force: true });
     throw e;
   }
+}
+
+/** Write JSON atomically, readable by its owner only (see {@link writeTextAtomic}). */
+export function writeJsonAtomic(path: string, data: unknown, indent?: number): void {
+  writeTextAtomic(path, `${JSON.stringify(data, null, indent)}\n`);
 }
 
 /** Parsed JSON of a file, or undefined when it is missing, unreadable or not JSON. */

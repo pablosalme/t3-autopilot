@@ -2,7 +2,8 @@
 // does (a child process speaking MCP on stdin/stdout), connects the MCP SDK
 // client to it and walks the flow the orchestrator snippet asks for:
 // recommend with capabilities, recommend from the cache, merge a `search`
-// output, log the delegation and its outcome, read the stats.
+// output, log the delegation and its outcome, read the stats, and save the
+// subscription profiles that setupNeeded asks for.
 //
 // It uses Node's own test runner, so it also runs on Node versions Vitest
 // does not support:
@@ -13,7 +14,7 @@
 // against that executable instead of dist/cli.js (scripts/pack-check.mjs does).
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -80,15 +81,17 @@ describe(`orchestrator flow over stdio (${bin ? "installed bin" : "dist/cli.js"}
     await client?.close();
   });
 
-  it("initializes and lists the five tools", async () => {
+  it("initializes and lists the seven tools", async () => {
     assert.deepEqual(client.getServerVersion(), { name: "t3-autopilot", version: pkg.version });
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map((t) => t.name).sort(), [
       "get_stats",
+      "get_subscriptions",
       "log_delegation",
       "log_outcome",
       "mark_unavailable",
       "recommend_model",
+      "set_subscription",
     ]);
     const description = tools.find((t) => t.name === "recommend_model").description;
     for (const type of ["review", "debug", "plan", "research", "quick", "code", "design", "writing"]) {
@@ -227,7 +230,7 @@ describe("a broken user policy over stdio", () => {
 
   it("does not stop the server: tools report the file, and fixing it needs no restart", async () => {
     const { tools } = await client.listTools();
-    assert.equal(tools.length, 5);
+    assert.equal(tools.length, 7);
     const args = { task: "x", taskType: "code", capabilities: fixture("codex") };
     const broken = await client.callTool({ name: "recommend_model", arguments: args });
     assert.equal(broken.isError, true);
@@ -294,6 +297,76 @@ describe("calls sent at once over stdio", () => {
     } finally {
       await client.close();
     }
+  });
+});
+
+describe("subscription profiles over stdio", () => {
+  // The invented setup of Claude, Grok, Cursor and OpenCode, and the profiles of the user's real case.
+  const setup = JSON.parse(readFileSync(join(root, "test", "fixtures", "subscriptions-setup.json"), "utf8"));
+  const profiles = {
+    claudeAgent: { plan: "Claude Max", quota: "generous", role: "primary" },
+    grok: {
+      plan: "X Subscription Premium ($30)",
+      quota: "standard",
+      quotaPool: "x-premium",
+      quotaWindow: "weekly",
+      role: "primary",
+    },
+    cursor: {
+      plan: "X Subscription Premium ($30), includes Cursor Pro",
+      quota: "standard",
+      quotaPool: "x-premium",
+      quotaWindow: "weekly",
+      includedFamilies: ["composer", "grok", "grok-build", "grok-fast"],
+      paidFamilies: ["claude-opus", "claude-sonnet", "gpt", "gpt-mini", "gemini", "gemini-flash", "gemini-flash-lite"],
+    },
+    opencode: { plan: "OpenCode Go", quota: "tight", quotaWindow: "5h", role: "experimental" },
+  };
+
+  it("asks for the missing profiles, saves the answers, and they survive a restart", async () => {
+    const home = newHome();
+    let { client } = await start(home);
+    const call = async (name, args) => {
+      const res = await client.callTool({ name, arguments: args });
+      assert.ok(!res.isError, text(res));
+      return res.structuredContent;
+    };
+    const review = { task: "Review the PR", taskType: "review" };
+    const first = await call("recommend_model", { ...review, capabilities: setup });
+    assert.deepEqual(
+      first.setupNeeded.providers.map((p) => p.providerInstanceId),
+      ["claudeAgent", "grok", "cursor", "opencode"],
+    );
+    assert.ok(first.candidates.length > 0);
+    for (const [providerInstanceId, profile] of Object.entries(profiles)) {
+      await call("set_subscription", { providerInstanceId, ...profile });
+    }
+    const file = join(home, "subscriptions.yaml");
+    if (process.platform !== "win32") assert.equal(statSync(file).mode & 0o777, 0o600);
+
+    await client.close();
+    ({ client } = await start(home));
+    const got = await call("get_subscriptions", {});
+    assert.deepEqual(Object.keys(got.subscriptions).sort(), ["claudeAgent", "cursor", "grok", "opencode"]);
+    const next = await call("recommend_model", review);
+    assert.equal(next.setupNeeded, undefined);
+    assert.equal(ids(next)[0], "grok/grok-8.1");
+    assert.ok(!ids(next).some((id) => /^cursor\/(claude|gpt|gemini)/.test(id)), ids(next).join(", "));
+    const marked = await call("mark_unavailable", {
+      providerInstanceId: "opencode",
+      model: "opencode-go/*",
+      reason: "5-hour limit reached",
+    });
+    assert.equal(marked.untilFrom, "quotaWindow 5h of opencode's subscription profile");
+    const hours = (Date.parse(marked.marked.until) - Date.parse(marked.marked.markedAt)) / 3_600_000;
+    assert.equal(hours, 5);
+    const bad = await client.callTool({
+      name: "set_subscription",
+      arguments: { providerInstanceId: "opencode", plan: "OpenCode Go", quota: "tight", onlyFamilies: ["gemmini"] },
+    });
+    assert.equal(bad.isError, true);
+    assert.match(text(bad), /unknown family "gemmini"/);
+    await client.close();
   });
 });
 

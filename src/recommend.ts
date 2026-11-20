@@ -10,6 +10,17 @@ import { classifyTask } from "./classify.js";
 import { buildOptions, shiftEffort } from "./effort.js";
 import { familyPattern, resolveFamily, resolveFamilyDetail } from "./families.js";
 import type { CandidateRule, Effort, Family, Policy } from "./policy.js";
+import {
+  allowsFamily,
+  describeProfile,
+  evaluateProfile,
+  isPaidFamily,
+  isRestricted,
+  type ProfileVerdict,
+  type SubscriptionProfile,
+  type Subscriptions,
+  unknownNames,
+} from "./subscriptions.js";
 import { findMark, markTarget, type UnavailableMark } from "./unavailable.js";
 import { evaluateUsage, type ProviderUsage, type UsageSource, type UsageTier } from "./usage.js";
 
@@ -27,6 +38,12 @@ export interface RecommendInput {
   usage?: ProviderUsage[];
   /** Marks in force (mark_unavailable): those candidates go last, with the reason. */
   unavailable?: readonly UnavailableMark[];
+  /**
+   * Subscription profiles by provider instance id (set_subscription). When
+   * given, they rank and filter candidates, and eligible providers without one
+   * are listed in `setupNeeded`. Undefined: no profiles and no setupNeeded.
+   */
+  subscriptions?: Readonly<Subscriptions>;
 }
 
 /** Where a candidate came from: the task type's list, the policy fallback, the generic fallback, or the orchestrator itself. */
@@ -42,6 +59,33 @@ export interface Candidate {
   sameAsOrchestrator: boolean;
 }
 
+/** A provider instance with no subscription profile, and what to ask the user about it. */
+export interface SetupProvider {
+  providerInstanceId: string;
+  driverKind: string;
+  displayName?: string;
+  /** Policy families with a model listed on it, for onlyFamilies / avoidFamilies. */
+  families: string[];
+  questions: string[];
+}
+
+export interface SetupNeeded {
+  providers: SetupProvider[];
+  instructions: string;
+}
+
+export const SETUP_INSTRUCTIONS =
+  "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every " +
+  "model were included in the plan. Without holding up the current task (this recommendation works without them), " +
+  "ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and " +
+  "purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how " +
+  "often its limit resets; quotaPool, the same name on every provider " +
+  "that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, " +
+  "if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies " +
+  "and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other " +
+  'subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan "not ' +
+  'given" and quota standard, so they are not asked again.';
+
 export interface Recommendation {
   taskType: string;
   classification: { source: "given" | "classifier"; reason: string; matched: string[] };
@@ -51,6 +95,8 @@ export interface Recommendation {
   /** Things the orchestrator can act on, e.g. models omitted from the short list. */
   warnings: string[];
   usageSource: string;
+  /** Eligible providers with no subscription profile; only when profiles were passed and some are missing. */
+  setupNeeded?: SetupNeeded;
 }
 
 /**
@@ -77,6 +123,12 @@ interface Scored {
   unavailable?: UnavailableMark;
   usageTier: UsageTier;
   inheritedPenalty: 0 | 1;
+  /** From the provider's subscription profile: 0 none, up to 3 for lastResort. */
+  profileTier: number;
+  /** Why the candidate breaks its provider's subscription profile; empty when it fits or there is none. */
+  outside: string[];
+  /** Why the model costs extra on its provider's plan (billed apart); undefined when it is included. */
+  extraCost?: string;
   order: number;
 }
 
@@ -93,9 +145,11 @@ interface Ctx {
   seen: Set<string>;
   out: Scored[];
   shift: number;
+  /** Per family: other eligible providers that offer it and are not restricted by their profile. */
+  familyHolders: Map<string, Provider[]>;
 }
 
-function eligibleProviders(
+export function eligibleProviders(
   providers: Provider[],
   policy: Policy,
   inherited: string | undefined,
@@ -135,18 +189,49 @@ function push(
   source: CandidateSource,
   why: string,
   noDemote = false,
-  more: { notes?: string[] } = {},
+  more: { notes?: string[]; family?: string } = {},
 ): void {
-  const key = `${provider.providerInstanceId}\u0000${model.id}`;
+  const id = provider.providerInstanceId;
+  const key = `${id}\u0000${model.id}`;
   if (ctx.seen.has(key)) return;
   ctx.seen.add(key);
   const { policy } = ctx;
+  const profile = profileFor(ctx, id);
+  const fit: ProfileVerdict = profile
+    ? evaluateProfile(profile, {
+        family: more.family,
+        taskType: ctx.input.taskType as string,
+        size: ctx.input.size ?? "medium",
+        criticality: ctx.input.criticality ?? "normal",
+        familyElsewhere:
+          more.family === undefined
+            ? []
+            : holdersOf(ctx, more.family)
+                .filter((p) => p.providerInstanceId !== id)
+                .map((p) => p.providerInstanceId),
+      })
+    : { tier: 0, outside: [] };
+  // A model billed apart does not draw from the plan's quota, so a shared pool's limits do not apply to it.
+  const pool = profile?.quotaPool !== undefined && fit.extraCost === undefined ? profile.quotaPool : undefined;
+  const mates = pool === undefined ? [] : poolMates(ctx, id, pool);
   const built = buildOptions(model, policy.effortOptionIds, effort, extra);
-  const verdict = evaluateUsage(ctx.usage.get(provider.providerInstanceId), model.id, policy);
+  const verdict = evaluateUsage(poolUsage(ctx, id, mates), model.id, policy);
   let usageTier = verdict.tier;
   const notes = [...(more.notes ?? []), ...built.notes];
-  const mark = findMark(ctx.input.unavailable ?? [], provider.providerInstanceId, model.id);
-  if (mark) notes.push(`marked unavailable until ${mark.until}: ${mark.reason}; moved to the end`);
+  const marks = ctx.input.unavailable ?? [];
+  let mark = findMark(marks, id, model.id);
+  if (mark) {
+    notes.push(`marked unavailable until ${mark.until}: ${mark.reason}; moved to the end`);
+  } else {
+    // A limit on another provider of the same quota pool (a whole-provider mark) is this one's limit too.
+    mark = mates.map((mate) => marks.find((m) => m.providerInstanceId === mate && m.model === undefined)).find(Boolean);
+    if (mark) {
+      notes.push(
+        `shares quota pool "${pool}" with ${mark.providerInstanceId}, marked unavailable until ${mark.until}: ` +
+          `${mark.reason}; moved to the end`,
+      );
+    }
+  }
   if (verdict.note) notes.push(verdict.note);
   if (usageTier === 1 && noDemote) {
     usageTier = 0;
@@ -154,24 +239,94 @@ function push(
   } else if (usageTier > 0) {
     notes.push("demoted for usage");
   }
-  const inheritedPenalty: 0 | 1 =
-    ctx.avoidInherited && ctx.inherited !== undefined && provider.providerInstanceId === ctx.inherited ? 1 : 0;
+  const inheritedPenalty: 0 | 1 = ctx.avoidInherited && ctx.inherited !== undefined && id === ctx.inherited ? 1 : 0;
   if (inheritedPenalty) notes.push("same provider as the orchestrator; demoted for an independent review");
+  if (fit.note) notes.push(fit.note);
   const effortText = built.effort ? `, effort ${built.effort}` : "";
   ctx.out.push({
     candidate: {
-      providerInstanceId: provider.providerInstanceId,
+      providerInstanceId: id,
       model: model.id,
       options: built.options,
       reason: `${why}${effortText}${notes.length ? ` (${notes.join("; ")})` : ""}`,
       source,
-      sameAsOrchestrator: provider.providerInstanceId === ctx.inherited && model.id === ctx.inheritedModel,
+      sameAsOrchestrator: id === ctx.inherited && model.id === ctx.inheritedModel,
     },
     ...(mark ? { unavailable: mark } : {}),
     usageTier,
     inheritedPenalty,
+    profileTier: fit.tier,
+    outside: fit.outside,
+    ...(fit.extraCost ? { extraCost: fit.extraCost } : {}),
     order: ctx.out.length,
   });
+}
+
+/** The subscription profile of a provider instance, if the call passed one (own keys only). */
+function profileFor(ctx: Ctx, id: string): SubscriptionProfile | undefined {
+  const subs = ctx.input.subscriptions;
+  return subs && Object.hasOwn(subs, id) ? subs[id] : undefined;
+}
+
+/** Other provider instances (eligible or not) whose profile names the same quota pool. */
+function poolMates(ctx: Ctx, id: string, pool: string): string[] {
+  return Object.entries(ctx.input.subscriptions ?? {})
+    .filter(([other, p]) => other !== id && p.quotaPool === pool)
+    .map(([other]) => other);
+}
+
+/**
+ * Usage of a provider, plus the windows of its quota pool mates that are not
+ * scoped to their own models: a shared quota is used up from every app.
+ */
+function poolUsage(ctx: Ctx, id: string, mates: string[]): ProviderUsage | undefined {
+  const own = ctx.usage.get(id);
+  const shared = mates.flatMap((mate) => (ctx.usage.get(mate)?.windows ?? []).filter((w) => !w.modelIds));
+  if (shared.length === 0) return own;
+  return { providerInstanceId: id, windows: [...(own?.windows ?? []), ...shared] };
+}
+
+/**
+ * Eligible providers that offer a family as part of their plan, and whose
+ * profile neither restricts them nor rules the family out (nor bills it
+ * apart), and that are not marked unavailable as a whole: where the user
+ * "already has" that family now.
+ */
+function holdersOf(ctx: Ctx, familyName: string): Provider[] {
+  const known = ctx.familyHolders.get(familyName);
+  if (known) return known;
+  const family = ctx.policy.families[familyName];
+  const marks = ctx.input.unavailable ?? [];
+  const holders = family
+    ? ctx.providers.filter((p) => {
+        // A provider marked unavailable as a whole cannot stand in for the restricted one now.
+        if (marks.some((m) => m.providerInstanceId === p.providerInstanceId && m.model === undefined)) return false;
+        const profile = profileFor(ctx, p.providerInstanceId);
+        if (
+          profile &&
+          (isRestricted(profile) ||
+            profile.role === "lastResort" ||
+            !allowsFamily(profile, familyName) ||
+            isPaidFamily(profile, familyName))
+        ) {
+          return false;
+        }
+        return resolveFamily(family, p) !== undefined;
+      })
+    : [];
+  ctx.familyHolders.set(familyName, holders);
+  return holders;
+}
+
+/** The first policy family (in policy order) that a model of this provider belongs to. */
+function familyOfModel(policy: Policy, provider: Provider, model: Model): string | undefined {
+  for (const [name, family] of Object.entries(policy.families)) {
+    const re = familyPattern(family, provider);
+    if (!re?.test(model.id)) continue;
+    if (family.exclude && new RegExp(family.exclude, "i").test(model.id)) continue;
+    return name;
+  }
+  return undefined;
 }
 
 /**
@@ -213,7 +368,7 @@ function scoreRules(
       const notes: string[] = [];
       if (ties > 0) notes.push(`same version as ${ties} other${ties === 1 ? "" : "s"}, T3 lists this one first`);
       if (truncated > 0) notes.push(`${truncated} models left out of the list, so a newer one may exist`);
-      push(ctx, provider, model, effort, rule.options, source, why, rule.noDemote, { notes });
+      push(ctx, provider, model, effort, rule.options, source, why, rule.noDemote, { notes, family: rule.family });
     }
   });
 }
@@ -257,6 +412,8 @@ function scoreGeneric(ctx: Ctx, effort: Effort | undefined): void {
       undefined,
       "generic",
       `generic fallback (low confidence, not chosen by a policy family): ${model.id} is ${why} on ${provider.providerInstanceId}`,
+      false,
+      { family: familyOfModel(ctx.policy, provider, model) },
     );
   }
 }
@@ -268,6 +425,7 @@ function rank(scored: Scored[]): Scored[] {
       marked(a) - marked(b) ||
       a.usageTier - b.usageTier ||
       a.inheritedPenalty - b.inheritedPenalty ||
+      a.profileTier - b.profileTier ||
       a.order - b.order,
   );
 }
@@ -419,6 +577,7 @@ export async function recommendModel(
     shift:
       (policy.effortShift.size[input.size ?? "medium"] ?? 0) +
       (policy.effortShift.criticality[input.criticality ?? "normal"] ?? 0),
+    familyHolders: new Map(),
   };
 
   // Every stage is scored, then ranked: the task type's candidates come first,
@@ -427,6 +586,7 @@ export async function recommendModel(
   scoreRules(policy.fallback, "fallback", "fallback", ctx, typeDef.candidates[0]?.effort);
   if (policy.genericFallback) scoreGeneric(ctx, typeDef.candidates[0]?.effort);
 
+  const profileWarnings = applyProfiles(ctx);
   const ranked = rank(ctx.out);
   let candidates = ranked.slice(0, policy.maxCandidates).map((s) => s.candidate);
   // Marked candidates that did not make the list are reported once per mark.
@@ -452,7 +612,18 @@ export async function recommendModel(
     }
   }
 
-  const warnings = omittedWarnings(ctx, [...typeDef.candidates, ...policy.fallback]);
+  const warnings = [...omittedWarnings(ctx, [...typeDef.candidates, ...policy.fallback]), ...profileWarnings];
+  for (const [id, profile] of Object.entries(input.subscriptions ?? {})) {
+    if (!ids.includes(id)) continue;
+    const unknown = unknownNames(profile, policy);
+    if (unknown.length) {
+      warnings.push(
+        `${id}: its subscription profile names ${unknown.slice(0, -2).join("; ")}; those names never match. ` +
+          "Ask the user and save the profile again with set_subscription.",
+      );
+    }
+  }
+  const setupNeeded = input.subscriptions ? setupFor(ctx, input.subscriptions) : undefined;
 
   return {
     taskType,
@@ -461,5 +632,90 @@ export async function recommendModel(
     skipped,
     warnings,
     usageSource: input.usage?.length ? `${usageSource.name}+call` : usageSource.name,
+    ...(setupNeeded ? { setupNeeded } : {}),
+  };
+}
+
+/** Whether a scored candidate can run now: not marked unavailable and its usage not exhausted. */
+const usable = (s: Scored) => !s.unavailable && s.usageTier < 2;
+
+/** Why a candidate should not be used while another can: outside its profile, or billed apart from the plan. */
+function blockers(s: Scored): string[] {
+  return [...s.outside, ...(s.extraCost ? [`extra cost: ${s.extraCost}`] : [])];
+}
+
+/**
+ * Candidates outside their provider's subscription profile, or billed apart
+ * from its plan, are dropped (and named in `skipped`) while any other
+ * candidate can run. If none can, they stay, with a warning per provider:
+ * they are the only option.
+ */
+function applyProfiles(ctx: Ctx): string[] {
+  const blocked = ctx.out.filter((s) => blockers(s).length > 0);
+  if (blocked.length === 0) return [];
+  const profileOf = (id: string) => {
+    const profile = profileFor(ctx, id);
+    return profile ? ` (${describeProfile(profile)})` : "";
+  };
+  if (ctx.out.some((s) => blockers(s).length === 0 && usable(s))) {
+    ctx.out = ctx.out.filter((s) => blockers(s).length === 0);
+    for (const s of blocked) {
+      const { providerInstanceId: id, model } = s.candidate;
+      ctx.skipped.push(
+        `${id}/${model}: left out by its subscription profile${profileOf(id)}: ${blockers(s).join("; ")}`,
+      );
+    }
+    return [];
+  }
+  const warnings: string[] = [];
+  const seen = new Set<string>();
+  for (const s of blocked) {
+    const id = s.candidate.providerInstanceId;
+    s.candidate.reason += " Used only because no candidate within the subscription profiles can run.";
+    const warnKey = `${id}\u0000${s.extraCost ? s.candidate.model : ""}`;
+    if (seen.has(warnKey)) continue;
+    seen.add(warnKey);
+    if (s.extraCost) {
+      warnings.push(
+        `${id}/${s.candidate.model}${profileOf(id)} costs extra: ${s.extraCost}, so it is paid at API prices or ` +
+          "from prepaid credit. It is recommended only because no included model can run. Ask the user before delegating.",
+      );
+      continue;
+    }
+    const tight = profileFor(ctx, id)?.quota === "tight" ? " Its quota is tight and may run out quickly." : "";
+    warnings.push(
+      `${id}${profileOf(id)} is recommended outside its subscription profile (${s.outside.join("; ")}) because no ` +
+        `other candidate can run.${tight} Tell the user before delegating.`,
+    );
+  }
+  return warnings;
+}
+
+/** Eligible providers with no subscription profile, with the questions to ask the user. */
+function setupFor(ctx: Ctx, subscriptions: Readonly<Subscriptions>): SetupNeeded | undefined {
+  const missing = ctx.providers.filter((p) => !Object.hasOwn(subscriptions, p.providerInstanceId));
+  if (missing.length === 0) return undefined;
+  return {
+    providers: missing.map((p) => {
+      const id = p.providerInstanceId;
+      const name = p.displayName && p.displayName !== id ? `${p.displayName} (${id})` : id;
+      const families = Object.entries(ctx.policy.families)
+        .filter(([, family]) => resolveFamily(family, p) !== undefined)
+        .map(([familyName]) => familyName);
+      return {
+        providerInstanceId: id,
+        driverKind: driverKindOf(p),
+        ...(p.displayName ? { displayName: p.displayName } : {}),
+        families,
+        questions: [
+          `Which plan do you have on ${name}? For example a monthly subscription such as "Claude Max" or "OpenCode Go", a free tier, or pay per use.`,
+          `Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?`,
+          `Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?`,
+          `Which models does the plan include, and are any billed apart at API prices or from prepaid credit?`,
+          `What do you want ${name} for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?`,
+        ],
+      };
+    }),
+    instructions: SETUP_INSTRUCTIONS,
   };
 }

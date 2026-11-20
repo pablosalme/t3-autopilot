@@ -78,6 +78,12 @@ describe("CLI", () => {
     expect(INSTRUCTIONS_SNIPPET).toMatch(/fails with "No capabilities yet", call `orchestrator_capabilities`/);
   });
 
+  it("the snippet asks the user about providers in setupNeeded and saves the answers with set_subscription", () => {
+    expect(INSTRUCTIONS_SNIPPET).toMatch(/If the result has `setupNeeded`, ask the user its questions/);
+    expect(INSTRUCTIONS_SNIPPET).toMatch(/save each answer with `set_subscription`/);
+    expect(INSTRUCTIONS_SNIPPET).toMatch(/costs extra or is outside its subscription profile, ask the user/);
+  });
+
   it("the snippet asks for the whole capabilities output, never a trimmed copy", () => {
     expect(INSTRUCTIONS_SNIPPET).toMatch(/Pass it whole, exactly as returned, never trimmed or summarised/);
   });

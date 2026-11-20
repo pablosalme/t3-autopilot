@@ -1,0 +1,430 @@
+{
+  "parentThreadId": "thread:fixture-orchestrator",
+  "inheritedProviderInstanceId": "claudeAgent",
+  "inheritedModel": "claude-opus-9-2",
+  "inheritedOptions": [
+    {
+      "id": "effort",
+      "value": "high"
+    }
+  ],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "claudeAgent",
+      "driverKind": "claudeAgent",
+      "displayName": "Claude",
+      "models": [
+        {
+          "id": "claude-opus-9-2",
+          "label": "Claude Opus 9.2",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "ultracode",
+              "values": [
+                false,
+                true
+              ]
+            },
+            {
+              "id": "contextWindow",
+              "values": [
+                "200k",
+                "1m"
+              ],
+              "default": "200k"
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-9-1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "claude-sonnet-9-1",
+          "label": "Claude Sonnet 9.1",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "claude-haiku-9-0",
+          "label": "Claude Haiku 9.0",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "claude-fable-8-3",
+          "label": "Claude Fable 8.3",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "grok",
+      "driverKind": "grok",
+      "displayName": "Grok",
+      "models": [
+        {
+          "id": "grok-build",
+          "label": "Grok Build"
+        },
+        {
+          "id": "grok-8.1",
+          "label": "Grok 8.1",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-8",
+          "label": "Grok 8",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-8.1-fast",
+          "label": "Grok 8.1 Fast"
+        },
+        {
+          "id": "grok-8-build",
+          "label": "Grok 8 Build",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        }
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "cursor",
+      "driverKind": "cursor",
+      "displayName": "Cursor",
+      "models": [
+        {
+          "id": "default",
+          "label": "Auto"
+        },
+        {
+          "id": "composer-4",
+          "label": "Composer 4",
+          "options": [
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            }
+          ]
+        },
+        {
+          "id": "composer-3.5",
+          "label": "Composer 3.5",
+          "options": [
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-9-1",
+          "label": "Claude Opus 9.1",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "gpt-9.1-sol",
+          "label": "GPT-9.1 Sol",
+          "options": [
+            {
+              "id": "reasoning",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "gpt-8.4-mini",
+          "label": "GPT 8.4 Mini",
+          "options": [
+            {
+              "id": "reasoning",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "gemini-7-pro",
+          "label": "Gemini 7 Pro",
+          "options": [
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            },
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "gemini-7.5-flash-lite",
+          "label": "Gemini 7.5 Flash Lite"
+        },
+        {
+          "id": "grok-8",
+          "label": "Grok 8"
+        }
+      ],
+      "omittedModels": 0,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "opencode",
+      "driverKind": "opencode",
+      "displayName": "OpenCode",
+      "models": [
+        {
+          "id": "opencode/big-pickle",
+          "label": "Big Pickle",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "agent",
+              "values": [
+                "build",
+                "plan"
+              ],
+              "default": "build"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/kimi-k5",
+          "label": "Kimi K5",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/gemini-7.5-pro",
+          "label": "Gemini 7.5 Pro",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "anthropic/claude-sonnet-9-1",
+          "label": "Claude Sonnet 9.1",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "openai/gpt-9.1-sol",
+          "label": "GPT-9.1 Sol",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/glm-8",
+          "label": "GLM 8",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          ]
+        }
+      ],
+      "omittedModels": 0,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    }
+  ]
+}
