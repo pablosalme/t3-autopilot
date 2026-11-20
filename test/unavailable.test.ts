@@ -107,7 +107,7 @@ describe("the marks file", () => {
 });
 
 describe("recommend_model with unavailable marks", () => {
-  it("moves a marked provider after every other candidate and reports it when cut", async () => {
+  it("moves a marked provider after the available candidates and reports it when cut", async () => {
     expect(ids(await rec([]))).toEqual([
       "codex/gpt-9.1-sol",
       "cursor/claude-opus-9-1",
@@ -125,18 +125,48 @@ describe("recommend_model with unavailable marks", () => {
     const r = await rec([mark("cursor", "claude-opus-9-1", "Claude Opus 9.1 is not included in your plan")]);
     expect(ids(r)).not.toContain("cursor/claude-opus-9-1");
     expect(ids(r)[0]).toBe("codex/gpt-9.1-sol");
-    // A single provider: the marked candidates are all there is, so they stay, last and explained.
+    // A single provider: the marked candidates are all there is, so they stay, first, and say their quota may be out.
     const only = await rec([mark("codex")], "codex");
     expect(only.candidates.length).toBeGreaterThan(0);
     for (const c of only.candidates) {
-      expect(c.reason).toContain(`marked unavailable until ${hours(24).toISOString()}: weekly limit reached`);
+      expect(c.reason).toContain(
+        `marked unavailable until ${hours(24).toISOString()}: weekly limit reached; quota may be exhausted; ` +
+          "no available candidate ranks higher",
+      );
+      expect(c.reason).not.toMatch(/moved to the end|ranked after available/);
     }
     const one = await rec([mark("codex", "gpt-9.1-sol")], "codex");
     expect(ids(one)[0]).not.toBe("codex/gpt-9.1-sol");
     expect(ids(one)).toContain("codex/gpt-9.1-sol");
     expect(one.candidates.at(-1)!.reason).toMatch(
-      /marked unavailable until .*: weekly limit reached; moved to the end/,
+      /marked unavailable until .*: weekly limit reached; ranked after available candidates/,
     );
+  });
+
+  it("says where a marked candidate stands: after available ones, or first with its quota maybe exhausted", async () => {
+    const until = hours(24).toISOString();
+    const providers = (driverFixture("mixed") as { providers: { providerInstanceId: string }[] }).providers.map(
+      (p) => p.providerInstanceId,
+    );
+    // Every provider but Codex marked: Codex comes first and the marked ones say they rank after it.
+    const after = await rec(providers.filter((id) => id !== "codex").map((id) => mark(id)));
+    expect(ids(after)[0]).toBe("codex/gpt-9.1-sol");
+    const later = after.candidates.filter((c) => c.providerInstanceId !== "codex");
+    expect(later.length).toBeGreaterThan(0);
+    for (const c of later) {
+      expect(c.reason).toContain(
+        `marked unavailable until ${until}: weekly limit reached; ranked after available candidates`,
+      );
+    }
+    // Every provider marked: the first one heads the list, and no reason claims it went to the end.
+    const all = await rec(providers.map((id) => mark(id)));
+    expect(ids(all)[0]).toBe("codex/gpt-9.1-sol");
+    for (const c of all.candidates) {
+      expect(c.reason).toContain(
+        `marked unavailable until ${until}: weekly limit reached; quota may be exhausted; no available candidate ranks higher`,
+      );
+      expect(c.reason).not.toMatch(/moved to the end|ranked after available/);
+    }
   });
 });
 

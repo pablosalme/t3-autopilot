@@ -234,7 +234,7 @@ describe("one plan for Grok and Cursor (quotaPool, includedFamilies)", () => {
     expect(ids(r)).toEqual(["claudeAgent/claude-haiku-9-0", "cursor/composer-4"]);
     const composer = r.candidates.find((c) => c.model === "composer-4");
     expect(composer?.reason).toMatch(
-      /shares quota pool "x-premium" with grok, marked unavailable until .*: weekly limit of the X plan reached; moved to the end/,
+      /shares quota pool "x-premium" with grok, marked unavailable until .*: weekly limit of the X plan reached; ranked after available candidates/,
     );
     // Without the pool, a mark on Grok says nothing about Cursor.
     const { quotaPool: _pool, ...cursorAlone } = USER.cursor!;
@@ -668,8 +668,12 @@ describe("the user's real capabilities of 2026-11-20, with Grok's weekly limit r
     it("puts what the plan includes first, although marked, and what costs extra last, with a warning", async () => {
       const r = await review({}, excluded);
       expect(ids(r)).toEqual(["grok/grok-4.7", "cursor/grok-4.7", "cursor/gemini-4-neon"]);
-      expect(r.candidates[0]!.reason).toMatch(/marked unavailable until/);
-      expect(r.candidates[1]!.reason).toMatch(/shares quota pool "x-premium" with grok/);
+      expect(r.candidates[0]!.reason).toMatch(
+        /marked unavailable until .*; quota may be exhausted; no available candidate ranks higher/,
+      );
+      expect(r.candidates[1]!.reason).toMatch(
+        /shares quota pool "x-premium" with grok, .*; quota may be exhausted; no available candidate ranks higher/,
+      );
       expect(r.candidates[2]!.reason).toMatch(/extra cost: gemini is billed apart.*Used only because/);
       const warnings = r.warnings.filter((w) => !/left out \d+ models/.test(w));
       expect(warnings[1]).toBe(

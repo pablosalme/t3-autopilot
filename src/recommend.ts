@@ -37,7 +37,7 @@ export interface RecommendInput {
   capabilities: unknown;
   /** Usage percentages known by the caller; they override the configured usage source. */
   usage?: ProviderUsage[];
-  /** Marks in force (mark_unavailable): those candidates go last, with the reason. */
+  /** Marks in force (mark_unavailable): those candidates go after the ones not marked, with the reason. */
   unavailable?: readonly UnavailableMark[];
   /**
    * Subscription profiles by provider instance id (set_subscription). When
@@ -123,7 +123,15 @@ const GENERIC_DEFAULT_IDS = ["auto", "default"];
 
 interface Scored {
   candidate: Candidate;
-  /** Marked unavailable (a usage limit or plan): after every other candidate. */
+  /** The reason's text before its notes ("review #1: latest gpt on codex is ..., effort high"). */
+  why: string;
+  /** The notes in the reason's parentheses; `candidate.reason` is written from them (see `reasonOf`). */
+  notes: string[];
+  /** Index in `notes` of the unavailable mark's note, which gets the candidate's place once ranked. */
+  markNote?: number;
+  /** Text after the notes, such as why a candidate outside its profile is listed. */
+  tail?: string;
+  /** Marked unavailable (a usage limit or plan): after the candidates not marked (see `rank`). */
   unavailable?: UnavailableMark;
   usageTier: UsageTier;
   inheritedPenalty: 0 | 1;
@@ -224,16 +232,18 @@ function push(
   const notes = [...(more.notes ?? []), ...built.notes];
   const marks = ctx.input.unavailable ?? [];
   let mark = findMark(marks, id, model.id);
+  let markNote: number | undefined;
   if (mark) {
-    notes.push(`marked unavailable until ${mark.until}: ${mark.reason}; moved to the end`);
+    markNote = notes.push(`marked unavailable until ${mark.until}: ${mark.reason}`) - 1;
   } else {
     // A limit on another provider of the same quota pool (a whole-provider mark) is this one's limit too.
     mark = mates.map((mate) => marks.find((m) => m.providerInstanceId === mate && m.model === undefined)).find(Boolean);
     if (mark) {
-      notes.push(
-        `shares quota pool "${pool}" with ${mark.providerInstanceId}, marked unavailable until ${mark.until}: ` +
-          `${mark.reason}; moved to the end`,
-      );
+      markNote =
+        notes.push(
+          `shares quota pool "${pool}" with ${mark.providerInstanceId}, marked unavailable until ${mark.until}: ` +
+            mark.reason,
+        ) - 1;
     }
   }
   if (verdict.note) notes.push(verdict.note);
@@ -247,15 +257,18 @@ function push(
   if (inheritedPenalty) notes.push("same provider as the orchestrator; demoted for an independent review");
   if (fit.note) notes.push(fit.note);
   const effortText = built.effort ? `, effort ${built.effort}` : "";
-  ctx.out.push({
+  const scored: Scored = {
     candidate: {
       providerInstanceId: id,
       model: model.id,
       options: built.options,
-      reason: `${why}${effortText}${notes.length ? ` (${notes.join("; ")})` : ""}`,
+      reason: "",
       source,
       sameAsOrchestrator: id === ctx.inherited && model.id === ctx.inheritedModel,
     },
+    why: `${why}${effortText}`,
+    notes,
+    ...(markNote !== undefined ? { markNote } : {}),
     ...(mark ? { unavailable: mark } : {}),
     usageTier,
     inheritedPenalty,
@@ -263,6 +276,33 @@ function push(
     outside: fit.outside,
     ...(fit.extraCost ? { extraCost: fit.extraCost } : {}),
     order: ctx.out.length,
+  };
+  scored.candidate.reason = reasonOf(scored);
+  ctx.out.push(scored);
+}
+
+/** A candidate's reason: its text, its notes (the mark's with `place` when given) and its tail. */
+function reasonOf(s: Scored, place?: string): string {
+  const notes =
+    place === undefined || s.markNote === undefined
+      ? s.notes
+      : s.notes.map((note, i) => (i === s.markNote ? `${note}; ${place}` : note));
+  return `${s.why}${notes.length ? ` (${notes.join("; ")})` : ""}${s.tail ?? ""}`;
+}
+
+/**
+ * Where each marked candidate of the final list stands, in its reason: after
+ * the available (not marked) candidates that rank higher, or, when none does,
+ * ahead of them (first, or after other marked ones), so its quota may be
+ * exhausted and the child may not start.
+ */
+function placeMarked(listed: Scored[]): void {
+  listed.forEach((s, i) => {
+    if (!s.unavailable) return;
+    const place = listed.slice(0, i).some((x) => !x.unavailable)
+      ? "ranked after available candidates"
+      : "quota may be exhausted; no available candidate ranks higher";
+    s.candidate.reason = reasonOf(s, place);
   });
 }
 
@@ -623,6 +663,7 @@ export async function recommendModel(
   const onlyOption = applyProfiles(ctx);
   const ranked = rank(ctx.out);
   const listed = shortList(ranked, policy.maxCandidates);
+  placeMarked(listed);
   const left = ranked.filter((s) => !listed.includes(s));
   let candidates = listed.map((s) => s.candidate);
   // Marked candidates that did not make the list are reported once per mark.
@@ -710,7 +751,8 @@ function applyProfiles(ctx: Ctx): boolean {
     return false;
   }
   for (const s of blocked) {
-    s.candidate.reason += " Used only because no candidate within the subscription profiles can run.";
+    s.tail = " Used only because no candidate within the subscription profiles can run.";
+    s.candidate.reason = reasonOf(s);
   }
   return true;
 }
