@@ -230,7 +230,7 @@ Not every subscription is the same. One has plenty of room, another runs out in 
 
 - **A plan with a tight limit is kept for what you said it is for.** It is not used for big or delicate tasks, nor for models you already have elsewhere.
 - **Models your plan charges extra for are left alone** while an included one can do the job. If one is the only option, your agent asks you first.
-- **Two apps on one plan share one limit.** When one runs out, the other moves to the back of the queue too.
+- **Two apps on one plan share one limit.** When one runs out, the other also drops behind the included ones that can still run.
 - **A provider that runs out waits as long as its limit lasts:** 5 hours, a week or a month, as you said, instead of a guess of 24 hours.
 
 Until you answer, everything works as before. For example, with Claude Max, an X Premium plan that covers both Grok and Cursor (in Cursor only Grok and Composer are included; Claude, GPT and Gemini are charged apart) and OpenCode Go to try models you have nowhere else, the saved answers look like this:
@@ -310,7 +310,7 @@ Yes. It is built around the way T3 Code hands off tasks.
 All the ones T3 Code offers: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse and ACP agents. Any combination works, including two accounts of the same provider. [docs/providers.md](docs/providers.md) has the details of each.
 
 **Does it know how much of my subscription is left?**
-No. T3 Code does not share that with add-ons, and t3-autopilot will not read your account tokens to find out. What it does: when a helper cannot start because a limit was reached, your agent notes it, and that provider goes to the back of the queue until the limit resets (24 hours if the date is not known). If you told it how often a plan's limit resets, it waits that long instead (see [Your subscriptions](#your-subscriptions)), and you can tell it which plans run out quickly.
+No. T3 Code does not share that with add-ons, and t3-autopilot will not read your account tokens to find out. What it does: when a helper cannot start because a limit was reached, your agent notes it, and that provider drops behind the ones that can still run until the limit resets (24 hours if the date is not known; only models your plan charges extra for stay behind it). If you told it how often a plan's limit resets, it waits that long instead (see [Your subscriptions](#your-subscriptions)), and you can tell it which plans run out quickly.
 
 **A new model came out. Do I have to update anything?**
 Usually not. Preferences name families ("Claude Opus", "GPT", "Gemini"), and the newest version you have is picked each time. Only a brand-new family needs a line in your settings file.

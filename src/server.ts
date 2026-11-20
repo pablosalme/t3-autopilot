@@ -332,8 +332,9 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         'Call when a child cannot start, or stops at once, because of a usage limit or its plan (for example "not ' +
         "included in your weekly usage\"). Until `until` (by default the quotaWindow of the provider's subscription " +
         `profile, 5h, weekly or monthly, else ${UNAVAILABLE_DEFAULT_HOURS} h from now), recommend_model moves that ` +
-        "provider instance, or only that model, after every other candidate and gives the reason. Not for poor " +
-        "results: those are log_outcome failure. clear: true removes marks instead.",
+        "provider instance, or only that model, after every other candidate except models that cost extra on " +
+        "their plan (those go after it), and gives the reason. Not for poor results: those are log_outcome " +
+        "failure. clear: true removes marks instead.",
       inputSchema: {
         providerInstanceId: z.string().min(1),
         model: z

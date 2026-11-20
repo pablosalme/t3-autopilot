@@ -232,7 +232,7 @@ No todas las suscripciones son iguales. Una tiene margen de sobra, otra se agota
 
 - **Un plan con el límite justo se reserva para lo que dijiste.** No se usa para tareas grandes o delicadas, ni para modelos que ya tienes en otro sitio.
 - **Los modelos que tu plan cobra aparte no se tocan** mientras haya uno incluido que sirva. Si es la única opción, tu agente te pregunta antes.
-- **Dos aplicaciones con un mismo plan comparten límite.** Cuando una se agota, la otra también pasa al final de la cola.
+- **Dos aplicaciones con un mismo plan comparten límite.** Cuando una se agota, la otra también queda detrás de las opciones incluidas que aún se pueden usar.
 - **Un proveedor agotado espera lo que dura su límite:** 5 horas, una semana o un mes, según le dijiste, en vez de suponer 24 horas.
 
 Mientras no contestes, todo funciona como antes. Por ejemplo, con Claude Max, un plan X Premium que cubre Grok y Cursor (en Cursor solo entran Grok y Composer; Claude, GPT y Gemini se cobran aparte) y OpenCode Go para probar modelos que no tienes en ningún otro sitio, las respuestas guardadas quedan así:
@@ -312,7 +312,7 @@ Sí. Está pensado para la forma en que T3 Code reparte las tareas.
 Con todos los que ofrece T3 Code: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse y agentes ACP. Vale cualquier combinación, también dos cuentas del mismo proveedor. En [providers.md](providers.md) (en inglés) están los detalles de cada uno.
 
 **¿Sabe cuánto me queda de cada suscripción?**
-No. T3 Code no comparte ese dato con los complementos, y t3-autopilot no va a leer los tokens de tus cuentas para averiguarlo. Lo que sí hace: cuando un ayudante no puede arrancar porque se ha llegado a un límite, tu agente lo apunta y ese proveedor pasa al final de la cola hasta que el límite se renueve (24 horas si no se sabe la fecha). Si le dijiste cada cuánto se renueva el límite de un plan, espera ese tiempo (mira [Tus suscripciones](#tus-suscripciones)), y también puedes decirle qué planes se agotan enseguida.
+No. T3 Code no comparte ese dato con los complementos, y t3-autopilot no va a leer los tokens de tus cuentas para averiguarlo. Lo que sí hace: cuando un ayudante no puede arrancar porque se ha llegado a un límite, tu agente lo apunta y ese proveedor queda detrás de los que aún se pueden usar hasta que el límite se renueve (24 horas si no se sabe la fecha; solo los modelos que tu plan cobra aparte siguen detrás de él). Si le dijiste cada cuánto se renueva el límite de un plan, espera ese tiempo (mira [Tus suscripciones](#tus-suscripciones)), y también puedes decirle qué planes se agotan enseguida.
 
 **Ha salido un modelo nuevo. ¿Tengo que actualizar algo?**
 Normalmente no. Las preferencias nombran familias («Claude Opus», «GPT», «Gemini») y cada vez se escoge la versión más reciente que tengas. Solo una familia completamente nueva necesita una línea en tu fichero de ajustes.
