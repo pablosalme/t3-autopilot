@@ -24,6 +24,7 @@ import {
   validateProfile,
   writeSubscriptions,
 } from "./subscriptions.js";
+import { resolveTaskType } from "./taskTypes.js";
 import { activeMarks, clearUnavailable, markUnavailable, UNAVAILABLE_DEFAULT_HOURS } from "./unavailable.js";
 import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usage.js";
 
@@ -121,11 +122,9 @@ export function createServer(opts: ServerOptions = {}): McpServer {
     return result;
   };
 
-  const requireTaskType = (policy: Policy, taskType: string | undefined) => {
-    if (taskType !== undefined && !Object.hasOwn(policy.taskTypes, taskType)) {
-      throw new Error(`Unknown taskType "${taskType}". Known types: ${Object.keys(policy.taskTypes).join(", ")}`);
-    }
-  };
+  // The policy's task type for what the caller passed (an alias too); throws when there is none.
+  const requireTaskType = <T extends string | undefined>(policy: Policy, taskType: T): T =>
+    (taskType === undefined ? taskType : resolveTaskType(policy, taskType).taskType) as T;
 
   const server = new McpServer({ name: "t3-autopilot", version: VERSION });
 
@@ -145,7 +144,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           .string()
           .optional()
           .describe(
-            "Task type from the list in the description. Pass it; the keyword classifier is only a last resort.",
+            "Task type from the list in the description. Pass it; the keyword classifier is only a last resort. " +
+              "Common synonyms (implementation, fix, docs, ...) are accepted; the result's taskType is the type used.",
           ),
         size: z.enum(["small", "medium", "large"]).optional().describe("Rough size of the task. Shifts effort."),
         criticality: z.enum(["low", "normal", "high"]).optional().describe("How costly a mistake is. Shifts effort."),
@@ -286,8 +286,10 @@ export function createServer(opts: ServerOptions = {}): McpServer {
     },
     async (args) => {
       try {
-        requireTaskType(load().policy, args.taskType);
-        const record = logDelegation(getLogPath(), args);
+        const record = logDelegation(getLogPath(), {
+          ...args,
+          taskType: requireTaskType(load().policy, args.taskType),
+        });
         return ok({ delegationId: record.id, logged: record });
       } catch (e) {
         return fail(e);
@@ -314,8 +316,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
     },
     async (args) => {
       try {
-        requireTaskType(load().policy, args.taskType);
-        return ok({ logged: logOutcome(getLogPath(), args) });
+        const taskType = requireTaskType(load().policy, args.taskType);
+        return ok({ logged: logOutcome(getLogPath(), { ...args, ...(taskType !== undefined ? { taskType } : {}) }) });
       } catch (e) {
         return fail(e);
       }

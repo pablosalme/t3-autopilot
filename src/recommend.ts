@@ -21,6 +21,7 @@ import {
   type Subscriptions,
   unknownNames,
 } from "./subscriptions.js";
+import { resolveTaskType } from "./taskTypes.js";
 import { findMark, markTarget, type UnavailableMark } from "./unavailable.js";
 import { evaluateUsage, type ProviderUsage, type UsageSource, type UsageTier } from "./usage.js";
 
@@ -87,7 +88,10 @@ export const SETUP_INSTRUCTIONS =
   'given" and quota standard, so they are not asked again.';
 
 export interface Recommendation {
+  /** The policy's task type: the one given, the one an alias stands for, or the classifier's. */
   taskType: string;
+  /** The taskType the caller passed, when it was an alias (or another spelling) of `taskType`. */
+  requestedTaskType?: string;
   classification: { source: "given" | "classifier"; reason: string; matched: string[] };
   candidates: Candidate[];
   /** Why providers or policy entries were left out. */
@@ -518,11 +522,19 @@ export async function recommendModel(
   const caps = parseCapabilities(input.capabilities);
 
   let classification: Recommendation["classification"];
+  let requestedTaskType: string | undefined;
   if (input.taskType !== undefined) {
-    if (!Object.hasOwn(policy.taskTypes, input.taskType)) {
-      throw new Error(`Unknown taskType "${input.taskType}". Known types: ${Object.keys(policy.taskTypes).join(", ")}`);
-    }
-    classification = { source: "given", reason: "taskType given by the caller", matched: [] };
+    const resolved = resolveTaskType(policy, input.taskType);
+    requestedTaskType = resolved.requested;
+    classification = {
+      source: "given",
+      reason:
+        requestedTaskType === undefined
+          ? "taskType given by the caller"
+          : `taskType "${requestedTaskType}" given by the caller, resolved to ${resolved.taskType}`,
+      matched: [],
+    };
+    input = { ...input, taskType: resolved.taskType };
   } else {
     const c = classifyTask(input.task, policy);
     classification = {
@@ -627,6 +639,7 @@ export async function recommendModel(
 
   return {
     taskType,
+    ...(requestedTaskType !== undefined ? { requestedTaskType } : {}),
     classification,
     candidates,
     skipped,

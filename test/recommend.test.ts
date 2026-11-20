@@ -30,6 +30,54 @@ describe("recommendModel", () => {
     await expect(rec({ taskType: "nope" })).rejects.toThrow(/Unknown taskType "nope"/);
   });
 
+  it("resolves common synonyms of a task type to the type itself, and says so", async () => {
+    const cases: [string, string][] = [
+      ["implementation", "code"],
+      ["implement", "code"],
+      ["coding", "code"],
+      ["feature", "code"],
+      ["bugfix", "debug"],
+      ["fix", "debug"],
+      ["docs", "writing"],
+      ["Code Review", "review"],
+      ["code_review", "review"],
+      ["Implementation", "code"],
+      [" REVIEW ", "review"],
+    ];
+    for (const [given, type] of cases) {
+      const r = await rec({ task: "anything", taskType: given });
+      expect(r.taskType, given).toBe(type);
+      expect(r.requestedTaskType, given).toBe(given);
+      expect(r.classification).toEqual({
+        source: "given",
+        reason: `taskType "${given}" given by the caller, resolved to ${type}`,
+        matched: [],
+      });
+      expect(ids(r), given).toEqual(ids(await rec({ task: "anything", taskType: type })));
+    }
+    const exact = await rec({ task: "anything", taskType: "code" });
+    expect(exact.requestedTaskType).toBeUndefined();
+    expect(exact.classification.reason).toBe("taskType given by the caller");
+  });
+
+  it("lists the aliases when a task type is unknown", async () => {
+    await expect(rec({ taskType: "nope" })).rejects.toThrow(
+      /^Unknown taskType "nope"\. Known types: review, debug, plan, research, quick, code, design, writing\. Accepted aliases, by type: .*code \(implementation, implement, coding, feature,/,
+    );
+  });
+
+  it("a task type of the policy wins over an alias of the same name", async () => {
+    const own = policyWith({
+      taskTypes: { fix: { candidates: [{ provider: "codex", family: "gpt", effort: "low" }] } },
+    });
+    const r = await rec({ task: "anything", taskType: "fix" }, own);
+    expect(r.taskType).toBe("fix");
+    expect(r.requestedTaskType).toBeUndefined();
+    // An alias whose task type the policy removed is not accepted.
+    const noDebug = policyWith({ taskTypes: { debug: null } });
+    await expect(rec({ taskType: "bugfix" }, noDebug)).rejects.toThrow(/Unknown taskType "bugfix"/);
+  });
+
   it("accepts capabilities as a JSON string", async () => {
     const r = await rec({ capabilities: JSON.stringify(fixture()) });
     expect(ids(r)[0]).toBe("claudeAgent/claude-opus-7-1");

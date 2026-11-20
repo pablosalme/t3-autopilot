@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `taskType` accepts common synonyms and other spellings, resolved to the policy's type: `implementation`, `implement`, `coding` and `feature` are `code`, `bugfix` and `fix` are `debug`, `docs` is `writing`, and so on (the full list is in the reference). Case, spaces and underscores do not matter. The result says what was resolved in `requestedTaskType` and `classification.reason`; `log_delegation` and `log_outcome` store the type's own name. Before, `"implementation"` failed with "Unknown taskType". An unknown name now lists the aliases as well.
+
 ## [0.1.2] - 2026-11-20
 
 ### Added

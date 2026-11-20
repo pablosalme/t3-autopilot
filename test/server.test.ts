@@ -127,6 +127,28 @@ describe("MCP server", () => {
     expect((stats.structuredContent as { stats: unknown }).stats).toBeNull();
   });
 
+  it("log_delegation and log_outcome store the task type an alias stands for", async () => {
+    const client = await connect();
+    const del = await client.callTool({
+      name: "log_delegation",
+      arguments: { taskType: "implementation", providerInstanceId: "codex", model: "gpt-6.2-codex" },
+    });
+    expect(del.isError).toBeFalsy();
+    expect((del.structuredContent as { logged: { taskType: string } }).logged.taskType).toBe("code");
+    const out = await client.callTool({
+      name: "log_outcome",
+      arguments: { taskType: "fix", providerInstanceId: "codex", model: "gpt-6.2-codex", outcome: "success" },
+    });
+    expect(out.isError).toBeFalsy();
+    expect((out.structuredContent as { logged: { taskType: string } }).logged.taskType).toBe("debug");
+    const rec = await client.callTool({
+      name: "recommend_model",
+      arguments: { task: "x", taskType: "implementation", capabilities: fixture() },
+    });
+    expect(rec.isError).toBeFalsy();
+    expect(rec.structuredContent).toMatchObject({ taskType: "code", requestedTaskType: "implementation" });
+  });
+
   it("validates input: bad enums, missing fields, bad dates", async () => {
     const client = await connect();
     const bad = async (name: string, args: Record<string, unknown>) => {

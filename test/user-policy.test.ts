@@ -132,9 +132,11 @@ describe("a partial user policy", () => {
     const client = await start();
     const quick = await recommend(client, { taskType: "quick" });
     expect(quick.isError).toBe(true);
-    expect(resultText(quick)).toBe(
-      'Unknown taskType "quick". Known types: review, debug, plan, research, code, design, writing',
+    expect(resultText(quick)).toMatch(
+      /^Unknown taskType "quick"\. Known types: review, debug, plan, research, code, design, writing\. /,
     );
+    // Its aliases go with it.
+    expect(resultText(quick)).not.toMatch(/trivial|chore/);
     expect((await recommend(client)).isError).toBeFalsy();
   });
 

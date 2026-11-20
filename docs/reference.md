@@ -192,7 +192,7 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 
 | Tool | Input | Output |
 |---|---|---|
-| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType`, `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `usageSource`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`), `setupNeeded` (only when an eligible provider has no subscription profile) |
+| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType` (the type used), `requestedTaskType` (only when `taskType` was an alias), `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `usageSource`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`), `setupNeeded` (only when an eligible provider has no subscription profile) |
 | `log_delegation` | `taskType`, `providerInstanceId`, `model`, optional `options`, `recommendedRank` (1-based, or null), `childThreadId`, `summary` | `delegationId` and `logged` (the stored record) |
 | `log_outcome` | `outcome` (`success`/`corrected`/`failure`), optional `note`, plus `delegationId` **or** `taskType` + `providerInstanceId` + `model` | `logged` (the stored record) |
 | `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model; `prefix*` for every id that starts with `prefix`), `reason` (required unless clearing), `until` (ISO date; by default the provider's `quotaWindow`, else 24 h), or `clear: true` to remove marks | `marked` and `untilFrom` (`until`, the `quotaWindow` used, or `default 24 h`), or `cleared`; `active`, every mark in force |
@@ -245,6 +245,21 @@ Merge rules: entries under `families` and `taskTypes` replace the default entry 
 ### Task types
 
 `review`, `debug`, `plan`, `research`, `quick`, `code`, `design`, `writing`; the tool description lists them with one line each. The orchestrator is an LLM and should always pass `taskType`. If it does not, the task text is matched against each type's `keywords` (case-insensitive, whole words; a phrase scores its number of words); the highest score wins, ties go to the type listed first, and no match gives `defaultTaskType` (`code`). The keywords are a last resort, not a classifier.
+
+`taskType` also accepts other spellings and common synonyms, and the result's `taskType` is the type used, with what was passed in `requestedTaskType` and `classification.reason`. Case, spaces and underscores do not matter (`Code Review` and `code_review` are `code-review`), and these aliases are resolved:
+
+| Task type | Aliases |
+|---|---|
+| `code` | `implementation`, `implement`, `coding`, `feature`, `refactor`, `refactoring`, `development`, `programming`, `tests`, `testing` |
+| `debug` | `bugfix`, `bug-fix`, `fix`, `hotfix`, `bug`, `debugging`, `troubleshooting` |
+| `writing` | `docs`, `documentation`, `write`, `copywriting` |
+| `review` | `code-review`, `pr-review`, `audit` |
+| `plan` | `planning`, `architecture` |
+| `research` | `investigation`, `analysis` |
+| `quick` | `trivial`, `chore` |
+| `design` | `ui`, `ux` |
+
+A task type of your policy with the same name as an alias wins over it, and an alias of a task type your policy removed is not accepted. `log_delegation` and `log_outcome` resolve aliases too, so the log keeps the type's own name. An unknown name fails with the list of types and their aliases.
 
 A task type has an optional `description`, `keywords`, at least one entry in `candidates` and optionally `avoidInheritedProvider: true`: for independent reviews (set on the `review` type), the orchestrator's own provider is moved down so the review comes from a different one.
 
