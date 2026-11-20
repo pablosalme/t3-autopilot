@@ -1,6 +1,6 @@
 {
   "name": "t3-autopilot",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MCP server that recommends the provider, model and reasoning effort for each T3 Code child task, from a family-based policy and the models you actually have.",
   "keywords": [
     "t3code",

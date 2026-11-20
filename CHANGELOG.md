@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-20
+
 ### Added
 
 - `taskType` accepts common synonyms and other spellings, resolved to the policy's type: `implementation`, `implement`, `coding` and `feature` are `code`, `bugfix` and `fix` are `debug`, `docs` is `writing`, and so on (the full list is in the reference). Case, spaces and underscores do not matter. The result says what was resolved in `requestedTaskType` and `classification.reason`; `log_delegation` and `log_outcome` store the type's own name. Before, `"implementation"` failed with "Unknown taskType". An unknown name now lists the aliases as well.
@@ -68,7 +70,8 @@ For those who ran it from a source checkout before this version:
 - The instructions snippet changed. Replace the paragraph in your `CLAUDE.md` / `AGENTS.md` with the output of `t3-autopilot snippet`.
 - The technical part of the README moved to `docs/reference.md`.
 
-[Unreleased]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/pablosalme/t3-autopilot/releases/tag/v0.1.0
