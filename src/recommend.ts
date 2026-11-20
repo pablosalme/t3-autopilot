@@ -422,16 +422,38 @@ function scoreGeneric(ctx: Ctx, effort: Effort | undefined): void {
   }
 }
 
+/**
+ * Order: what the plan includes before what costs extra (marked or not), then
+ * not marked before marked, usage, the subscription profile's tier, the
+ * independent-review penalty and the policy's order. The profile goes before
+ * the review penalty: a provider the user keeps as experimental, tight or a
+ * backup does not jump ahead of their primary one just because the
+ * orchestrator runs on it.
+ */
 function rank(scored: Scored[]): Scored[] {
+  const paid = (s: Scored) => (s.extraCost ? 1 : 0);
   const marked = (s: Scored) => (s.unavailable ? 1 : 0);
   return [...scored].sort(
     (a, b) =>
+      paid(a) - paid(b) ||
       marked(a) - marked(b) ||
       a.usageTier - b.usageTier ||
-      a.inheritedPenalty - b.inheritedPenalty ||
       a.profileTier - b.profileTier ||
+      a.inheritedPenalty - b.inheritedPenalty ||
       a.order - b.order,
   );
+}
+
+/**
+ * The first `max` ranked candidates. When none of them can run (all marked
+ * unavailable or out of quota) and one that costs extra could, it takes the
+ * last slot, so the orchestrator can offer the user the choice.
+ */
+function shortList(ranked: Scored[], max: number): Scored[] {
+  const list = ranked.slice(0, max);
+  if (max < 2 || list.some(usable) || list.some((s) => s.extraCost)) return list;
+  const paid = ranked.slice(max).find((s) => s.extraCost && usable(s));
+  return paid ? [...list.slice(0, max - 1), paid] : list;
 }
 
 /** Families the rules would use on this provider, in rule order, without repeats. */
@@ -598,14 +620,25 @@ export async function recommendModel(
   scoreRules(policy.fallback, "fallback", "fallback", ctx, typeDef.candidates[0]?.effort);
   if (policy.genericFallback) scoreGeneric(ctx, typeDef.candidates[0]?.effort);
 
-  const profileWarnings = applyProfiles(ctx);
+  const onlyOption = applyProfiles(ctx);
   const ranked = rank(ctx.out);
-  let candidates = ranked.slice(0, policy.maxCandidates).map((s) => s.candidate);
+  const listed = shortList(ranked, policy.maxCandidates);
+  const left = ranked.filter((s) => !listed.includes(s));
+  let candidates = listed.map((s) => s.candidate);
   // Marked candidates that did not make the list are reported once per mark.
-  const cut = new Set(ranked.slice(policy.maxCandidates).flatMap((s) => (s.unavailable ? [s.unavailable] : [])));
+  const cut = new Set(left.flatMap((s) => (s.unavailable && !s.extraCost ? [s.unavailable] : [])));
   for (const mark of cut) {
     skipped.push(`${markTarget(mark)}: marked unavailable until ${mark.until} (${mark.reason})`);
   }
+  for (const s of left.filter((x) => x.extraCost)) {
+    const { providerInstanceId: id, model } = s.candidate;
+    skipped.push(
+      `${id}/${model}: costs extra (${s.extraCost})` +
+        (s.unavailable ? `, and marked unavailable until ${s.unavailable.until} (${s.unavailable.reason})` : "") +
+        "; left out of the list after the models the plans include",
+    );
+  }
+  const profileWarnings = onlyOption ? onlyOptionWarnings(ctx, listed, left) : [];
 
   if (candidates.length === 0 && inherited !== undefined && caps.inheritedModel) {
     const parent = providers.find((p) => p.providerInstanceId === inherited);
@@ -660,45 +693,83 @@ function blockers(s: Scored): string[] {
 /**
  * Candidates outside their provider's subscription profile, or billed apart
  * from its plan, are dropped (and named in `skipped`) while any other
- * candidate can run. If none can, they stay, with a warning per provider:
- * they are the only option.
+ * candidate can run. If none can, they stay, after the included ones (see
+ * `rank`), and the result is true: they may be the only option.
  */
-function applyProfiles(ctx: Ctx): string[] {
+function applyProfiles(ctx: Ctx): boolean {
   const blocked = ctx.out.filter((s) => blockers(s).length > 0);
-  if (blocked.length === 0) return [];
-  const profileOf = (id: string) => {
-    const profile = profileFor(ctx, id);
-    return profile ? ` (${describeProfile(profile)})` : "";
-  };
+  if (blocked.length === 0) return false;
   if (ctx.out.some((s) => blockers(s).length === 0 && usable(s))) {
     ctx.out = ctx.out.filter((s) => blockers(s).length === 0);
     for (const s of blocked) {
       const { providerInstanceId: id, model } = s.candidate;
       ctx.skipped.push(
-        `${id}/${model}: left out by its subscription profile${profileOf(id)}: ${blockers(s).join("; ")}`,
+        `${id}/${model}: left out by its subscription profile${profileOf(ctx, id)}: ${blockers(s).join("; ")}`,
       );
     }
-    return [];
+    return false;
   }
+  for (const s of blocked) {
+    s.candidate.reason += " Used only because no candidate within the subscription profiles can run.";
+  }
+  return true;
+}
+
+/** " (Claude Max, quota generous, primary)": a provider's profile in a reason or a warning, or "". */
+function profileOf(ctx: Ctx, id: string): string {
+  const profile = profileFor(ctx, id);
+  return profile ? ` (${describeProfile(profile)})` : "";
+}
+
+const named = (list: Scored[]) => list.map((s) => `${s.candidate.providerInstanceId}/${s.candidate.model}`).join(", ");
+
+/**
+ * Warnings when no candidate within the subscription profiles can run: one per
+ * listed provider outside its profile (per model when it costs extra), the
+ * included candidates that are marked unavailable or out of quota, and, when
+ * only those and paid models are left, a reminder to ask the user before
+ * spending money.
+ */
+function onlyOptionWarnings(ctx: Ctx, listed: Scored[], left: Scored[]): string[] {
   const warnings: string[] = [];
   const seen = new Set<string>();
-  for (const s of blocked) {
+  for (const s of listed.filter((x) => blockers(x).length > 0)) {
     const id = s.candidate.providerInstanceId;
-    s.candidate.reason += " Used only because no candidate within the subscription profiles can run.";
     const warnKey = `${id}\u0000${s.extraCost ? s.candidate.model : ""}`;
     if (seen.has(warnKey)) continue;
     seen.add(warnKey);
     if (s.extraCost) {
       warnings.push(
-        `${id}/${s.candidate.model}${profileOf(id)} costs extra: ${s.extraCost}, so it is paid at API prices or ` +
-          "from prepaid credit. It is recommended only because no included model can run. Ask the user before delegating.",
+        `${id}/${s.candidate.model}${profileOf(ctx, id)} costs extra: ${s.extraCost}, so it is paid at API prices or ` +
+          "from prepaid credit. It is recommended only because no included model is free to run. Ask the user before " +
+          "delegating.",
       );
       continue;
     }
     const tight = profileFor(ctx, id)?.quota === "tight" ? " Its quota is tight and may run out quickly." : "";
     warnings.push(
-      `${id}${profileOf(id)} is recommended outside its subscription profile (${s.outside.join("; ")}) because no ` +
+      `${id}${profileOf(ctx, id)} is recommended outside its subscription profile (${s.outside.join("; ")}) because no ` +
         `other candidate can run.${tight} Tell the user before delegating.`,
+    );
+  }
+  const waiting = listed.filter((s) => !s.extraCost && !usable(s));
+  if (waiting.length) {
+    const one = waiting.length === 1;
+    warnings.push(
+      `${named(waiting)} ${one ? "fits its" : "fit their"} subscription but ${one ? "is" : "are"} marked unavailable ` +
+        `or out of quota, so the child may not start. ${one ? "It comes" : "They come"} first because ` +
+        `${one ? "it costs" : "they cost"} nothing extra; if a child cannot start, take the next candidate.`,
+    );
+  }
+  const paid = [...listed, ...left].filter((s) => s.extraCost);
+  if (paid.length && !listed.some((s) => !s.extraCost && usable(s))) {
+    const ends = waiting
+      .flatMap((s) => (s.unavailable ? [s.unavailable] : []))
+      .sort((a, b) => Date.parse(a.until) - Date.parse(b.until))[0];
+    const wait = ends ? `, wait until ${ends.until} (when the mark on ${markTarget(ends)} ends)` : "";
+    warnings.push(
+      "Every candidate is marked unavailable, out of quota or costs extra. Before delegating to one that costs " +
+        `extra (${named(paid)}), ask the user whether to pay for it${wait} or use another provider.`,
     );
   }
   return warnings;

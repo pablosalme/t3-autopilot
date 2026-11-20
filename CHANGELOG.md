@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `taskType` accepts common synonyms and other spellings, resolved to the policy's type: `implementation`, `implement`, `coding` and `feature` are `code`, `bugfix` and `fix` are `debug`, `docs` is `writing`, and so on (the full list is in the reference). Case, spaces and underscores do not matter. The result says what was resolved in `requestedTaskType` and `classification.reason`; `log_delegation` and `log_outcome` store the type's own name. Before, `"implementation"` failed with "Unknown taskType". An unknown name now lists the aliases as well.
 
+### Fixed
+
+- With subscription profiles, a model that costs extra no longer comes ahead of one the plan includes that is only marked unavailable (a shared quota at its weekly limit, for example): included and not marked first, then included but marked, then paid, and a paid and marked model last. When the included candidates in the list are all marked and a paid one could run, it takes the last slot. A new warning names the marked included candidates, and another, when only marked or paid candidates are left, tells the orchestrator to ask the user before paying, with the time the earliest mark ends; paid models left out of the list are named in `skipped`.
+- A provider's subscription tier now weighs more than the independent-review rule: for a `review` with the orchestrator on its primary provider and the other primary provider marked, a generic, low-confidence model on an experimental or tight-quota provider (`opencode-go/beam-free` on OpenCode Go) no longer comes ahead of the primary provider's Claude Opus.
+
 ## [0.1.2] - 2026-11-20
 
 ### Added

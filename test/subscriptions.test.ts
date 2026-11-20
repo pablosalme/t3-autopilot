@@ -263,23 +263,32 @@ describe("one plan for Grok and Cursor (quotaPool, includedFamilies)", () => {
     expect(ids(r)[0]).toBe("claudeAgent/claude-haiku-9-0");
   });
 
-  it("a paid model is recommended only when no included one can run, with a warning", async () => {
-    // Only Cursor, and the shared weekly quota is used up: what is left costs extra.
+  it("a paid model comes only after the included ones, marked or not, with a warning", async () => {
+    // Only Cursor, and the shared weekly quota is used up: what is included is marked, the rest costs extra.
     const r = await rec({
       capabilities: setup(["cursor"]),
       taskType: "design",
       subscriptions: USER,
       unavailable: [whole("grok")],
     });
-    expect(ids(r)[0]).toBe("cursor/gemini-7-pro");
-    expect(r.candidates[0]!.reason).toMatch(/extra cost: gemini is billed apart.*Used only because/);
-    expect(r.warnings[0]).toBe(
+    expect(ids(r)).toEqual(["cursor/grok-8", "cursor/default", "cursor/gemini-7-pro"]);
+    expect(r.candidates[0]!.reason).toMatch(/shares quota pool "x-premium" with grok, marked unavailable/);
+    expect(r.candidates[2]!.reason).toMatch(/extra cost: gemini is billed apart.*Used only because/);
+    expect(r.warnings).toEqual([
       "cursor/gemini-7-pro (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly) " +
         "costs extra: gemini is billed apart from the plan (paidFamilies), so it is paid at API " +
-        "prices or from prepaid credit. It is recommended only because no included model can run. Ask the user " +
-        "before delegating.",
+        "prices or from prepaid credit. It is recommended only because no included model is free to run. Ask the " +
+        "user before delegating.",
+      "cursor/grok-8, cursor/default fit their subscription but are marked unavailable or out of quota, so the child " +
+        "may not start. They come first because they cost nothing extra; if a child cannot start, take the next candidate.",
+      "Every candidate is marked unavailable, out of quota or costs extra. Before delegating to one that costs extra " +
+        "(cursor/gemini-7-pro, cursor/claude-opus-9-1, cursor/gpt-9.1-sol), ask the user whether to pay for it, wait " +
+        "until 2026-11-21T08:00:00.000Z (when the mark on grok (every model) ends) or use another provider.",
+    ]);
+    expect(r.skipped).toContain(
+      "cursor/gpt-9.1-sol: costs extra (gpt is billed apart from the plan (paidFamilies)); left out of the list after " +
+        "the models the plans include",
     );
-    expect(r.warnings.length).toBe(r.candidates.filter((c) => /extra cost/.test(c.reason)).length);
   });
 
   it("paidFamilies works like a missing includedFamilies entry, and a model of no family is not paid", () => {
@@ -621,5 +630,72 @@ describe("set_subscription and get_subscriptions", () => {
       arguments: { providerInstanceId: "acp", plan: "Free", quota: "tight", onlyFamilies: ["devstral"] },
     });
     expect(resultText(rejected)).toMatch(/unknown family "devstral"/);
+  });
+});
+
+describe("the user's real capabilities of 2026-11-20, with Grok's weekly limit reached", () => {
+  /** orchestrator_capabilities as T3 returned it that day (thread id invented); the orchestrator on Claude Opus. */
+  const real = () =>
+    parseCapabilities(
+      JSON.parse(readFileSync(new URL("./fixtures/capabilities-2026-11-20.json", import.meta.url), "utf8")),
+    );
+  const review = (
+    input: Omit<Partial<RecommendInput>, "capabilities"> & { capabilities?: Capabilities } = {},
+    p = policy,
+  ) =>
+    rec({ capabilities: real(), taskType: "review", subscriptions: USER, unavailable: [whole("grok")], ...input }, p);
+
+  it("a generic, low-confidence model on the experimental provider does not jump ahead of Claude", async () => {
+    const r = await review();
+    expect(ids(r)).toEqual([
+      "claudeAgent/claude-opus-5-5",
+      "claudeAgent/claude-sonnet-5-5",
+      "opencode/opencode-go/beam-free",
+    ]);
+    expect(r.candidates[0]!.reason).toMatch(/same provider as the orchestrator; demoted for an independent review/);
+    expect(r.candidates[2]!.reason).toMatch(/generic fallback \(low confidence.*experimental: fits its profile/);
+    expect(r.warnings.filter((w) => !/left out \d+ models/.test(w))).toEqual([]);
+  });
+
+  it("the independent-review rule still puts another primary provider first", async () => {
+    const r = await review({ unavailable: [] });
+    expect(ids(r)).toEqual(["grok/grok-4.7", "cursor/grok-4.7", "grok/grok-4.7-build-fast"]);
+  });
+
+  describe("with Claude and OpenCode in excludeProviders", () => {
+    const excluded = policyWith({ excludeProviders: ["claudeAgent", "opencode"] });
+
+    it("puts what the plan includes first, although marked, and what costs extra last, with a warning", async () => {
+      const r = await review({}, excluded);
+      expect(ids(r)).toEqual(["grok/grok-4.7", "cursor/grok-4.7", "cursor/gemini-4-neon"]);
+      expect(r.candidates[0]!.reason).toMatch(/marked unavailable until/);
+      expect(r.candidates[1]!.reason).toMatch(/shares quota pool "x-premium" with grok/);
+      expect(r.candidates[2]!.reason).toMatch(/extra cost: gemini is billed apart.*Used only because/);
+      const warnings = r.warnings.filter((w) => !/left out \d+ models/.test(w));
+      expect(warnings[1]).toBe(
+        "grok/grok-4.7, cursor/grok-4.7 fit their subscription but are marked unavailable or out of quota, so the " +
+          "child may not start. They come first because they cost nothing extra; if a child cannot start, take the " +
+          "next candidate.",
+      );
+      expect(warnings[2]).toMatch(
+        /^Every candidate is marked unavailable, out of quota or costs extra\. Before delegating to one that costs extra \(cursor\/gemini-4-neon, cursor\/claude-opus-5-5\), ask the user whether to pay for it, wait until .* \(when the mark on grok \(every model\) ends\) or use another provider\.$/,
+      );
+      expect(r.skipped).toContain(
+        "cursor/claude-opus-5-5: costs extra (claude-opus is billed apart from the plan (paidFamilies)); left out of the " +
+          "list after the models the plans include",
+      );
+    });
+
+    it("never puts a paid and marked model ahead of an included one that is only marked", async () => {
+      // Cursor alone, marked as a whole: its paid models are marked too, and its included ones only marked.
+      const caps = real();
+      caps.providers = caps.providers.filter((p) => p.providerInstanceId === "cursor");
+      const r = await review({ capabilities: caps, unavailable: [whole("cursor")] }, excluded);
+      expect(ids(r)).toEqual(["cursor/grok-4.7", "cursor/default", "cursor/gemini-4-neon"]);
+      expect(r.candidates[2]!.reason).toMatch(/marked unavailable until.*extra cost: gemini/);
+      expect(r.warnings.join("\n")).toMatch(
+        /ask the user whether to pay for it, wait until .* \(when the mark on cursor/,
+      );
+    });
   });
 });

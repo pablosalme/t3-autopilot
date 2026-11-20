@@ -1,0 +1,703 @@
+{
+  "parentThreadId": "thread:fixture-real-2026-11-20",
+  "inheritedProviderInstanceId": "claudeAgent",
+  "inheritedModel": "claude-opus-5-5",
+  "inheritedOptions": [
+    {
+      "id": "fastMode",
+      "value": false
+    }
+  ],
+  "runtimeMode": "full-access",
+  "interactionMode": "default",
+  "providers": [
+    {
+      "providerInstanceId": "codex",
+      "driverKind": "codex",
+      "displayName": "Codex",
+      "models": [],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider instance is disabled."
+      ]
+    },
+    {
+      "providerInstanceId": "claudeAgent",
+      "driverKind": "claudeAgent",
+      "displayName": "Claude",
+      "models": [
+        {
+          "id": "claude-opus-5-5",
+          "label": "Claude Opus 5.5",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultrathink"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "ultracode",
+              "values": [
+                false,
+                true
+              ]
+            },
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ]
+            }
+          ]
+        },
+        {
+          "id": "claude-sonnet-5-5",
+          "label": "Claude Sonnet 5.5",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultrathink"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "ultracode",
+              "values": [
+                false,
+                true
+              ]
+            }
+          ]
+        },
+        {
+          "id": "claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultrathink"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "ultracode",
+              "values": [
+                false,
+                true
+              ]
+            }
+          ]
+        },
+        {
+          "id": "claude-haiku-5-5",
+          "label": "Claude Haiku 5.5",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultrathink"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "ultracode",
+              "values": [
+                false,
+                true
+              ]
+            }
+          ]
+        }
+      ],
+      "omittedModels": 10,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "cursor",
+      "driverKind": "cursor",
+      "displayName": "Cursor",
+      "models": [
+        {
+          "id": "default",
+          "label": "Auto"
+        },
+        {
+          "id": "grok-4.7",
+          "label": "Grok 4.7",
+          "options": [
+            {
+              "id": "contextWindow",
+              "values": [
+                "256k",
+                "500k"
+              ],
+              "default": "500k"
+            },
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            },
+            {
+              "id": "reasoning_effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-4.6",
+          "label": "Grok 4.6",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "composer-2.5",
+          "label": "Composer 2.5",
+          "options": [
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-5-5",
+          "label": "Claude Opus 5.5",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            },
+            {
+              "id": "contextWindow",
+              "values": [
+                "300k",
+                "1m"
+              ],
+              "default": "1m"
+            },
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-5",
+          "label": "Claude Opus 5",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "contextWindow",
+              "values": [
+                "300k",
+                "1m"
+              ],
+              "default": "1m"
+            },
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            },
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "claude-opus-4-8",
+          "label": "Claude Opus 4.8",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "high"
+            },
+            {
+              "id": "contextWindow",
+              "values": [
+                "300k",
+                "1m"
+              ],
+              "default": "1m"
+            },
+            {
+              "id": "fastMode",
+              "values": [
+                false,
+                true
+              ],
+              "default": false
+            },
+            {
+              "id": "thinking",
+              "values": [
+                false,
+                true
+              ],
+              "default": true
+            }
+          ]
+        },
+        {
+          "id": "gemini-4-neon",
+          "label": "Gemini 4 Neon",
+          "options": [
+            {
+              "id": "contextWindow",
+              "values": [
+                "300k",
+                "1m"
+              ],
+              "default": "1m"
+            },
+            {
+              "id": "reasoning_effort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "high"
+            }
+          ]
+        }
+      ],
+      "omittedModels": 41,
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "grok",
+      "driverKind": "grok",
+      "displayName": "Grok",
+      "models": [
+        {
+          "id": "grok-4.7",
+          "label": "Grok 4.7",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-4.7-build-fast",
+          "label": "Grok 4.7 Fast",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-4.6",
+          "label": "Grok 4.6",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "default": "high"
+            }
+          ]
+        },
+        {
+          "id": "grok-4.5",
+          "label": "Grok 4.5",
+          "options": [
+            {
+              "id": "reasoningEffort",
+              "values": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "high"
+            }
+          ]
+        }
+      ],
+      "runtimeModes": [
+        "approval-required",
+        "auto",
+        "full-access"
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "opencode",
+      "driverKind": "opencode",
+      "displayName": "OpenCode",
+      "models": [
+        {
+          "id": "opencode-go/beam-free",
+          "label": "Beam Free",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode/beam-free",
+          "label": "Beam Free",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode/big-pickle",
+          "label": "Big Pickle"
+        },
+        {
+          "id": "opencode/claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode-go/claude-haiku-5-5",
+          "label": "Claude Haiku 5.5",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode/claude-haiku-5-5",
+          "label": "Claude Haiku 5.5",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode/claude-opus-5-5",
+          "label": "Claude Opus 5.5",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        },
+        {
+          "id": "opencode/claude-sonnet-5-5",
+          "label": "Claude Sonnet 5.5",
+          "options": [
+            {
+              "id": "variant",
+              "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        }
+      ],
+      "omittedModels": 66,
+      "runtimeModes": [
+        "approval-required",
+        "auto-accept-edits",
+        "auto",
+        "full-access"
+      ],
+      "canRunChildTask": true,
+      "canRunCrossProviderChildTask": true,
+      "constraints": []
+    },
+    {
+      "providerInstanceId": "antigravity",
+      "driverKind": "antigravity",
+      "displayName": "Antigravity",
+      "models": [],
+      "runtimeModes": [
+        "approval-required",
+        "auto-accept-edits",
+        "full-access"
+      ],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider instance is disabled."
+      ]
+    },
+    {
+      "providerInstanceId": "fx",
+      "driverKind": "fx",
+      "displayName": "fx",
+      "models": [
+        {
+          "id": "default",
+          "options": [
+            {
+              "id": "effort",
+              "values": [
+                "auto",
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "default": "medium"
+            }
+          ]
+        }
+      ],
+      "runtimeModes": [
+        "approval-required",
+        "auto"
+      ],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider instance is disabled."
+      ]
+    },
+    {
+      "providerInstanceId": "kiro",
+      "driverKind": "kiro",
+      "displayName": "Kiro",
+      "models": [
+        {
+          "id": "default",
+          "label": "Kiro default"
+        }
+      ],
+      "runtimeModes": [
+        "approval-required",
+        "full-access"
+      ],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider instance is disabled."
+      ]
+    },
+    {
+      "providerInstanceId": "muse",
+      "driverKind": "muse",
+      "displayName": "Muse Code",
+      "models": [],
+      "runtimeModes": [
+        "approval-required",
+        "full-access"
+      ],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider instance is disabled."
+      ]
+    },
+    {
+      "providerInstanceId": "pi",
+      "driverKind": "pi",
+      "displayName": "Pi",
+      "models": [
+        {
+          "id": "default",
+          "label": "Pi default"
+        }
+      ],
+      "runtimeModes": [
+        "approval-required",
+        "auto-accept-edits",
+        "full-access"
+      ],
+      "canRunChildTask": false,
+      "canRunCrossProviderChildTask": false,
+      "constraints": [
+        "Provider instance is disabled."
+      ]
+    }
+  ],
+  "features": {
+    "appOwnedSubagents": true,
+    "asyncPolling": true,
+    "cancellation": true,
+    "batchThreadCreation": true,
+    "threadManagement": true,
+    "incrementalThreadRead": true,
+    "scheduledTasks": true,
+    "maxBatchThreads": 20
+  }
+}
