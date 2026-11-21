@@ -8,7 +8,7 @@ import {
 } from "./capabilities.js";
 import { classifyTask } from "./classify.js";
 import { buildOptions, shiftEffort } from "./effort.js";
-import { familyPattern, resolveFamily, resolveFamilyDetail } from "./families.js";
+import { declaredFamily, familyPattern, resolveFamily, resolveFamilyDetail } from "./families.js";
 import type { CandidateRule, Effort, Family, Policy } from "./policy.js";
 import {
   allowsFamily,
@@ -381,15 +381,21 @@ function holdersOf(ctx: Ctx, familyName: string): Provider[] {
         ) {
           return false;
         }
-        return resolveFamily(family, p) !== undefined;
+        return resolveFamily(family, p, familyName) !== undefined;
       })
     : [];
   ctx.familyHolders.set(familyName, holders);
   return holders;
 }
 
-/** The first policy family (in policy order) that a model of this provider belongs to. */
+/**
+ * The policy family a model of this provider belongs to: the one it declares
+ * (a model of the agent catalog, such as the alias `opus`), else the first
+ * family, in policy order, whose regex matches its id.
+ */
 function familyOfModel(policy: Policy, provider: Provider, model: Model): string | undefined {
+  const declared = declaredFamily(model);
+  if (declared !== undefined && Object.hasOwn(policy.families, declared)) return declared;
   for (const [name, family] of Object.entries(policy.families)) {
     const re = familyPattern(family, provider);
     if (!re?.test(model.id)) continue;
@@ -420,7 +426,7 @@ function scoreRules(
     const targets = instancesFor(rule, ctx.providers);
     for (const provider of targets) {
       if (!familyPattern(family, provider)) continue;
-      const resolved = resolveFamilyDetail(family, provider);
+      const resolved = resolveFamilyDetail(family, provider, rule.family);
       if (!resolved) {
         if (rule.provider !== "*") {
           ctx.skipped.push(`${tag}: no ${rule.family} model listed on ${provider.providerInstanceId}`);
@@ -850,7 +856,7 @@ function setupFor(ctx: Ctx, subscriptions: Readonly<Subscriptions>): SetupNeeded
       const id = p.providerInstanceId;
       const name = p.displayName && p.displayName !== id ? `${p.displayName} (${id})` : id;
       const families = Object.entries(ctx.policy.families)
-        .filter(([, family]) => resolveFamily(family, p) !== undefined)
+        .filter(([familyName, family]) => resolveFamily(family, p, familyName) !== undefined)
         .map(([familyName]) => familyName);
       return {
         providerInstanceId: id,

@@ -51,6 +51,11 @@ export const t3: HostAdapter = {
   detect: looksLikeT3,
   catalog: ({ capabilities }) => {
     const parsed = parseCapabilitiesInput(capabilities);
+    // `policyFamily` ties a model of the agent catalog to a policy family (families.ts). A T3 model never carries
+    // one; were T3 to send a field with that name, it must not change what T3 orchestrators get.
+    for (const provider of parsed.capabilities.providers) {
+      for (const model of provider.models) delete (model as { policyFamily?: unknown }).policyFamily;
+    }
     // The orchestrator's own thread: T3 sends it in every output (null outside a thread).
     const thread = (parsed.capabilities as { parentThreadId?: unknown }).parentThreadId;
     return { ...parsed, ...(typeof thread === "string" && thread !== "" ? { session: thread } : {}), notes: [] };

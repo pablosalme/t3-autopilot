@@ -54,6 +54,14 @@ describe("the T3 Code adapter", () => {
     expect(() => t3.catalog({ capabilities: "{bad" }, ctx)).toThrow(/^capabilities is a string but not valid JSON/);
   });
 
+  it("drops a policyFamily from T3's models, so the agent catalog's family hook never applies to them", () => {
+    const tagged = structuredClone(full) as { providers: { models: Record<string, unknown>[] }[] };
+    for (const provider of tagged.providers) for (const model of provider.models) model.policyFamily = "gpt";
+    const { capabilities } = t3.catalog({ capabilities: tagged }, ctx);
+    expect(capabilities).toEqual(t3.catalog({ capabilities: full }, ctx).capabilities);
+    expect(JSON.stringify(capabilities)).not.toContain("policyFamily");
+  });
+
   it("keeps the file, the snippet and the texts of 0.1", () => {
     expect(t3.legacyCacheFile).toBe("capabilities-cache.json");
     expect(t3.cacheFile).toBe("capabilities-cache.t3.json");
