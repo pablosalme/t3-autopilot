@@ -7,7 +7,11 @@ import {
   type CapabilitiesEntry,
   formatAge,
   loadCapabilitiesCache,
+  loadLatestEntry,
+  loadSessionEntry,
+  SESSION_ENTRIES_MAX,
   saveCapabilitiesCache,
+  saveSessionEntry,
 } from "./capabilitiesCache.js";
 import {
   DEFAULT_HOST,
@@ -124,17 +128,31 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   /** The host of a call that brings no capabilities: the one it names, else the last recommend_model call's. */
   const hostOf = (id: string | undefined) => resolveHost({ host: id, last: lastHost }, hosts);
 
-  // Last capabilities received per host, so the orchestrator does not resend ~10 KB on every call. Also saved in the
-  // host's cache file, so a restart between turns does not lose them (for capabilitiesCacheTtlHours).
+  // Capabilities kept so the orchestrator does not resend ~10 KB on every call: in memory, by host and session, and
+  // the last ones each host used; on disk, in the host's cache file (one entry per session) and, for T3, also in
+  // capabilities-cache.json as in 0.1, so a restart between turns does not lose them (for capabilitiesCacheTtlHours).
   // `savedBy`: for a copy read from disk, the orchestrator it was saved for ("claudeAgent / claude-opus-9-2").
   type Kept = CapabilitiesEntry & { fromDisk: boolean; savedBy?: string };
-  const cached = new Map<string, Kept>();
+  const bySession = new Map<string, Kept>();
+  const lastOf = new Map<string, Kept>();
+  const sessionKey = (host: HostAdapter, session: string) => `${host.id}\u0000${session}`;
+  const legacyPath = (host: HostAdapter) => host.legacyCacheFile && join(dataDir(), host.legacyCacheFile);
 
-  // The kept capabilities of a host: in memory, else the saved copy if it is younger than the TTL.
-  const keptCapabilities = (host: HostAdapter, ttl: number, at: Date): Kept | undefined => {
-    const inMemory = cached.get(host.id);
-    if (inMemory) return inMemory;
-    const saved = loadCapabilitiesCache(cachePath(host), ttl, at);
+  /** Keep an entry in memory as the host's last one and, with a session, as that session's. */
+  const remember = (host: HostAdapter, session: string | undefined, entry: Kept) => {
+    lastOf.set(host.id, entry);
+    if (session === undefined) return;
+    const key = sessionKey(host, session);
+    bySession.delete(key);
+    bySession.set(key, entry);
+    // One process serves one session, as a rule: past the limit, the sessions used longest ago go.
+    for (const old of bySession.keys()) {
+      if (bySession.size <= SESSION_ENTRIES_MAX) break;
+      bySession.delete(old);
+    }
+  };
+
+  const fromDisk = (saved: CapabilitiesEntry | undefined): Kept | undefined => {
     if (!saved) return undefined;
     const { inheritedProviderInstanceId: provider, inheritedModel: model } = saved.capabilities;
     return {
@@ -142,6 +160,20 @@ export function createServer(opts: ServerOptions = {}): McpServer {
       fromDisk: true,
       ...(provider ? { savedBy: `${provider}${model ? ` / ${model}` : ""}` } : {}),
     };
+  };
+
+  // The kept capabilities of a host, younger than the TTL. With a session: that session's, from memory or the host's
+  // cache file, and never another's. Without one: the last ones this process used for the host, else, as in 0.1,
+  // T3's capabilities-cache.json, or the entry another host saved last.
+  const keptCapabilities = (host: HostAdapter, ttl: number, at: Date, session?: string): Kept | undefined => {
+    if (session !== undefined) {
+      return bySession.get(sessionKey(host, session)) ?? fromDisk(loadSessionEntry(cachePath(host), session, ttl, at));
+    }
+    const legacy = legacyPath(host);
+    return (
+      lastOf.get(host.id) ??
+      fromDisk(legacy ? loadCapabilitiesCache(legacy, ttl, at) : loadLatestEntry(cachePath(host), ttl, at))
+    );
   };
 
   /** A host's eligible providers of its kept capabilities with no subscription profile; null when none are kept. */
@@ -229,6 +261,16 @@ export function createServer(opts: ServerOptions = {}): McpServer {
             `The host you run in: ${hostList}. Default: the host whose output \`capabilities\` is, else the host of ` +
               `this server's last call, else ${host0.id}.`,
           ),
+        session: z
+          .string()
+          .min(1)
+          .max(200)
+          .optional()
+          .describe(
+            "Your orchestrator session's id (in T3 Code, the parentThreadId of orchestrator_capabilities). The " +
+              "capabilities are kept per session, so after a server restart a call with it gets its own back, never " +
+              "another orchestrator's. Without it, the last ones kept are used.",
+          ),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -242,15 +284,18 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const at = now();
           const ttl = policy.capabilitiesCacheTtlHours;
           const ctx: HostContext = { dataDir: dataDir(), now: at, policy, platform: process.platform };
-          const kept = () => keptCapabilities(host, ttl, at);
+          const kept = () => keptCapabilities(host, ttl, at, args.session);
           let entry: Kept;
           let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
           let keep = true;
+          // The session new capabilities are kept under: the one named, else the one the payload names (T3's thread).
+          let saveAs = args.session;
           const notes: string[] = [...policyWarnings];
           if (args.capabilities !== undefined) {
             // `listed`: how many outputs were passed as a list ([full, search, ...]); 0 for a single output.
             const catalog = host.catalog({ capabilities: args.capabilities }, ctx);
             const { capabilities: given, outputs: listed } = catalog;
+            saveAs = args.session ?? catalog.session;
             notes.push(...catalog.notes);
             if (args.mergeCapabilities && !host.merges) {
               notes.push(`mergeCapabilities is ignored: ${host.name} sends its whole catalog in one output.`);
@@ -288,18 +333,20 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           // Kept before the recommendation: if that fails (an unknown taskType, say), the capabilities this call
           // brought are still good, and the calls sent with it, which omit them, must find them.
           if (keep) {
-            const changed = cached.get(host.id) !== entry;
-            cached.set(host.id, entry);
-            if (changed && ttl > 0 && capabilitiesFrom !== "disk-cache") {
+            remember(host, saveAs, entry);
+            if ((capabilitiesFrom === "call" || capabilitiesFrom === "merged") && ttl > 0) {
               try {
                 const { fromDisk: _fromDisk, savedBy: _savedBy, ...saved } = entry;
-                saveCapabilitiesCache(cachePath(host), saved);
+                const legacy = legacyPath(host);
+                if (legacy) saveCapabilitiesCache(legacy, saved);
+                // T3's capabilities-cache.json already holds a call that names no session.
+                if (saveAs !== undefined || !legacy) saveSessionEntry(cachePath(host), saveAs ?? "", saved, at, ttl);
               } catch (e) {
                 notes.push(`Could not save the capabilities cache: ${e instanceof Error ? e.message : String(e)}`);
               }
             }
           }
-          const { mergeCapabilities: _merge, capabilities: _caps, host: _host, ...rest } = args;
+          const { mergeCapabilities: _merge, capabilities: _caps, host: _host, session: _session, ...rest } = args;
           const unavailable = viewItems(host, activeMarks(marksPath(), at));
           const subs = readSubscriptions(subscriptionsPath());
           if (subs.error) {

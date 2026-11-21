@@ -32,6 +32,12 @@ export interface HostCatalog {
   capabilities: Capabilities;
   /** How many outputs the payload listed (`[full, search, ...]`); 0 for a single output. */
   outputs: number;
+  /**
+   * The orchestrator's session, when the payload names it (T3: its
+   * `parentThreadId`): the capabilities are saved under it, so a later call
+   * with `session` set to it gets them back after a restart.
+   */
+  session?: string;
   /** Notes for the result's `warnings`. */
   notes: string[];
 }
@@ -88,8 +94,18 @@ export interface HostAdapter {
    * 0.1; `<id>:` for any other host, so its `codex` never meets T3's.
    */
   readonly keyPrefix: "" | `${string}:`;
-  /** The file in the data directory where the server keeps this host's capabilities for a restart. */
+  /**
+   * The file in the data directory where the server keeps this host's
+   * capabilities for a restart, one entry per session:
+   * `capabilities-cache.<id>.json`.
+   */
   readonly cacheFile: string;
+  /**
+   * T3 Code only: `capabilities-cache.json`, the single entry 0.1 reads and
+   * writes. It is kept as a copy of the host's last saved entry, and a call
+   * that names no session reads it instead of the newest entry of `cacheFile`.
+   */
+  readonly legacyCacheFile?: string;
   /**
    * Whether the host sends its catalog in several outputs that the server
    * merges (`mergeCapabilities`, a list of outputs): T3's short lists plus

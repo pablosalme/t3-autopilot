@@ -44,14 +44,19 @@ describe("the T3 Code adapter", () => {
   it("builds the catalog with parseCapabilitiesInput, with no notes of its own", () => {
     expect(t3.catalog({ capabilities: [full, search] }, ctx)).toEqual({
       ...parseCapabilitiesInput([full, search]),
+      session: "thread:fixture-orchestrator",
       notes: [],
     });
+    // No thread (null outside one, or an old output): no session.
+    expect(t3.catalog({ capabilities: { ...full, parentThreadId: null } }, ctx)).not.toHaveProperty("session");
+    expect(t3.catalog({ capabilities: full.providers }, ctx)).not.toHaveProperty("session");
     expect(t3.catalog({ capabilities: full }, ctx).outputs).toBe(0);
     expect(() => t3.catalog({ capabilities: "{bad" }, ctx)).toThrow(/^capabilities is a string but not valid JSON/);
   });
 
   it("keeps the file, the snippet and the texts of 0.1", () => {
-    expect(t3.cacheFile).toBe("capabilities-cache.json");
+    expect(t3.legacyCacheFile).toBe("capabilities-cache.json");
+    expect(t3.cacheFile).toBe("capabilities-cache.t3.json");
     expect(t3.snippet).toBe(INSTRUCTIONS_SNIPPET);
     expect(t3.merges).toBe(true);
     expect(t3.text).toMatchObject(DEFAULT_RECOMMEND_TEXT);

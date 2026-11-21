@@ -100,6 +100,21 @@ describe("files written now, read by 0.1.3", () => {
     ]);
   });
 
+  it("the entries by session stay in a file 0.1.3 does not read; capabilities-cache.json is the last one saved", async () => {
+    const home = tempDir();
+    const s = await connect(home);
+    for (const [session, name] of [
+      ["a", "codex"],
+      ["b", "cursor"],
+    ] as const) {
+      await s.call("recommend_model", { task: "x", taskType: "code", session, capabilities: driverFixtureRaw(name) });
+    }
+    const raw = JSON.parse(s.read("capabilities-cache.json"));
+    expect(Object.keys(raw).sort()).toEqual(["capabilities", "merged", "receivedAt", "version"]);
+    expect(CacheFileSchema.parse(raw).capabilities.providers.map((p) => p.providerInstanceId)).toEqual(["cursor"]);
+    expect(Object.keys(JSON.parse(s.read("capabilities-cache.t3.json")).entries)).toEqual(["b", "a"]);
+  });
+
   it("0.1.3 keeps another host's entries when it rewrites the files (that path is unchanged since 0.1.3)", () => {
     const home = tempDir();
     const subsPath = join(home, "subscriptions.yaml");
@@ -156,6 +171,12 @@ describe("files written by 0.1.3, read now", () => {
     expect(fromDisk.skipped).toEqual(given.skipped);
     const cleared = await s.call("mark_unavailable", { providerInstanceId: "nobody", clear: true });
     expect(cleared).toEqual({ cleared: [], active: inForce });
+    // 0.1.3's copy names no session: a call that names one never gets it.
+    const other = await s.client.callTool({
+      name: "recommend_model",
+      arguments: { task: "x", taskType: "code", session: "someone" },
+    });
+    expect(resultText(other)).toBe(t3.text.noCatalog);
   });
 
   it("another host sees 0.1.3's data as T3's, and none of it as its own", async () => {

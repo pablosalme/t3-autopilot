@@ -33,7 +33,8 @@ export const t3: HostAdapter = {
   id: "t3",
   name: "T3 Code",
   keyPrefix: "",
-  cacheFile: DATA_FILES.capabilitiesCache,
+  cacheFile: "capabilities-cache.t3.json",
+  legacyCacheFile: DATA_FILES.capabilitiesCache,
   merges: true,
   text: {
     ...DEFAULT_RECOMMEND_TEXT,
@@ -48,5 +49,10 @@ export const t3: HostAdapter = {
   },
   snippet: INSTRUCTIONS_SNIPPET,
   detect: looksLikeT3,
-  catalog: ({ capabilities }) => ({ ...parseCapabilitiesInput(capabilities), notes: [] }),
+  catalog: ({ capabilities }) => {
+    const parsed = parseCapabilitiesInput(capabilities);
+    // The orchestrator's own thread: T3 sends it in every output (null outside a thread).
+    const thread = (parsed.capabilities as { parentThreadId?: unknown }).parentThreadId;
+    return { ...parsed, ...(typeof thread === "string" && thread !== "" ? { session: thread } : {}), notes: [] };
+  },
 };
