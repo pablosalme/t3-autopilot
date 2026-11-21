@@ -1,0 +1,2365 @@
+{
+  "review": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #1: latest gpt on codex is gpt-6.2-codex, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-5.1-pro",
+        "options": [
+          {
+            "id": "reasoning_effort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #3 (any provider): newest listed gemini on cursor is gemini-5.1-pro, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-6",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #4: latest grok on grok is grok-6, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor gpt\", \"cursor gemini\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode gpt\", \"opencode gemini\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "debug": {
+    "taskType": "debug",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "debug #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort xhigh",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "debug #2: latest gpt on codex is gpt-6.2-codex, effort xhigh",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-7",
+        "options": [
+          {
+            "id": "effort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "debug #3 (any provider): newest listed claude-opus on cursor is claude-opus-7, effort xhigh (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor gpt\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode gpt\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "plan": {
+    "taskType": "plan",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "plan #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort xhigh",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "plan #2: latest gpt on codex is gpt-6.2-codex, effort xhigh",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-fable-6-3",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "plan #3: latest claude-fable on claudeAgent is claude-fable-6-3, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor gpt\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode gpt\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "research": {
+    "taskType": "research",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-sonnet-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "medium"
+          }
+        ],
+        "reason": "research #1: latest claude-sonnet on claudeAgent is claude-sonnet-7-1, effort medium",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-6",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "research #2: latest grok on grok is grok-6, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-5.1-pro",
+        "options": [
+          {
+            "id": "reasoning_effort",
+            "value": "medium"
+          }
+        ],
+        "reason": "research #3 (any provider): newest listed gemini on cursor is gemini-5.1-pro, effort medium (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor gemini\", \"cursor sonnet\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode gemini\", \"opencode sonnet\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "quick": {
+    "taskType": "quick",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-haiku-7-0",
+        "options": [
+          {
+            "id": "effort",
+            "value": "low"
+          }
+        ],
+        "reason": "quick #1: latest claude-haiku on claudeAgent is claude-haiku-7-0, effort low",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "composer-3",
+        "options": [],
+        "reason": "quick #2: newest listed composer on cursor is composer-3 (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-mini",
+        "options": [],
+        "reason": "quick #3 (any provider): latest gpt-mini on codex is gpt-6.2-mini (model has no effort option; using its default)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor composer\", \"cursor gpt\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode gpt\", \"opencode flash\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "code": {
+    "taskType": "code",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #2: latest gpt on codex is gpt-6.2-codex, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-7",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #3 (any provider): newest listed claude-opus on cursor is claude-opus-7, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor composer\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode gpt\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "design": {
+    "taskType": "design",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "design #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-5.1-pro",
+        "options": [
+          {
+            "id": "reasoning_effort",
+            "value": "high"
+          }
+        ],
+        "reason": "design #2 (any provider): newest listed gemini on cursor is gemini-5.1-pro, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-fable-6-3",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "design #3: latest claude-fable on claudeAgent is claude-fable-6-3, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor gemini\", \"cursor opus\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode gemini\", \"opencode opus\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "writing": {
+    "taskType": "writing",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "writing #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-fable-6-3",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "writing #2: latest claude-fable on claudeAgent is claude-fable-6-3, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-7",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "writing #3 (any provider): newest listed claude-opus on cursor is claude-opus-7, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor sonnet\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode sonnet\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "review, large and highly critical": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh (effort max not supported, using xhigh)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-5.1-pro",
+        "options": [
+          {
+            "id": "reasoning_effort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #3 (any provider): newest listed gemini on cursor is gemini-5.1-pro, effort high (31 models left out of the list, so a newer one may exist; effort max not supported, using high)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-6",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "review #4: latest grok on grok is grok-6, effort xhigh (effort max not supported, using xhigh)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor gpt\", \"cursor gemini\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode gpt\", \"opencode gemini\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "code, small and low criticality": {
+    "taskType": "code",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "low"
+          }
+        ],
+        "reason": "code #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort low",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "low"
+          }
+        ],
+        "reason": "code #2: latest gpt on codex is gpt-6.2-codex, effort low",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-7",
+        "options": [
+          {
+            "id": "effort",
+            "value": "low"
+          }
+        ],
+        "reason": "code #3 (any provider): newest listed claude-opus on cursor is claude-opus-7, effort low (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor composer\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode gpt\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "alias implementation": {
+    "taskType": "code",
+    "requestedTaskType": "implementation",
+    "classification": {
+      "source": "given",
+      "reason": "taskType \"implementation\" given by the caller, resolved to code",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #2: latest gpt on codex is gpt-6.2-codex, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-7",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #3 (any provider): newest listed claude-opus on cursor is claude-opus-7, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor composer\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode gpt\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "alias Code Review": {
+    "taskType": "review",
+    "requestedTaskType": "Code Review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType \"Code Review\" given by the caller, resolved to review",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #1: latest gpt on codex is gpt-6.2-codex, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-5.1-pro",
+        "options": [
+          {
+            "id": "reasoning_effort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #3 (any provider): newest listed gemini on cursor is gemini-5.1-pro, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-6",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #4: latest grok on grok is grok-6, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor gpt\", \"cursor gemini\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode gpt\", \"opencode gemini\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "classifier: keywords": {
+    "taskType": "debug",
+    "classification": {
+      "source": "classifier",
+      "reason": "keywords matched: fails, flaky (pass taskType for a reliable choice)",
+      "matched": [
+        "fails",
+        "flaky"
+      ]
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "debug #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort xhigh",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "debug #2: latest gpt on codex is gpt-6.2-codex, effort xhigh",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-7",
+        "options": [
+          {
+            "id": "effort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "debug #3 (any provider): newest listed claude-opus on cursor is claude-opus-7, effort xhigh (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor gpt\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode gpt\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "classifier: no keyword": {
+    "taskType": "code",
+    "classification": {
+      "source": "classifier",
+      "reason": "no keyword matched; default type \"code\" (pass taskType for a reliable choice)",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-7-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #1: latest claude-opus on claudeAgent is claude-opus-7-1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #2: latest gpt on codex is gpt-6.2-codex, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-7",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #3 (any provider): newest listed claude-opus on cursor is claude-opus-7, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor composer\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode gpt\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "usage: weekly 88% on claudeAgent": {
+    "taskType": "code",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #2: latest gpt on codex is gpt-6.2-codex, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-7",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #3 (any provider): newest listed claude-opus on cursor is claude-opus-7, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "opencode/claude-opus-7-1",
+        "options": [
+          {
+            "id": "variant",
+            "value": "high"
+          }
+        ],
+        "reason": "code #3 (any provider): newest listed claude-opus on opencode is opencode/claude-opus-7-1, effort high (52 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor opus\", \"cursor composer\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode opus\", \"opencode gpt\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none+call",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "usage: session exhausted on claudeAgent, in two entries": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #1: latest gpt on codex is gpt-6.2-codex, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-5.1-pro",
+        "options": [
+          {
+            "id": "reasoning_effort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #3 (any provider): newest listed gemini on cursor is gemini-5.1-pro, effort high (31 models left out of the list, so a newer one may exist)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-6",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #4: latest grok on grok is grok-6, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "antigravity: Provider instance is disabled."
+    ],
+    "warnings": [
+      "cursor: orchestrator_capabilities left out 31 models, so a newer model may be missing. Call orchestrator_capabilities with search \"cursor gpt\", \"cursor gemini\" and pass each output to recommend_model with mergeCapabilities: true.",
+      "opencode: orchestrator_capabilities left out 52 models, so a newer model may be missing. Call orchestrator_capabilities with search \"opencode gpt\", \"opencode gemini\" and pass each output to recommend_model with mergeCapabilities: true."
+    ],
+    "usageSource": "none+call",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "codex",
+          "driverKind": "codex",
+          "displayName": "Codex",
+          "families": [
+            "gpt",
+            "gpt-mini"
+          ],
+          "questions": [
+            "Which plan do you have on Codex (codex)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Codex (codex) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gemini",
+            "gemini-flash",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-opus",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  }
+}

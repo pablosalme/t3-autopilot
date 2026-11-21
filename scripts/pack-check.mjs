@@ -48,6 +48,8 @@ const required = [
   "dist/cli.js",
   "dist/index.js",
   "dist/index.d.ts",
+  "dist/hosts/index.js",
+  "dist/hosts/t3.js",
   // Every file listed in "files" that exists in the repository.
   ...pkg.files.filter((f) => existsSync(join(root, f)) && !statSync(join(root, f)).isDirectory()),
 ];
@@ -58,7 +60,9 @@ for (const f of new Set(required)) if (!files.includes(f)) fail(`the package lac
 // replace it on npmjs.com. Translations live in docs/.
 const unexpected = files.filter(
   (f) =>
-    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(f),
+    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/(?:hosts\/)?[\w.-]+\.(?:js|d\.ts))$/.test(
+      f,
+    ),
 );
 if (unexpected.length) fail(`the package has unexpected files: ${unexpected.join(", ")}`);
 // The bin must start with a shebang, or the installed command would not run on Unix.

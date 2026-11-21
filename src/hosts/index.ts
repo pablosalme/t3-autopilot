@@ -1,0 +1,128 @@
+import type { CandidateRule, Policy } from "../policy.js";
+import { t3 } from "./t3.js";
+import type { HostAdapter, HostId } from "./types.js";
+
+/**
+ * The hosts this version knows, the default one first: a call that names no
+ * host, and that a payload does not tell apart, is for it. A new host is a
+ * file in this folder and one line here (see "Adding a host" in
+ * CONTRIBUTING.md).
+ */
+export const HOSTS: readonly HostAdapter[] = [t3];
+
+/** The host of calls that name none: T3 Code, as in every 0.1 version. Its ids are stored with no prefix. */
+export const DEFAULT_HOST: HostAdapter = t3;
+
+/** What a call says, or lets the server infer, about its host. */
+export interface HostQuery {
+  /** The `host` argument. */
+  host?: string;
+  /** recommend_model's `capabilities`, whose shape may tell the host apart. */
+  payload?: unknown;
+  /** The host of this process's last recommend_model call: one stdio process serves one agent session. */
+  last?: HostAdapter;
+}
+
+/**
+ * The host a call is for: the one it names, else the one whose shape its
+ * payload has, else the host of the last recommend_model call, else the
+ * default host. Throws when the named host is unknown, or when the payload
+ * looks like another host's output.
+ */
+export function resolveHost(query: HostQuery, hosts: readonly HostAdapter[] = HOSTS): HostAdapter {
+  const { host, payload, last } = query;
+  if (host !== undefined) {
+    const named = hosts.find((h) => h.id === host);
+    if (!named) throw new Error(`Unknown host "${host}". Known hosts: ${hosts.map((h) => h.id).join(", ")}.`);
+    if (payload !== undefined && !named.detect(payload)) {
+      const like = hosts.find((h) => h !== named && h.detect(payload));
+      if (like) {
+        throw new Error(
+          `host is "${named.id}", but capabilities look like ${like.name} output (host "${like.id}"). ` +
+            `Pass the host you run in and the output of that host.`,
+        );
+      }
+    }
+    return named;
+  }
+  const detected = payload === undefined ? undefined : hosts.find((h) => h.detect(payload));
+  return detected ?? last ?? hosts[0] ?? DEFAULT_HOST;
+}
+
+/** The key a host stores one of its ids under: T3's ids as they are, any other host's with its prefix. */
+export function storageKey(host: HostAdapter, id: string): string {
+  return `${host.keyPrefix}${id}`;
+}
+
+/**
+ * Which host a stored key belongs to, and the id in it. A key with `:` is
+ * the host's named before it (T3's provider instance ids never have one:
+ * `^[a-zA-Z][a-zA-Z0-9_-]*$`); any other key, and one that starts with `t3:`,
+ * is T3's, whole, so T3 reads every key as 0.1 did.
+ */
+export function splitKey(key: string): { host: HostId; id: string } {
+  const colon = key.indexOf(":");
+  const prefix = key.slice(0, Math.max(colon, 0));
+  return prefix && prefix !== DEFAULT_HOST.id
+    ? { host: prefix, id: key.slice(colon + 1) }
+    : { host: DEFAULT_HOST.id, id: key };
+}
+
+/**
+ * A stored key as host H sees it: its own ids without a prefix, other hosts'
+ * with theirs (T3's as `t3:<id>`). For T3 it is the key itself.
+ */
+export function viewKey(host: HostAdapter, key: string): string {
+  const { host: owner, id } = splitKey(key);
+  return owner === host.id ? id : `${owner}:${id}`;
+}
+
+/** Whether a stored key is one of a host's ids. */
+export function isOwnKey(host: HostAdapter, key: string): boolean {
+  return splitKey(key).host === host.id;
+}
+
+/** A record keyed by stored keys, keyed as the host sees them (see {@link viewKey}). */
+export function viewOf<T>(host: HostAdapter, record: Readonly<Record<string, T>>): Record<string, T> {
+  return Object.fromEntries(Object.entries(record).map(([key, value]) => [viewKey(host, key), value]));
+}
+
+/** Items with a `providerInstanceId` (marks, log records), as the host sees them. */
+export function viewItems<T extends { providerInstanceId: string }>(host: HostAdapter, items: readonly T[]): T[] {
+  return items.map((item) => ({ ...item, providerInstanceId: viewKey(host, item.providerInstanceId) }));
+}
+
+/**
+ * A record keyed by stored keys split for a host's tool results: its own
+ * entries without a prefix, and the other hosts' with theirs.
+ */
+export function splitOwn<T>(
+  host: HostAdapter,
+  record: Readonly<Record<string, T>>,
+): { own: Record<string, T>; others: Record<string, T> } {
+  const own: Record<string, T> = {};
+  const others: Record<string, T> = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (isOwnKey(host, key)) own[viewKey(host, key)] = value;
+    else others[viewKey(host, key)] = value;
+  }
+  return { own, others };
+}
+
+/**
+ * The policy as a host sees it: the ids of `excludeProviders` and of the
+ * candidates' `instance` are stored keys, so `excludeProviders: [codex]`
+ * applies to T3 only and `[orca:codex]` to Orca only.
+ */
+export function viewPolicy(host: HostAdapter, policy: Policy): Policy {
+  const rules = (list: CandidateRule[]) =>
+    list.map((rule) => (rule.instance === undefined ? rule : { ...rule, instance: viewKey(host, rule.instance) }));
+  return {
+    ...policy,
+    excludeProviders: policy.excludeProviders.map((key) => viewKey(host, key)),
+    taskTypes: Object.fromEntries(
+      Object.entries(policy.taskTypes).map(([name, type]) => [name, { ...type, candidates: rules(type.candidates) }]),
+    ),
+    fallback: rules(policy.fallback),
+  };
+}

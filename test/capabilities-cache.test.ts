@@ -166,7 +166,8 @@ describe("capabilities saved on disk across a server restart", () => {
   it("writes atomically, ignores a corrupt copy and reports a failed save without failing", async () => {
     const home = tempDir();
     okData(await (await serverAt(home, T0))({ capabilities: fixture() }));
-    expect(readdirSync(home)).toEqual(["capabilities-cache.json"]);
+    // The copy 0.1 reads, and T3's entries by session (the fixture names its thread).
+    expect(readdirSync(home).sort()).toEqual(["capabilities-cache.json", "capabilities-cache.t3.json"]);
 
     writeFileSync(cacheFile(home), "{not json");
     expect(resultText(await (await serverAt(home, T0))({}))).toMatch(/^No capabilities yet/);

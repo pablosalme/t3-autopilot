@@ -279,6 +279,7 @@ Todo lo que guarda t3-autopilot está en una sola carpeta de tu ordenador: `.t3-
 | `log.jsonl` | Los encargos que tu agente ha apuntado: tipo de tarea, proveedor, modelo, ajustes usados, el identificador de la conversación del ayudante y cómo salió. Un resumen o una nota breve solo si tu agente los añade (200 caracteres como máximo). |
 | `unavailable.json` | Proveedores o modelos que no se pueden usar durante un tiempo porque se llegó a un límite, con el motivo y hasta cuándo. |
 | `capabilities-cache.json` | La última lista de proveedores y modelos que T3 Code le dio a tu agente, y si cada uno se puede usar. Sin contraseñas ni tokens. |
+| `capabilities-cache.t3.json` | Las mismas listas, una por conversación de tu agente, para que tras un reinicio cada una recupere la suya. |
 | `subscriptions.yaml` | Lo que le contaste a tu agente de cada suscripción: el plan, cuánto margen tiene, para qué es y qué modelos incluye. |
 
 Lo que no hace nunca:

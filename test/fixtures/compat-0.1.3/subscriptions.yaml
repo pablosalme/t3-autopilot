@@ -1,0 +1,49 @@
+# t3-autopilot subscription profiles, one per provider instance id.
+# Written by the set_subscription tool; you can also edit it by hand.
+# Keys: plan, quota (generous | standard | tight), purpose, role
+# (primary | secondary | experimental | lastResort), quotaPool, quotaWindow
+# (5h | weekly | monthly),
+# includedFamilies or paidFamilies, onlyFamilies or avoidFamilies,
+# onlyTaskTypes. See docs/reference.md#subscription-profiles:
+# https://github.com/pablosalme/t3-autopilot/blob/main/docs/reference.md#subscription-profiles
+
+version: 1
+subscriptions:
+  claudeAgent:
+    plan: Claude Max
+    quota: generous
+    role: primary
+    updatedAt: 2026-11-21T09:00:00.000Z
+  cursor:
+    plan: X Subscription Premium ($30), includes Cursor Pro
+    quota: standard
+    quotaPool: x-premium
+    quotaWindow: weekly
+    includedFamilies:
+      - composer
+      - grok
+      - grok-build
+      - grok-fast
+    paidFamilies:
+      - claude-opus
+      - claude-sonnet
+      - gpt
+      - gpt-mini
+      - gemini
+      - gemini-flash
+      - gemini-flash-lite
+    updatedAt: 2026-11-21T09:00:00.000Z
+  grok:
+    plan: X Subscription Premium ($30)
+    quota: standard
+    role: primary
+    quotaPool: x-premium
+    quotaWindow: weekly
+    updatedAt: 2026-11-21T09:00:00.000Z
+  opencode:
+    plan: OpenCode Go
+    quota: tight
+    purpose: try models
+    role: experimental
+    quotaWindow: 5h
+    updatedAt: 2026-11-21T09:00:00.000Z

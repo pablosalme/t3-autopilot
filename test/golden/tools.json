@@ -1,0 +1,420 @@
+{
+  "server": {
+    "name": "t3-autopilot",
+    "version": "<version>"
+  },
+  "tools": [
+    {
+      "name": "recommend_model",
+      "title": "Recommend a model for delegate_task",
+      "description": "Call before every child task, including ones you would start with your native subagent tool. Returns 1-3 candidates, best first; pass a candidate's providerInstanceId, model and options as delegate_task.target (sameAsOrchestrator: true means your native subagent tool also works). If the first cannot start because of a usage limit or its plan, call mark_unavailable and use the next. Always pass taskType, one of:\n- review: Independent review of code, a PR, a plan or a document.\n- debug: Find and fix a bug, a failing test or a crash.\n- plan: Architecture, design docs, breaking work down.\n- research: Web or codebase research, comparisons, reading docs.\n- quick: Small mechanical edits; renames, formatting, bumps.\n- code: Implement a feature, refactor, write tests.\n- design: UI, visual and UX work.\n- writing: Prose, docs, posts, emails, copy.",
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One line describing what the child will do."
+          },
+          "taskType": {
+            "description": "Task type from the list in the description. Pass it; the keyword classifier is only a last resort. Common synonyms (implementation, fix, docs, ...) are accepted; the result's taskType is the type used.",
+            "type": "string"
+          },
+          "size": {
+            "description": "Rough size of the task. Shifts effort.",
+            "type": "string",
+            "enum": [
+              "small",
+              "medium",
+              "large"
+            ]
+          },
+          "criticality": {
+            "description": "How costly a mistake is. Shifts effort.",
+            "type": "string",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ]
+          },
+          "capabilities": {
+            "description": "The complete output of T3 Code's orchestrator_capabilities, exactly as returned and never trimmed (object, JSON string, providers array, or a list of outputs). Needed on the first call; later calls reuse the last one received.",
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {}
+              }
+            ]
+          },
+          "mergeCapabilities": {
+            "description": "Merge `capabilities` into the ones kept from earlier calls (use it for orchestrator_capabilities `search` output).",
+            "type": "boolean"
+          },
+          "usage": {
+            "description": "Optional usage percentages per provider instance, if you know them (e.g. from /usage-limits).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "providerInstanceId": {
+                  "type": "string"
+                },
+                "windows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string"
+                      },
+                      "usedPercent": {
+                        "type": "number"
+                      },
+                      "resetsAt": {
+                        "type": "string"
+                      },
+                      "modelIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "usedPercent"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "providerInstanceId",
+                "windows"
+              ]
+            }
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "log_delegation",
+      "title": "Log a delegation",
+      "description": "Optional. Record a delegate_task you just made; returns a delegationId to pass to log_outcome later. log_outcome also works without it.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskType": {
+            "type": "string"
+          },
+          "providerInstanceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "value"
+              ]
+            }
+          },
+          "recommendedRank": {
+            "description": "1-based rank of the recommend_model candidate you used; null if you chose something else.",
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "childThreadId": {
+            "type": "string"
+          },
+          "summary": {
+            "description": "Short task summary (kept to 200 characters). Avoid secrets.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "taskType",
+          "providerInstanceId",
+          "model"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "log_outcome",
+      "title": "Log the outcome of a delegation",
+      "description": "Call after reviewing a child's result. Pass delegationId (from log_delegation) or taskType + providerInstanceId + model. outcome: success (accepted as is), corrected (needed fixes) or failure.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "delegationId": {
+            "type": "string"
+          },
+          "taskType": {
+            "type": "string"
+          },
+          "providerInstanceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure",
+              "corrected"
+            ]
+          },
+          "note": {
+            "description": "Short note (kept to 200 characters). Avoid secrets.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "mark_unavailable",
+      "title": "Mark a provider or model unavailable",
+      "description": "Call when a child cannot start, or stops at once, because of a usage limit or its plan (for example \"not included in your weekly usage\"). Until `until` (by default the quotaWindow of the provider's subscription profile, 5h, weekly or monthly, else 24 h from now), recommend_model moves that provider instance, or only that model, after every other candidate except models that cost extra on their plan (those go after it), and gives the reason. Not for poor results: those are log_outcome failure. clear: true removes marks instead.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "providerInstanceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "description": "Model id, or a prefix ending in * for every model id that starts with it (e.g. \"opencode-go/*\" for one plan's models inside a provider instance). Omit it when the whole provider instance is unavailable.",
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "description": "What failed, briefly (kept to 200 characters). Required unless clear is true.",
+            "type": "string",
+            "minLength": 1
+          },
+          "until": {
+            "description": "ISO date when it should work again (for example the resetsAt of the usage window). Default: the quotaWindow of the provider's subscription profile (or of its quotaPool), else 24 h from now.",
+            "type": "string"
+          },
+          "clear": {
+            "description": "Remove the marks of this provider instance (only this model's when model is given).",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "providerInstanceId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "set_subscription",
+      "title": "Save a provider's subscription profile",
+      "description": "Save what the user told you about the plan behind a provider instance, usually after recommend_model returned setupNeeded. Replaces that provider's whole profile (pass every field to keep; get_subscriptions shows it); remove: true deletes it. recommend_model then ranks and filters with it: a tight quota or the experimental role keeps a provider for families the user has nowhere else and for tasks that are neither large nor highly critical; models billed apart (paidFamilies, or not in includedFamilies) and anything outside onlyFamilies, avoidFamilies or onlyTaskTypes are used only when nothing else can run; providers with the same quotaPool share usage limits.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "providerInstanceId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Provider instance id, as in orchestrator_capabilities."
+          },
+          "plan": {
+            "description": "The plan in the user's words, e.g. \"Claude Max\", \"OpenCode Go\". Required unless remove.",
+            "type": "string"
+          },
+          "quota": {
+            "description": "generous (rarely hits the limit), standard, or tight (runs out quickly). Required unless remove.",
+            "type": "string",
+            "enum": [
+              "generous",
+              "standard",
+              "tight"
+            ]
+          },
+          "purpose": {
+            "description": "What the user wants it for, in their words (300 characters at most).",
+            "type": "string"
+          },
+          "role": {
+            "description": "primary (any task; the default), secondary (after primary ones), experimental (only what its rules allow, like a tight quota) or lastResort (after every other candidate).",
+            "type": "string",
+            "enum": [
+              "primary",
+              "secondary",
+              "experimental",
+              "lastResort"
+            ]
+          },
+          "quotaPool": {
+            "description": "Same name on every provider instance that shares one quota (one plan for several apps).",
+            "type": "string"
+          },
+          "quotaWindow": {
+            "description": "How often the plan's limit resets: 5h, weekly or monthly. Sets how long mark_unavailable lasts.",
+            "type": "string",
+            "enum": [
+              "5h",
+              "weekly",
+              "monthly"
+            ]
+          },
+          "includedFamilies": {
+            "description": "Policy families the plan covers; every other family is billed apart.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "paidFamilies": {
+            "description": "Policy families billed apart from the plan (API prices, prepaid credit).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "onlyFamilies": {
+            "description": "Use this provider only for these policy families.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "avoidFamilies": {
+            "description": "Never use these policy families on this provider.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "onlyTaskTypes": {
+            "description": "Use this provider only for these task types.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "remove": {
+            "description": "Delete this provider's profile instead (takes no other field).",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "providerInstanceId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_subscriptions",
+      "title": "Read the subscription profiles",
+      "description": "The saved subscription profiles by provider instance, and `missing`: providers of the last orchestrator_capabilities output that have none (null if no capabilities are kept).",
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_stats",
+      "title": "Delegation statistics",
+      "description": "Summary of the local delegation log by task type and model: counts, outcomes and success rate; also the mark_unavailable marks in force.",
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "description": "ISO date (YYYY-MM-DD or full timestamp); only records from then on.",
+            "type": "string"
+          },
+          "taskType": {
+            "description": "Only this task type.",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ]
+}

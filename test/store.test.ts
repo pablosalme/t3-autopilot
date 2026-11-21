@@ -79,7 +79,7 @@ describe("data files", () => {
     expect(readJson(join(dir, "missing.json"))).toBeUndefined();
   });
 
-  it.skipIf(!posix)("are readable by their owner only: the log, the capabilities cache and the marks", async () => {
+  it.skipIf(!posix)("are readable by their owner only: the log, the capabilities caches and the marks", async () => {
     const { client, home } = await connectServer();
     await client.callTool({
       name: "recommend_model",
@@ -94,7 +94,7 @@ describe("data files", () => {
       arguments: { providerInstanceId: "codex", reason: "weekly limit" },
     });
     const files = readdirSync(home).sort();
-    expect(files).toEqual(["capabilities-cache.json", "log.jsonl", "unavailable.json"]);
+    expect(files).toEqual(["capabilities-cache.json", "capabilities-cache.t3.json", "log.jsonl", "unavailable.json"]);
     for (const file of files) expect(mode(join(home, file)), file).toBe(PRIVATE_FILE_MODE);
   });
 

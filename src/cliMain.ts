@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { DEFAULT_HOST, HOSTS } from "./hosts/index.js";
+import type { HostAdapter } from "./hosts/types.js";
 import { userPolicyPath } from "./paths.js";
 import { createServer, VERSION } from "./server.js";
-import { INSTRUCTIONS_SNIPPET } from "./snippet.js";
 
 /**
  * What `init-policy` writes: a short commented template. Everything not set
@@ -42,18 +43,27 @@ export const POLICY_TEMPLATE = `# t3-autopilot policy override. Keys here replac
 #       - { provider: '*', family: claude-haiku, effort: low }
 `;
 
-export const HELP = `t3-autopilot ${VERSION}: model selection MCP server for T3 Code orchestrators.
+/** The usage text. `snippet --host` is listed once there is a host besides the default one. */
+export function helpText(hosts: readonly HostAdapter[] = HOSTS): string {
+  const others = hosts.slice(1).map((h) => h.id);
+  const snippetHost = others.length
+    ? `  t3-autopilot snippet --host <id> Print another host's instructions: ${others.join(", ")}.\n`
+    : "";
+  return `t3-autopilot ${VERSION}: model selection MCP server for T3 Code orchestrators.
 
 Usage:
   t3-autopilot [serve]             Start the MCP server on stdio (what your agent CLI runs).
   t3-autopilot snippet             Print the instructions to paste into CLAUDE.md / AGENTS.md.
-  t3-autopilot init-policy         Write a commented override template to the user policy path.
+${snippetHost}  t3-autopilot init-policy         Write a commented override template to the user policy path.
   t3-autopilot --help | -h | help  Print this text.
   t3-autopilot --version | -v      Print the version.
 
 Data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl,
 capabilities-cache.json, unavailable.json).
 `;
+}
+
+export const HELP = helpText();
 
 export interface CliIo {
   out: (s: string) => void;
@@ -62,8 +72,12 @@ export interface CliIo {
 
 const stdio: CliIo = { out: (s) => process.stdout.write(s), err: (s) => process.stderr.write(s) };
 
-/** Run one CLI command; returns the exit code. `serve` keeps running. */
-export async function runCli(argv: string[], io: CliIo = stdio): Promise<number> {
+/** Run one CLI command; returns the exit code. `serve` keeps running. `hosts`: the registry's, for tests. */
+export async function runCli(
+  argv: string[],
+  io: CliIo = stdio,
+  hosts: readonly HostAdapter[] = HOSTS,
+): Promise<number> {
   const cmd = argv[0];
   switch (cmd) {
     case undefined:
@@ -72,9 +86,25 @@ export async function runCli(argv: string[], io: CliIo = stdio): Promise<number>
       await server.connect(new StdioServerTransport());
       return 0;
     }
-    case "snippet":
-      io.out(INSTRUCTIONS_SNIPPET);
+    case "snippet": {
+      if (argv[1] !== "--host") {
+        io.out((hosts[0] ?? DEFAULT_HOST).snippet);
+        return 0;
+      }
+      const id = argv[2];
+      const host = hosts.find((h) => h.id === id);
+      if (!host) {
+        const known = hosts.map((h) => h.id).join(", ");
+        io.err(
+          id === undefined
+            ? `snippet --host needs a host: ${known}.\n`
+            : `Unknown host "${id}". Known hosts: ${known}.\n`,
+        );
+        return 2;
+      }
+      io.out(host.snippet);
       return 0;
+    }
     case "init-policy": {
       const target = userPolicyPath();
       if (existsSync(target)) {
@@ -93,10 +123,10 @@ export async function runCli(argv: string[], io: CliIo = stdio): Promise<number>
     case "--help":
     case "-h":
     case "help":
-      io.out(HELP);
+      io.out(helpText(hosts));
       return 0;
     default:
-      io.err(`Unknown command "${cmd}".\n\n${HELP}`);
+      io.err(`Unknown command "${cmd}".\n\n${helpText(hosts)}`);
       return 2;
   }
 }

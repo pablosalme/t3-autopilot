@@ -45,7 +45,32 @@ export interface RecommendInput {
    * are listed in `setupNeeded`. Undefined: no profiles and no setupNeeded.
    */
   subscriptions?: Readonly<Subscriptions>;
+  /** Phrases that name the host; T3 Code's ({@link DEFAULT_RECOMMEND_TEXT}) when omitted. */
+  text?: Partial<RecommendText>;
 }
+
+/**
+ * The phrases of a recommendation that name the host or its tools. Each host
+ * adapter (src/hosts) passes its own; the default is T3 Code's wording.
+ */
+export interface RecommendText {
+  /** The error when the catalog lists no provider at all. */
+  noProviders: string;
+  /** How to make a provider eligible, in the error when none is ("..., or remove it from excludeProviders."). */
+  enable: string;
+  /** Why the first of several models with the same version wins ("same version as 2 others, <listOrder>"). */
+  listOrder: string;
+  /** The generic fallback's model when the provider has no default one ("... is <firstListed> on cursor"). */
+  firstListed: string;
+}
+
+export const DEFAULT_RECOMMEND_TEXT: Readonly<RecommendText> = {
+  noProviders:
+    "orchestrator_capabilities lists no provider, so there is nothing to recommend. Call it again without `search`, or delegate inheriting your own model.",
+  enable: "Enable or sign in to a provider in T3 Code (Settings → Providers)",
+  listOrder: "T3 lists this one first",
+  firstListed: "the first model T3 lists for it",
+};
 
 /** Where a candidate came from: the task type's list, the policy fallback, the generic fallback, or the orchestrator itself. */
 export type CandidateSource = "taskType" | "fallback" | "generic" | "inherited";
@@ -148,6 +173,7 @@ interface Ctx {
   providers: Provider[];
   policy: Policy;
   input: RecommendInput;
+  text: RecommendText;
   usage: Map<string, ProviderUsage>;
   inherited?: string;
   inheritedModel?: string;
@@ -410,7 +436,7 @@ function scoreRules(
       const newest = ties > 0 ? "" : truncated > 0 ? "newest listed " : "latest ";
       const why = `${tag}${where}: ${newest}${rule.family} on ${provider.providerInstanceId} is ${model.id}`;
       const notes: string[] = [];
-      if (ties > 0) notes.push(`same version as ${ties} other${ties === 1 ? "" : "s"}, T3 lists this one first`);
+      if (ties > 0) notes.push(`same version as ${ties} other${ties === 1 ? "" : "s"}, ${ctx.text.listOrder}`);
       if (truncated > 0) notes.push(`${truncated} models left out of the list, so a newer one may exist`);
       push(ctx, provider, model, effort, rule.options, source, why, rule.noDemote, { notes, family: rule.family });
     }
@@ -437,7 +463,7 @@ function scoreGeneric(ctx: Ctx, effort: Effort | undefined): void {
       why = `the provider's default model`;
     } else if (firstListed) {
       model = firstListed;
-      why = "the first model T3 lists for it";
+      why = ctx.text.firstListed;
     } else if (driverDefaults[0] !== undefined) {
       // T3 accepts any slug on a provider that lists no models.
       model = { id: driverDefaults[0] };
@@ -582,6 +608,7 @@ export async function recommendModel(
   usageSource: UsageSource,
 ): Promise<Recommendation> {
   const caps = parseCapabilities(input.capabilities);
+  const text: RecommendText = { ...DEFAULT_RECOMMEND_TEXT, ...input.text };
 
   let classification: Recommendation["classification"];
   let requestedTaskType: string | undefined;
@@ -611,18 +638,14 @@ export async function recommendModel(
   if (!typeDef)
     throw new Error(`Unknown taskType "${taskType}". Known types: ${Object.keys(policy.taskTypes).join(", ")}`);
 
-  if (caps.providers.length === 0) {
-    throw new Error(
-      "orchestrator_capabilities lists no provider, so there is nothing to recommend. Call it again without `search`, or delegate inheriting your own model.",
-    );
-  }
+  if (caps.providers.length === 0) throw new Error(text.noProviders);
   const skipped: string[] = [];
   const inherited = caps.inheritedProviderInstanceId ?? undefined;
   const providers = eligibleProviders(caps.providers, policy, inherited, skipped);
   if (providers.length === 0) {
     throw new Error(
       `No provider instance can run a child task (${skipped.map((x) => x.replace(/\.$/, "")).join("; ")}). ` +
-        "Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.",
+        `${text.enable}, or remove it from excludeProviders.`,
     );
   }
 
@@ -641,6 +664,7 @@ export async function recommendModel(
     providers,
     policy,
     input,
+    text,
     usage,
     inherited,
     inheritedModel: caps.inheritedModel ?? undefined,

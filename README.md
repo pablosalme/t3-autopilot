@@ -277,6 +277,7 @@ Everything t3-autopilot keeps is in one folder on your computer: `.t3-autopilot`
 | `log.jsonl` | The handoffs your agent noted: kind of task, provider, model, the settings used, the id of the helper's conversation and how it went. A short summary or note only if your agent adds one (200 characters at most). |
 | `unavailable.json` | Providers or models that are out for a while because a limit was reached, with the reason and until when. |
 | `capabilities-cache.json` | The last list of providers and models T3 Code gave your agent, and whether each can be used. No passwords or tokens. |
+| `capabilities-cache.t3.json` | The same lists, one per conversation of your agent, so that after a restart each one gets its own back. |
 | `subscriptions.yaml` | What you told your agent about each subscription: the plan, how much room it has, what it is for and which models it includes. |
 
 What it never does:

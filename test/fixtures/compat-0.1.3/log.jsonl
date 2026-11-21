@@ -1,0 +1,5 @@
+{"kind":"delegation","id":"d_3f9a1c2b7e40","ts":"2026-11-20T10:00:00.000Z","taskType":"review","providerInstanceId":"codex","model":"gpt-6.2-codex","options":[{"id":"reasoningEffort","value":"xhigh"}],"recommendedRank":1,"childThreadId":"thread-123","summary":"Review the auth middleware PR"}
+{"kind":"outcome","ts":"2026-11-20T10:20:00.000Z","delegationId":"d_3f9a1c2b7e40","outcome":"success","note":"accepted as is"}
+{"kind":"delegation","id":"d_0a1b2c3d4e5f","ts":"2026-11-20T11:00:00.000Z","taskType":"code","providerInstanceId":"claudeAgent","model":"claude-opus-7-1","recommendedRank":null}
+{"kind":"outcome","ts":"2026-11-20T12:00:00.000Z","delegationId":"d_aaaaaaaaaaaa","outcome":"failure","taskType":"debug","providerInstanceId":"cursor","model":"composer-3"}
+not json

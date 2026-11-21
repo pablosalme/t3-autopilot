@@ -1,0 +1,31 @@
+# t3-autopilot policy override. Keys here replace the bundled default
+# (policy/default.yaml in the package); everything else comes from it.
+# Merge rules: entries under families and taskTypes replace the default entry
+# with the same name (null removes it); usage and effortShift merge one level
+# deep; any other key replaces the default. Re-read on every call.
+
+# Never recommend these provider instances (ids from orchestrator_capabilities):
+# excludeProviders: [cursor-work]
+
+# Return fewer candidates:
+# maxCandidates: 2
+
+# Demote a provider earlier when its weekly window is busy:
+# usage:
+#   thresholds: { weekly: 60 }
+
+# Add a model family (a regex over model ids; "*" = any driver):
+# families:
+#   my-model:
+#     search: my-model
+#     match:
+#       '*': '^(?:[\w.-]+/)*my-model-(\d+)(?:\.(\d+))?$'
+
+# Change the candidates of a task type (the whole entry is replaced):
+# taskTypes:
+#   quick:
+#     description: Small mechanical edits.
+#     keywords: [rename, typo, bump]
+#     candidates:
+#       - { provider: opencode, family: opencode-free }
+#       - { provider: '*', family: claude-haiku, effort: low }

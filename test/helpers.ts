@@ -6,6 +6,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { parse } from "yaml";
 import { type Capabilities, parseCapabilities } from "../src/capabilities.js";
+import type { HostAdapter } from "../src/hosts/types.js";
 import { defaultPolicyPath } from "../src/paths.js";
 import { loadPolicy, mergePolicy, type Policy, validatePolicy } from "../src/policy.js";
 import { createServer } from "../src/server.js";
@@ -48,11 +49,12 @@ export function policyWith(override: Record<string, unknown>): Policy {
 /**
  * An MCP client connected in memory to a fresh server whose data directory
  * (policy.yaml, log.jsonl, capabilities-cache.json, unavailable.json) is
- * `home`, a new temporary directory by default. `now` replaces the clock.
+ * `home`, a new temporary directory by default. `now` replaces the clock and
+ * `hosts` the registry's hosts.
  */
 export async function connectServer(
   home = tempDir(),
-  opts: { now?: () => Date } = {},
+  opts: { now?: () => Date; hosts?: readonly HostAdapter[] } = {},
 ): Promise<{ client: Client; home: string }> {
   const server = createServer({
     loadPolicy: () => loadPolicy({ userPath: join(home, "policy.yaml") }),
