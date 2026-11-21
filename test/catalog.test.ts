@@ -167,7 +167,8 @@ describe("user catalog.yaml", () => {
       ].join("\n"),
     );
     expect(catalog.agents.gemini).toBeUndefined();
-    expect(catalog.agents.kiro).toEqual({ driver: "kiro", name: "Kiro" });
+    expect(catalog.agents.kiro?.hosts).toBeUndefined();
+    expect(catalog.agents.kiro).toMatchObject({ driver: "kiro", name: "Kiro" });
     expect(catalog.hosts.orca?.aliases).toEqual({});
   });
 
@@ -282,7 +283,9 @@ describe("resolveAgent and agentView", () => {
   it("resolves an agent id, and a host's alias in that host only", () => {
     expect(resolveAgent(catalog, "orca", "codex")).toBe("codex");
     expect(resolveAgent(catalog, "orca", "opencode2")).toBe("opencode");
-    expect(resolveAgent(catalog, "herdr", "opencode2")).toBeUndefined();
+    const { catalog: c } = withUser("hosts:\n  orca:\n    aliases: { oc: opencode }\n");
+    expect(resolveAgent(c, "orca", "oc")).toBe("opencode");
+    expect(resolveAgent(c, "herdr", "oc")).toBeUndefined();
     expect(resolveAgent(catalog, "orca", "goose")).toBeUndefined();
     expect(resolveAgent(catalog, "orca", "__proto__")).toBeUndefined();
   });

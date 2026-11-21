@@ -18,6 +18,7 @@ The technical side of t3-autopilot: the tools, the policy file, the data it keep
 - [Capabilities and restarts](#capabilities-and-restarts)
   - [Merging outputs](#merging-outputs)
 - [Agent catalog](#agent-catalog)
+  - [Flags checked](#flags-checked)
 - [FAQ and limitations](#faq-and-limitations)
 - [Development](#development)
 - [Roadmap](#roadmap)
@@ -464,7 +465,7 @@ Outputs are merged by `providerInstanceId`, whether one is passed with `mergeCap
 
 ## Agent catalog
 
-T3 Code lists the models of every provider in `orchestrator_capabilities`. The other hosts t3-autopilot is being extended to, Orca and herdr, only say which agent CLIs are installed, or nothing at all, so t3-autopilot ships its own catalog of agent CLIs and the models and efforts each takes: [`catalog/agents.yaml`](../catalog/agents.yaml). T3 Code never reads it, and no tool uses it yet.
+T3 Code lists the models of every provider in `orchestrator_capabilities`. The other hosts t3-autopilot is being extended to, Orca and herdr, only say which agent CLIs are installed, or nothing at all, so t3-autopilot ships its own catalog of agent CLIs, the models and efforts each takes and, for herdr, which starts a program with arguments and knows nothing about models, how to run it: [`catalog/agents.yaml`](../catalog/agents.yaml). T3 Code never reads it, and no tool uses it yet.
 
 Extend it in `~/.t3-autopilot/catalog.yaml` (or `$T3_AUTOPILOT_HOME/catalog.yaml`), with the same keys. Each agent there is merged one level deep onto the built-in one: a key you set (`models`, `efforts`, `hosts`...) replaces the built-in value as a whole, so repeat the entries you want to keep, and `null` removes an agent or one of its keys. Aliases under `hosts.<host>.aliases` are merged by alias (`null` removes one). As with the policy, a key the catalog does not know is ignored with a warning. So are a `family` that is not a policy family (the model is then matched by its id alone), a model listed twice (the first one stays) and an alias to an agent the catalog does not have, or with the name of one of its agents. Anything else that is wrong, such as a model id with a space, a shell character or a leading `-`, is an error that names the file.
 
@@ -496,11 +497,32 @@ agents:
 | `efforts` | Efforts the agent takes. Values outside the policy's scale are ignored. |
 | `hosts.<host>` in an agent | What changes in one host (`orca` or `herdr`): `model: false` (the host rejects a model at launch, so only `default` is offered), `models`, `efforts` and `note`. |
 | `hosts.<host>.aliases` at the top level | Ids a host uses for an agent of the catalog (Orca's `opencode2` is `opencode`). |
+| `exe` | herdr: the program to run. Default: the agent id. |
+| `aliases` in an agent | herdr: other executable names of the agent, to recognize it on `PATH` (`opencode2` for OpenCode); the name found is the program run. |
+| `args` | herdr: words always passed after the program (`--no-daemon` for Codex, `chat --tui` for Kiro). |
+| `flags.model`, `flags.effort` | herdr: the words that pass a model or an effort, with `{model}` or `{effort}` as a whole word; `{effort}` may also go inside one (`model_reasoning_effort={effort}`). An agent without `flags.model` can only be started with `default`, and one without `flags.effort` with no effort. |
+| `prompt` | herdr: how the agent takes the brief: `positional` (the last argument), `send` (start it, wait until it is ready, then send the brief; the default) or the words that carry it, with `{brief}` as a whole word (`[--prompt, "{brief}"]`). |
+| `checked` | The CLI version whose `--help` these fields were checked against (informative). |
 
 - **No versioned ids in the built-in catalog.** They go stale, which is the problem families solve: it lists aliases the CLI resolves to its newest model (`opus`, `sonnet`) and `default`, tied to a family where no regex would match them. Versioned ids (needed, for example, by CLIs that only take `provider/model`, like OpenCode and Pi) go in your `catalog.yaml`.
 - **Aliases and versioned ids.** An alias has no version, so a versioned id of the same family wins over it (`claude-opus-9-2` over `opus`); between two aliases of a family, the one listed first wins.
 - **Agents without models.** An agent with no models, an agent the catalog does not know, and an agent in a host that rejects a model at launch are offered `default` only, which the generic fallback reaches with low confidence, unless the agent's own `default` entry gives it a family.
-- **Safe words.** Every model id, effort and alias is checked as one command-line word: letters, digits and `. _ : / @ + = , [ ] -`, at most 200 characters, not starting with `-`. So a model id cannot carry a space, a shell character or an option such as `--dangerously-skip-permissions`.
+- **Safe words.** Every model id, effort and alias is checked as one command-line word: letters, digits and `. _ : / @ + = , [ ] -`, at most 200 characters, not starting with `-`. So a model id cannot carry a space, a shell character or an option such as `--dangerously-skip-permissions`. `args` and the words of `flags` and `prompt` may also be options (`-m`, `--no-daemon`) or `--`, and a model or an effort is checked again once it is in its word.
+- **A command is a list.** The command for an agent is a list of arguments, never a shell string, and the brief is a placeholder (`{brief}`) that the host fills in. With `positional`, a brief that starts with `-` can be read as an option; Grok's entry puts `--` before it for that reason.
+
+### Flags checked
+
+The herdr fields were checked on 2026-11-21 against the `--help` of the CLIs installed on the maintainer's machine; no agent session was started. The others come from Orca's agent catalogs, which Orca maintains, and are marked as not checked in the file.
+
+| Agent | Version checked | Checked | Not checked |
+|---|---|---|---|
+| `claude` | Claude Code 2.1.327 | `--model` (aliases `fable`, `opus`, `sonnet`, or a full id), `--effort` with `low`, `medium`, `high`, `xhigh`, `max`, and the brief as a positional argument that starts an interactive session | the `haiku` alias |
+| `codex` | codex-cli 0.158.0-alpha.2.1 | `-m`, `-c key=value`, `--no-daemon`, and the brief as a positional argument | the `model_reasoning_effort` key and its values |
+| `grok` | grok 1.0.92 | `--model`, `--reasoning-effort` (alias `--effort`), and the brief as a positional argument of the interactive session | the effort values, and `--` before the brief |
+| `opencode` | opencode 2.3.2 | `--prompt`; the main interface takes no model (`opencode mini` takes `-m provider/model`) and its positional argument is a directory | |
+| `cursor`, `pi`, `antigravity`, `muse`, `kiro`, `gemini` | not installed | | all of their fields |
+
+`agent` is not an alias of Cursor (its newer CLI name) because on some machines it is Grok's program: on the machine above, `agent --version` prints Grok's version. If yours is Cursor's, add `hosts: { herdr: { aliases: { agent: cursor } } }` to your `catalog.yaml`.
 
 ## FAQ and limitations
 

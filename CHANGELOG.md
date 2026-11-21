@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - An agent catalog for the hosts that do not list models, Orca and herdr, whose support is coming: `catalog/agents.yaml` ships with the package and lists each agent CLI with model aliases that do not go stale (`opus`, `sonnet`, Codex's `default`), tied to policy families, and its efforts; `~/.t3-autopilot/catalog.yaml` extends it. No tool uses it yet, and T3 Code results are unchanged.
+- How herdr runs each agent CLI, in the agent catalog: the program, other executable names, fixed arguments, the flags for model and effort, and how the CLI takes the brief. The flags of Claude Code, Codex, Grok and OpenCode were checked against their `--help` (versions in `docs/reference.md`); the others come from Orca's agent catalogs and are marked as not checked.
 
 ## [0.1.3] - 2026-11-20
 

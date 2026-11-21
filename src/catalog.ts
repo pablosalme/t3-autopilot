@@ -34,10 +34,20 @@ const TOKEN = /^[A-Za-z0-9][A-Za-z0-9._:/@+=,[\]-]*$/;
 /** An agent id is also the provider instance id the engine sees: a T3-style slug, never with `:`. */
 const AGENT_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
 
+/** A command-line word that may also be an option (`-m`, `--no-daemon`, `--effort=high`) or the end of options (`--`). */
+const ARG = /^(?:--?)?[A-Za-z0-9][A-Za-z0-9._:/@+=,[\]-]*$|^--$/;
+
 /** Whether `value` is one safe command-line word for a model id, effort, alias or executable. */
 export function isToken(value: string): boolean {
   return value.length <= MAX_TOKEN_LENGTH && TOKEN.test(value);
 }
+
+function isArg(value: string): boolean {
+  return value.length <= MAX_TOKEN_LENGTH && ARG.test(value);
+}
+
+/** Where the brief goes in an agent's command: a whole argument, filled in by the host (herdr). */
+export const BRIEF = "{brief}";
 
 const Token = z
   .string()
@@ -47,6 +57,42 @@ const Token = z
 const AgentId = z.string().max(64).regex(AGENT_ID, "must start with a letter and have only letters, digits, - and _");
 
 const Efforts = z.array(Token);
+
+const Arg = z
+  .string()
+  .max(MAX_TOKEN_LENGTH)
+  .regex(ARG, "must be one word of letters, digits and . _ : / @ + = , [ ] -, an option such as --model, or --");
+
+/**
+ * Command-line words around one placeholder, such as `[--model, "{model}"]`. The placeholder appears once, as a
+ * whole word or, when `inside` allows it, within one (`model_reasoning_effort={effort}`); the other words are
+ * {@link Arg}s.
+ */
+function template(placeholder: string, inside: boolean) {
+  return z
+    .array(z.string())
+    .min(1)
+    .superRefine((words, ctx) => {
+      let uses = 0;
+      words.forEach((word, i) => {
+        const count = word.split(placeholder).length - 1;
+        uses += count;
+        const ok =
+          word === placeholder ||
+          (count === 0 ? isArg(word) : inside && count === 1 && isArg(word.replace(placeholder, "x")));
+        if (!ok) {
+          ctx.addIssue({
+            code: "custom",
+            path: [i],
+            message: inside
+              ? `must be one command-line word, ${placeholder}, or one word with ${placeholder} in it`
+              : `must be one command-line word or ${placeholder}`,
+          });
+        }
+      });
+      if (uses !== 1) ctx.addIssue({ code: "custom", message: `must have ${placeholder} exactly once` });
+    });
+}
 
 /** A model: `{ id, family?, efforts? }`, or its id alone. */
 export const CatalogModelSchema = z.preprocess(
@@ -83,6 +129,24 @@ export const CatalogAgentSchema = z.strictObject({
   /** Efforts the agent takes, for models that do not list their own. */
   efforts: Efforts.optional(),
   hosts: HostOverridesSchema.optional(),
+  // How herdr runs the agent: herdr starts a program with arguments and knows nothing about models.
+  /** Program to run; the agent id when absent. */
+  exe: Token.optional(),
+  /** Other executable names of the same agent, to recognize it on PATH (`opencode2`). */
+  aliases: z.array(Token).optional(),
+  /** Words always passed after the program (`--no-daemon` for Codex). */
+  args: z.array(Arg).optional(),
+  /** How the CLI takes a model and an effort. No `model` (or `effort`): the CLI takes none at start. */
+  flags: z
+    .strictObject({ model: template("{model}", false).optional(), effort: template("{effort}", true).optional() })
+    .optional(),
+  /**
+   * How the agent takes the brief: `positional` (the last argument), `send` (start it, wait until it is
+   * ready, then send the brief), or the words that carry it (`[--prompt, "{brief}"]`). Default: `send`.
+   */
+  prompt: z.union([z.enum(["positional", "send"]), template(BRIEF, false)]).optional(),
+  /** The CLI version whose `--help` these fields were checked against (informative). */
+  checked: z.string().optional(),
 });
 
 const HostSectionSchema = z.strictObject({
@@ -234,6 +298,26 @@ export function checkCatalog(raw: unknown, source: string, families?: Iterable<s
       if (override) override.models = checkModels(override.models, `agents.${id}.hosts.${host}.models`);
     }
   }
+  // Executable names (herdr): one agent each. The first agent that claims a name keeps it.
+  const programs = new Map<string, string>();
+  for (const [id, agent] of Object.entries(catalog.agents)) {
+    const exe = agent.exe ?? id;
+    const owner = programs.get(exe);
+    if (owner !== undefined) say(`agents.${id}.exe: "${exe}" is ${owner}'s program too; herdr finds ${owner}.`);
+    else programs.set(exe, id);
+  }
+  for (const [id, agent] of Object.entries(catalog.agents)) {
+    agent.aliases = agent.aliases?.filter((alias) => {
+      const owner = Object.hasOwn(catalog.agents, alias) ? alias : programs.get(alias);
+      if (owner !== undefined && owner !== id) {
+        say(`agents.${id}.aliases: "${alias}" is already ${owner}'s, so it is ignored.`);
+        return false;
+      }
+      programs.set(alias, id);
+      return true;
+    });
+    if (agent.aliases === undefined) delete agent.aliases;
+  }
   for (const host of CATALOG_HOSTS) {
     const aliases = catalog.hosts[host]?.aliases ?? {};
     for (const [alias, target] of Object.entries(aliases)) {
@@ -298,13 +382,17 @@ export function loadCatalog(
 
 /**
  * The catalog id of an agent a host names: the id itself, or the host's alias
- * for it (Orca's `opencode2` is `opencode`). Undefined for an agent the
- * catalog does not know.
+ * for it (Orca's `opencode2` is `opencode`); in herdr, which names programs,
+ * also an agent's `exe` or one of its `aliases` (`cursor-agent` is `cursor`).
+ * Undefined for an agent the catalog does not know.
  */
 export function resolveAgent(catalog: AgentCatalog, host: CatalogHost, id: string): string | undefined {
   if (Object.hasOwn(catalog.agents, id)) return id;
   const aliases = catalog.hosts[host]?.aliases ?? {};
-  return Object.hasOwn(aliases, id) ? aliases[id] : undefined;
+  if (Object.hasOwn(aliases, id)) return aliases[id];
+  if (host !== "herdr") return undefined;
+  const agents = Object.entries(catalog.agents);
+  return (agents.find(([, a]) => a.exe === id) ?? agents.find(([, a]) => a.aliases?.includes(id)))?.[0];
 }
 
 /** An agent as one host sees it, with its `hosts.<host>` override applied. */
@@ -385,4 +473,71 @@ export function agentProvider(catalog: AgentCatalog, host: CatalogHost, id: stri
     canRunChildTask: true,
     constraints: [],
   };
+}
+
+/** A model and an effort to start an agent with; `default` or absent: none. */
+export interface AgentSelection {
+  model?: string;
+  effort?: string;
+}
+
+/** How to start an agent (herdr). */
+export interface AgentCommand {
+  /** Catalog id of the agent. */
+  agent: string;
+  /** The command, one element per argument; {@link BRIEF} stands for the brief when the agent takes it at start. */
+  argv: string[];
+  /** `argv`: the brief is in `argv`. `send`: start the agent, wait until it is ready, then send the brief. */
+  brief: "argv" | "send";
+}
+
+/** The words of a flag template with its placeholder replaced by `value`, checked again as words. */
+function fill(words: readonly string[], placeholder: string, value: string, what: string, agent: string): string[] {
+  if (!isToken(value)) {
+    throw new Error(
+      `${agent}: ${what} "${value}" is not one command-line word (letters, digits, . _ : / @ + = , [ ] -).`,
+    );
+  }
+  return words.map((word) => {
+    const out = word.split(placeholder).join(value);
+    if (!isArg(out))
+      throw new Error(`${agent}: ${what} "${value}" makes "${out}", which is not one command-line word.`);
+    return out;
+  });
+}
+
+/**
+ * The command that starts an agent of the catalog with a model and an
+ * effort, as a list of arguments (never a shell string). `id` is what herdr
+ * found: an agent id, an alias, or one of the agent's executable names, which
+ * is then the program run (`opencode2`). Throws for an agent the catalog does
+ * not have, a model or an effort the CLI takes no flag for, and a value that is
+ * not one safe command-line word.
+ */
+export function agentCommand(catalog: AgentCatalog, id: string, selection: AgentSelection = {}): AgentCommand {
+  const canonical = resolveAgent(catalog, "herdr", id);
+  const agent = canonical === undefined ? undefined : catalog.agents[canonical];
+  if (canonical === undefined || agent === undefined) {
+    throw new Error(`"${id}" is not an agent of the catalog. Add it to catalog.yaml with its exe and flags.`);
+  }
+  const exe = agent.exe ?? canonical;
+  const program = id === exe || agent.aliases?.includes(id) ? id : exe;
+  const argv = [program, ...(agent.args ?? [])];
+  const { model, effort } = selection;
+  if (model !== undefined && model !== DEFAULT_MODEL_ID) {
+    if (!agent.flags?.model) {
+      throw new Error(`${canonical} takes no model at start. Set agents.${canonical}.flags.model in catalog.yaml.`);
+    }
+    argv.push(...fill(agent.flags.model, "{model}", model, "model", canonical));
+  }
+  if (effort !== undefined) {
+    if (!agent.flags?.effort) {
+      throw new Error(`${canonical} takes no effort at start. Set agents.${canonical}.flags.effort in catalog.yaml.`);
+    }
+    argv.push(...fill(agent.flags.effort, "{effort}", effort, "effort", canonical));
+  }
+  const prompt = agent.prompt ?? "send";
+  if (prompt === "send") return { agent: canonical, argv, brief: "send" };
+  argv.push(...(prompt === "positional" ? [BRIEF] : prompt));
+  return { agent: canonical, argv, brief: "argv" };
 }
