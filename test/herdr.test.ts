@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { describe, expect, it } from "vitest";
@@ -18,6 +19,24 @@ const probe = (name: string) => readFileSync(new URL(`./fixtures/herdr/${name}.t
 const context = (home = tempDir(), platform: NodeJS.Platform = "darwin") =>
   hostContext(home, T0, defaultPolicy(), platform);
 const HC = ["hc", "run", "--bg", "--name", "{name}", "--cwd", "{cwd}"];
+
+/**
+ * A command of `launch` as the instructions (step 3) have the orchestrator's shell tool run it: one shell
+ * command, each element in single quotes (a `'` written as `'\''`), `{name}` and `{cwd}` replaced, and
+ * `{brief}`, outside single quotes, as `"$(cat '<file>')"`.
+ */
+function shellLine(argv: readonly string[], name: string, cwd: string, briefFile: string): string {
+  const quote = (word: string) => `'${word.replaceAll("'", "'\\''")}'`;
+  const fill = (word: string) => (word === "{name}" ? name : word === "{cwd}" ? cwd : word);
+  return argv.map((word) => (word === BRIEF ? `"$(cat ${quote(briefFile)})"` : quote(fill(word)))).join(" ");
+}
+
+/**
+ * hc's rule for terminal names (herdr-core addr.rs:6, `check_name`, and terminals.rs:188, `id_shaped`): 1 to 32
+ * of a-z, 0-9, `-`, `_` and `.`, starting with a letter or digit, and not shaped like an id (`t7`, `t1b`).
+ */
+const isHcName = (name: string) =>
+  /^[a-z0-9][a-z0-9._-]{0,31}$/.test(name) && !/^t[1-9][0-9bcdfghjkmnpqrstvwxyz]*$/.test(name);
 
 type Result = Recommendation & {
   host?: string;
@@ -89,8 +108,21 @@ describe("the host of a call with herdr's payload", () => {
       'capabilities look like herdr output, but the call names no host: pass host: "herdr".',
     );
     expect(resolveHost({ payload: probe("probe-linux"), last: herdr })).toBe(herdr);
-    // A list is T3's (a bare providers array) unless the call says otherwise; T3's adapter comes first.
-    expect(resolveHost({ payload: ["claude"] })).toBe(t3);
+  });
+
+  it("must be named for a list of program names too, which is never T3's", () => {
+    // T3's providers are objects, so a list of plain strings is herdr's, and herdr is explicit.
+    for (const payload of [["claude"], ["claude", "codex"], '["claude", "codex"]']) {
+      expect(() => resolveHost({ payload }), JSON.stringify(payload)).toThrow(
+        'capabilities look like herdr output, but the call names no host: pass host: "herdr".',
+      );
+    }
+    expect(resolveHost({ payload: ["claude"], last: herdr })).toBe(herdr);
+    // The lists T3 takes stay T3's when the call names no host: empty, of providers, of outputs or their JSON.
+    const t3Output = driverFixtureRaw("mixed");
+    for (const payload of [[], "[]", t3Output.providers, [t3Output], [JSON.stringify(t3Output)], ["{bad"]]) {
+      expect(resolveHost({ payload }), JSON.stringify(payload).slice(0, 40)).toBe(t3);
+    }
   });
 
   it("refuses a payload of the other host", () => {
@@ -99,6 +131,9 @@ describe("the host of a call with herdr's payload", () => {
     );
     expect(() => resolveHost({ host: "herdr", payload: driverFixtureRaw("mixed") })).toThrow(
       'host is "herdr", but capabilities look like T3 Code output (host "t3").',
+    );
+    expect(() => resolveHost({ host: "t3", payload: ["claude", "codex"] })).toThrow(
+      'host is "t3", but capabilities look like herdr output (host "herdr").',
     );
   });
 });
@@ -313,10 +348,30 @@ describe("the launch command for hc", () => {
       then,
       notes: ["goose is not in the agent catalog: it starts with no flags and gets the brief once it is ready."],
     });
+    // Pi as herdr-core's manual starts it: its flags only, then hc wait and hc send.
+    expect(launch(candidate("pi", "openai/gpt-9.1-sol", "medium"))).toEqual({
+      mode: "supervised",
+      agent: "pi",
+      model: "openai/gpt-9.1-sol",
+      effort: "medium",
+      args: ["pi", "--model", "openai/gpt-9.1-sol", "--thinking", "medium"],
+      argv: [...HC, "pi", "--model", "openai/gpt-9.1-sol", "--thinking", "medium"],
+      then,
+    });
   });
 
   it("runs the program found: cursor-agent for Cursor", () => {
     expect(launch(candidate("cursor", "auto")).argv).toEqual([...HC, "cursor-agent", "--model", "auto", BRIEF]);
+  });
+
+  it("runs the exe catalog.yaml sets for an agent the probe found, though the probe did not look for it", () => {
+    const home = tempDir();
+    writeFileSync(join(home, "catalog.yaml"), "agents:\n  claude: { exe: claude-work }\n");
+    const on = context(home);
+    const [found] = herdr.catalog({ capabilities: "/usr/local/bin/claude\n" }, on).capabilities.providers;
+    expect(found).toMatchObject({ providerInstanceId: "claude", program: "claude-work" });
+    const started = herdr.launch?.(candidate("claude", "haiku"), on, found as Provider) as Launch;
+    expect(started.argv).toEqual([...HC, "claude-work", "--model", "haiku", BRIEF]);
   });
 
   it("refuses a model the agent's command cannot carry, so the candidate is skipped", () => {
@@ -335,9 +390,52 @@ describe("the launch command for hc", () => {
       "Not passed: fastMode; the agent catalog has no flag for it.",
     ]);
     expect(launch(candidate("claude", "opus"), context(tempDir(), "win32")).notes).toEqual([
-      'herdr on Windows is not covered yet: "$(cat <file>)" for {brief} needs a POSIX shell.',
+      `herdr on Windows is not covered yet: "$(cat '<file>')" for {brief} needs a POSIX shell.`,
     ]);
   });
+
+  // What the instructions have the orchestrator do, run for real through sh, with a stand-in for hc.
+  it.skipIf(process.platform === "win32")(
+    "through a POSIX shell, hands hc each element as one argument and the brief as written, running nothing in it",
+    () => {
+      const dir = tempDir();
+      const bin = join(dir, "bin");
+      mkdirSync(bin);
+      // The stand-in writes the arguments it gets, as JSON, to the file $HC_ARGS.
+      writeFileSync(
+        join(bin, "hc"),
+        '#!/usr/bin/env node\nrequire("node:fs").writeFileSync(process.env.HC_ARGS, JSON.stringify(process.argv.slice(2)));\n',
+        { mode: 0o755 },
+      );
+      const folder = join(dir, `it's a "dir" $(touch pwned) \`touch pwned\` ;x`);
+      mkdirSync(folder);
+      const briefFile = join(folder, "brief $HOME 'it''s'.md");
+      const brief =
+        "Fix the login.\nKeep $HOME, `touch pwned`, $(touch pwned), \"double\", 'single', a \\ and * as they are.\n" +
+        "Report with hc send t2 when done or stuck.";
+      // A file tool ends the file with a newline; the command substitution drops it.
+      writeFileSync(briefFile, `${brief}\n`);
+      const run = (argv: readonly string[]) => {
+        const out = join(dir, "args");
+        execFileSync("/bin/sh", ["-c", shellLine(argv, "fix-login", folder, briefFile)], {
+          cwd: dir,
+          env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ""}`, HC_ARGS: out },
+        });
+        return JSON.parse(readFileSync(out, "utf8")) as string[];
+      };
+      const filled = (argv: readonly string[]) =>
+        argv.slice(1).map((w) => (w === "{name}" ? "fix-login" : w === "{cwd}" ? folder : w === BRIEF ? brief : w));
+      const claude = launch(candidate("claude", "opus", "high"));
+      expect(run(claude.argv)).toEqual(filled(claude.argv));
+      expect(run(claude.argv).at(-1)).toBe(brief);
+      // An agent that gets the brief once it is ready: hc run, then hc wait and hc send, the same way.
+      const kiro = launch(candidate("kiro", "default"));
+      for (const argv of [kiro.argv, ...(kiro.then ?? [])]) expect(run(argv)).toEqual(filled(argv));
+      // Nothing in the folder's name, the file's name or the brief ran.
+      expect(readdirSync(dir).filter((f) => f.startsWith("pwned"))).toEqual([]);
+      expect(readdirSync(folder)).toEqual([expect.stringMatching(/^brief /)]);
+    },
+  );
 });
 
 describe("recommend_model in herdr", () => {
@@ -448,12 +546,12 @@ describe("recommend_model in herdr", () => {
     );
   });
 
-  it("asks for host when the probe output comes without it", async () => {
+  it("asks for host when the probe output, or a list of program names, comes without it", async () => {
     const { client } = await connectServer(tempDir(), { now: () => T0 });
     const { host: _host, ...nameless } = first;
-    expect(resultText(await recommend(client, nameless))).toBe(
-      'capabilities look like herdr output, but the call names no host: pass host: "herdr".',
-    );
+    const ask = 'capabilities look like herdr output, but the call names no host: pass host: "herdr".';
+    expect(resultText(await recommend(client, nameless))).toBe(ask);
+    expect(resultText(await recommend(client, { capabilities: ["claude", "codex"] }))).toBe(ask);
   });
 });
 
@@ -540,15 +638,81 @@ describe("snippet --host herdr", () => {
     expect(doc).toContain(`\`\`\`markdown\n${HERDR_SNIPPET}\`\`\``);
   });
 
-  it("asks for host, session, the probe, the orchestrator, the launch and the report line", () => {
+  it("asks for host, session, the probe, the orchestrator and the launch", () => {
     expect(HERDR_SNIPPET).toContain('`host: "herdr"`');
-    expect(HERDR_SNIPPET).toContain("`session` (your `$HC_TERMINAL_ID`)");
+    expect(HERDR_SNIPPET).toContain(
+      "`session` (your terminal id: the value of `$HC_TERMINAL_ID`, such as `t2`, which `printenv HC_TERMINAL_ID` prints)",
+    );
     expect(HERDR_SNIPPET).toContain(HERDR_PROBE);
     expect(HERDR_SNIPPET).toContain("as `orchestrator` your own `agent`");
-    expect(HERDR_SNIPPET).toContain("`launch.argv`, one element per argument");
-    expect(HERDR_SNIPPET).toContain('`{brief}` by `"$(cat <file>)"`');
     expect(HERDR_SNIPPET).toContain("`launch.then`");
-    expect(HERDR_SNIPPET).toContain("Report with hc send $HC_TERMINAL_ID when done or stuck.");
     expect(HERDR_SNIPPET).toMatch(/never `echo` or a heredoc/);
+  });
+
+  it("has the child report to the orchestrator's id written out, never to $HC_TERMINAL_ID", () => {
+    // The child runs the report line in its own shell, where $HC_TERMINAL_ID is the child's own id.
+    expect(HERDR_SNIPPET).toContain(
+      'ending with "Report with hc send <id> when done or stuck.", where `<id>` is your terminal id written out ' +
+        "(`t2`), never `$HC_TERMINAL_ID`",
+    );
+    const doc = readFileSync(new URL("../docs/hosts/herdr.md", import.meta.url), "utf8");
+    for (const text of [HERDR_SNIPPET, doc]) expect(text).not.toMatch(/hc send \$HC_TERMINAL_ID/);
+    expect(doc).toContain('ending it with "Report with hc send t2 when done or stuck."');
+  });
+
+  it("runs launch.argv as one shell command, each element in single quotes and the brief from its file", () => {
+    expect(HERDR_SNIPPET).toContain("Run its `launch.argv` as one shell command, each element in single quotes");
+    expect(HERDR_SNIPPET).toContain("`{brief}`, without single quotes, by `\"$(cat '<file>')\"`");
+    expect(HERDR_SNIPPET).toContain("A `'` in a path is written `'\\''` inside single quotes.");
+    expect(HERDR_SNIPPET).not.toContain("one element per argument");
+    // The examples are what that rule makes of a launch command.
+    const example = (argv: string[]) => shellLine(argv, "fix-login", "/src/app", "/tmp/fix-login.md");
+    expect(HERDR_SNIPPET).toContain(`For example: \`${example([...HC, "claude", "--model", "opus", BRIEF])}\`.`);
+    const doc = readFileSync(new URL("../docs/hosts/herdr.md", import.meta.url), "utf8");
+    const opusHigh = [...HC, "claude", "--model", "opus", "--effort", "high", BRIEF];
+    expect(doc).toContain(`\`\`\`sh\n   ${example(opusHigh)}\n   \`\`\``);
+  });
+
+  it("gives hc's rule for names, and only examples that follow it", () => {
+    expect(HERDR_SNIPPET).toContain(
+      "1 to 32 of a-z, 0-9, `-`, `_` and `.`, starting with a letter or digit, not shaped like an id such as `t7`",
+    );
+    // The rule as hc's own tests have it (addr.rs, names_need_no_quoting_anywhere).
+    for (const good of ["rohan", "can-desktop", "w_2.b", "1.2.3.4", "tmp", "t3po", "t0", "a".repeat(32)]) {
+      expect(isHcName(good), good).toBe(true);
+    }
+    for (const bad of [
+      "",
+      "Rohan",
+      "a b",
+      "a/b",
+      "-x",
+      ".x",
+      "t7",
+      "t1b",
+      "t9zzzzzzzzzz",
+      "café",
+      "$x",
+      "a".repeat(33),
+    ]) {
+      expect(isHcName(bad), bad).toBe(false);
+    }
+    const doc = readFileSync(new URL("../docs/hosts/herdr.md", import.meta.url), "utf8");
+    const names = [...`${HERDR_SNIPPET}\n${doc}`.matchAll(/--name'? '?([^\s'`"]+)/g)].map((m) => m[1] as string);
+    expect(new Set(names)).toEqual(new Set(["fix-login", "lead"]));
+    for (const name of names) expect(isHcName(name), name).toBe(true);
+    expect(HERDR_SNIPPET).toContain("`childThreadId` (the name you gave the child, such as `fix-login`)");
+  });
+
+  it("says what to do when hc reports the child blocked, as by Claude Code's question about a new folder", () => {
+    expect(HERDR_SNIPPET).toContain(
+      "If hc reports the child blocked, read its screen with `hc read <name>` and answer it with `hc keys <name>`",
+    );
+    // Claude Code 2.1.330, run in hc: the question comes with "No, exit" selected, so enter alone would end it.
+    expect(HERDR_SNIPPET).toContain(
+      'Claude Code first asks whether to trust it, with "No, exit" selected: `hc keys <name> down enter` picks ' +
+        '"Yes, I trust this folder"',
+    );
+    expect(HERDR_SNIPPET).toContain("Ask the user about anything else, such as a permission request.");
   });
 });

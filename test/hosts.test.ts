@@ -71,11 +71,19 @@ describe("the T3 Code adapter", () => {
   const search = driverFixtureRaw("search-mixed-cursor-opus");
 
   it("recognises orchestrator_capabilities output in every form the server accepts", () => {
-    const forms = [full, JSON.stringify(full), full.providers, [full, search], JSON.stringify([full, search]), []];
+    const forms = [
+      full,
+      JSON.stringify(full),
+      full.providers,
+      [full, search],
+      JSON.stringify([full, search]),
+      [JSON.stringify(full), JSON.stringify(search)],
+      [],
+    ];
     for (const payload of forms) expect(t3.detect(payload)).toBe(true);
-    for (const payload of [fakePayload([]), {}, "{bad", "plain text", 42, null, undefined]) {
-      expect(t3.detect(payload)).toBe(false);
-    }
+    // A list of plain strings is no form of T3's output (each provider is an object): herdr's program names.
+    const others = [fakePayload([]), {}, "{bad", "plain text", 42, null, undefined, ["claude", "codex"], '["claude"]'];
+    for (const payload of others) expect(t3.detect(payload)).toBe(false);
   });
 
   it("builds the catalog with parseCapabilitiesInput, with no notes of its own", () => {

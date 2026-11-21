@@ -222,7 +222,7 @@ An orchestrator that runs in herdr gets its own instructions from `t3-autopilot 
 
 ### Hosts
 
-A host is the app the orchestrator runs in and starts children with: T3 Code (`t3`), the default, and [herdr](hosts/herdr.md) (`herdr`, through herdr-core's `hc`); support for Orca is coming. Every tool takes an optional `host`; a call without one is for the host of this server's last `recommend_model` call (a server process serves one agent session), else T3 Code. `recommend_model` also tells T3 Code's output from the shape of `capabilities`, and fails when `host` names one host and `capabilities` look like another's output. herdr's probe output is plain text, so herdr is never assumed: a call with it that names no host fails, asking for `host: "herdr"` (unless this server's last call was for herdr). Outside T3 Code the result says `host`, and in a host that starts children with a command each candidate has `launch`: the tokens and the command to start it, one element per argument.
+A host is the app the orchestrator runs in and starts children with: T3 Code (`t3`), the default, and [herdr](hosts/herdr.md) (`herdr`, through herdr-core's `hc`); support for Orca is coming. Every tool takes an optional `host`; a call without one is for the host of this server's last `recommend_model` call (a server process serves one agent session), else T3 Code. `recommend_model` also tells T3 Code's output from the shape of `capabilities`, and fails when `host` names one host and `capabilities` look like another's output. herdr's probe output is plain text, so herdr is never assumed: a call with it, or with a list of program names, that names no host fails, asking for `host: "herdr"` (unless this server's last call was for herdr). Outside T3 Code the result says `host`, and in a host that starts children with a command each candidate has `launch`: the tokens and the command to start it, one element per argument.
 
 What t3-autopilot keeps is kept per host: [marks](#unavailable-marks), [subscription profiles](#subscription-profiles), the [log](#log-and-statistics) and the ids of the policy's `excludeProviders` and `instance`. T3 Code's ids are stored as they are, as in every 0.1 version; another host's carry its prefix (`orca:codex`), so a `codex` in one host never meets the other's. Tools take and return ids without the prefix, in the calling host; a stored id with `:` is another host's, because T3's provider instance ids never have one. A quota shared across hosts is said with the same [`quotaPool`](#shared-quota-quotapool) on both profiles; nothing else is shared.
 
@@ -548,15 +548,17 @@ agents:
 
 ### Flags checked
 
-The herdr fields were checked on 2026-11-21 against the `--help` of the CLIs installed on the maintainer's machine; no agent session was started. The others come from Orca's agent catalogs, which Orca maintains, and are marked as not checked in the file.
+The herdr fields were checked on 2026-11-21 against the `--help` of the CLIs installed on the maintainer's machine. The same day, Claude Code was also run for real in herdr-core's `hc`, with `--model haiku` and the brief as its positional argument (see [Checked against](hosts/herdr.md#checked-against)); no other agent session was started. The others come from Orca's agent catalogs, which Orca maintains, and are marked as not checked in the file.
 
 | Agent | Version checked | Checked | Not checked |
 |---|---|---|---|
-| `claude` | Claude Code 2.1.327 | `--model` (aliases `fable`, `opus`, `sonnet`, or a full id), `--effort` with `low`, `medium`, `high`, `xhigh`, `max`, and the brief as a positional argument that starts an interactive session | the `haiku` alias |
+| `claude` | Claude Code 2.1.327 | `--model` (aliases `fable`, `opus`, `sonnet`, or a full id), `--effort` with `low`, `medium`, `high`, `xhigh`, `max`, and the brief as a positional argument that starts an interactive session; the `haiku` alias, in a run in `hc` that started Haiku | |
 | `codex` | codex-cli 0.158.0-alpha.2.1 | `-m`, `-c key=value`, `--no-daemon`, and the brief as a positional argument | the `model_reasoning_effort` key and its values |
 | `grok` | grok 1.0.92 | `--model`, `--reasoning-effort` (alias `--effort`), and the brief as a positional argument of the interactive session | the effort values, and `--` before the brief |
 | `opencode` | opencode 2.3.2 | `--prompt`; the main interface takes no model (`opencode mini` takes `-m provider/model`) and its positional argument is a directory | |
 | `cursor`, `pi`, `antigravity`, `muse`, `kiro`, `gemini` | not installed | | all of their fields |
+
+How the brief reaches each one (`prompt`) comes from those checks for Claude Code, Codex, Grok and OpenCode. Cursor Agent takes it as an argument, as Orca passes it. Pi gets it with `hc send` once it is ready (`send`), as herdr-core's manual starts it, although Orca passes it as an argument. Neither was run.
 
 `agent` is not an alias of Cursor (its newer CLI name) because on some machines it is Grok's program: on the machine above, `agent --version` prints Grok's version. If yours is Cursor's, add `hosts: { herdr: { aliases: { agent: cursor } } }` to your `catalog.yaml`.
 

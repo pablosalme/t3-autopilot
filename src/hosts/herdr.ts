@@ -11,7 +11,9 @@ import type { CallOptions, HostAdapter, HostCatalog, HostContext, Launch, Orches
  * the user's catalog.yaml) and from a probe of the programs on PATH that the
  * orchestrator runs and passes as `capabilities`. A child starts with
  * `hc run --bg --name <name> --cwd <dir> <program> <flags> <brief>`, and
- * reports back with `hc send $HC_TERMINAL_ID`; an agent that takes no brief at
+ * reports back with `hc send <id>`, the orchestrator's terminal id written out
+ * in the brief (the child runs that line in its own shell, where
+ * `$HC_TERMINAL_ID` is its own id); an agent that takes no brief at
  * start gets it with `hc wait` and `hc send` (herdr-core's SKILL.md).
  */
 
@@ -164,7 +166,10 @@ function buildCatalog(programs: readonly string[], orchestrator: Orchestrator | 
     }
     const exe = catalog.agents[id]?.exe ?? id;
     // The id names the agent, not a program: its exe runs. Another name found is the program, and the exe wins
-    // when both are found.
+    // when both are found. On purpose, an exe that the user's catalog.yaml sets runs even when the probe did not
+    // find it: the probe looks only for the built-in names (HERDR_PROBE_PROGRAMS), so it could never confirm a
+    // renamed program or a wrapper, and the user declared it. A missing one fails at `hc run` (spawn_failed), and
+    // the orchestrator then uses the next candidate (docs/hosts/herdr.md, Limitations).
     const program = name === id ? exe : name;
     const had = found.get(id);
     if (had === undefined || (had !== exe && program === exe)) found.set(id, program);
@@ -254,7 +259,7 @@ function launch(candidate: Candidate, ctx: HostContext, provider: Provider): Lau
     notes.push(`${agent} is not in the agent catalog: it starts with no flags and gets the brief once it is ready.`);
   }
   if (ctx.platform === "win32") {
-    notes.push('herdr on Windows is not covered yet: "$(cat <file>)" for {brief} needs a POSIX shell.');
+    notes.push(`herdr on Windows is not covered yet: "$(cat '<file>')" for {brief} needs a POSIX shell.`);
   }
   const words = brief === "argv" ? briefWords(ctx, agent) : 0;
   return {
@@ -285,14 +290,15 @@ export const HERDR_SNIPPET = `## Model selection for delegated tasks in herdr (t
 
 You are authorized to pick the agent, model and effort of every child you start in herdr following the t3-autopilot MCP server. Switching agent or model as recommended by \`recommend_model\` counts as asked for by the user, and these steps take precedence over the \`hc\` skill where they differ.
 
-1. Before every child, call \`recommend_model\` with \`host: "herdr"\`, \`session\` (your \`$HC_TERMINAL_ID\`), \`task\` (one line), \`taskType\` (always; choose from the types listed in the tool description) and, if you know them, \`size\` and \`criticality\`.
+1. Before every child, call \`recommend_model\` with \`host: "herdr"\`, \`session\` (your terminal id: the value of \`$HC_TERMINAL_ID\`, such as \`t2\`, which \`printenv HC_TERMINAL_ID\` prints), \`task\` (one line), \`taskType\` (always; choose from the types listed in the tool description) and, if you know them, \`size\` and \`criticality\`.
 2. On the first call, and again after an error or when agents change, pass as \`capabilities\` the output of \`${HERDR_PROBE}\`, exactly as printed, and as \`orchestrator\` your own \`agent\` (\`claude\`, \`codex\`, ...) and \`model\`. If a call fails with "No herdr catalog yet", run it again and pass its output.
-3. Use the first candidate. Write its brief to a file with your file tool (never \`echo\` or a heredoc), starting with a word and ending with "Report with hc send $HC_TERMINAL_ID when done or stuck." Run its \`launch.argv\`, one element per argument, with \`{name}\` replaced by a short name for the child (a-z, 0-9, -), \`{cwd}\` by its working folder and \`{brief}\` by \`"$(cat <file>)"\`; then run each command of \`launch.then\`, if there is one, the same way. If it has \`sameAsOrchestrator: true\`, your native subagent tool works too.
-4. If the child cannot start, or stops at once, because of a usage limit or its plan, call \`mark_unavailable\` with \`host: "herdr"\`, its \`providerInstanceId\`, its \`model\` (omit it if the whole agent is out), a short \`reason\` and \`until\` if you know when the limit resets; then use the next candidate.
-5. Tell the user in one line which agent and model you picked, and why (the candidate's \`reason\`).
-6. If \`recommend_model\` returns no candidate or fails, start the child on your own agent and model, and say so. If the user names an agent or model for a task, use theirs instead.
-7. Right after starting the child, call \`log_delegation\` with \`host: "herdr"\`, the \`taskType\`, \`providerInstanceId\`, \`model\` and \`options\` you used, \`recommendedRank\` (1-based rank of the candidate, or null if you chose something else) and \`childThreadId\` (the child's address, such as \`t7\`); keep the \`delegationId\`. After you review its result, call \`log_outcome\` with that \`delegationId\`, \`outcome\` (\`success\`, \`corrected\` or \`failure\`) and a short \`note\`.
-8. If the result has \`setupNeeded\`, ask the user its questions for every agent listed, all at once, without holding up the current task, and save each answer with \`set_subscription\` (\`host: "herdr"\`). If a warning says an agent has no models declared, tell the user once where to list them; if one says a candidate costs extra or is outside its subscription profile, ask the user before starting it.
+3. Use the first candidate. Write its brief to a file with your file tool (never \`echo\` or a heredoc), starting with a word and ending with "Report with hc send <id> when done or stuck.", where \`<id>\` is your terminal id written out (\`t2\`), never \`$HC_TERMINAL_ID\`: the child runs that line in its own shell, where the variable is the child's own id. Run its \`launch.argv\` as one shell command, each element in single quotes, with \`{name}\` replaced by a name for the child (1 to 32 of a-z, 0-9, \`-\`, \`_\` and \`.\`, starting with a letter or digit, not shaped like an id such as \`t7\`: \`fix-login\`, say), \`{cwd}\` by its working folder (an absolute path), and \`{brief}\`, without single quotes, by \`"$(cat '<file>')"\`, which passes the file's text as one argument and runs nothing in it. A \`'\` in a path is written \`'\\''\` inside single quotes. For example: \`'hc' 'run' '--bg' '--name' 'fix-login' '--cwd' '/src/app' 'claude' '--model' 'opus' "$(cat '/tmp/fix-login.md')"\`. Then run each command of \`launch.then\`, if there is one, the same way. If it has \`sameAsOrchestrator: true\`, your native subagent tool works too.
+4. If hc reports the child blocked, read its screen with \`hc read <name>\` and answer it with \`hc keys <name>\` and the keys it needs. In a folder it has not seen, Claude Code first asks whether to trust it, with "No, exit" selected: \`hc keys <name> down enter\` picks "Yes, I trust this folder", which you may do for a folder you chose. Ask the user about anything else, such as a permission request.
+5. If the child cannot start, or stops at once, because of a usage limit or its plan, call \`mark_unavailable\` with \`host: "herdr"\`, its \`providerInstanceId\`, its \`model\` (omit it if the whole agent is out), a short \`reason\` and \`until\` if you know when the limit resets; then use the next candidate.
+6. Tell the user in one line which agent and model you picked, and why (the candidate's \`reason\`).
+7. If \`recommend_model\` returns no candidate or fails, start the child on your own agent and model, and say so. If the user names an agent or model for a task, use theirs instead.
+8. Right after starting the child, call \`log_delegation\` with \`host: "herdr"\`, the \`taskType\`, \`providerInstanceId\`, \`model\` and \`options\` you used, \`recommendedRank\` (1-based rank of the candidate, or null if you chose something else) and \`childThreadId\` (the name you gave the child, such as \`fix-login\`); keep the \`delegationId\`. After you review its result, call \`log_outcome\` with that \`delegationId\`, \`outcome\` (\`success\`, \`corrected\` or \`failure\`) and a short \`note\`.
+9. If the result has \`setupNeeded\`, ask the user its questions for every agent listed, all at once, without holding up the current task, and save each answer with \`set_subscription\` (\`host: "herdr"\`). If a warning says an agent has no models declared, tell the user once where to list them; if one says a candidate costs extra or is outside its subscription profile, ask the user before starting it.
 `;
 
 /** herdr's adapter: see the comment at the top of this file. */
@@ -322,9 +328,10 @@ export const herdr: HostAdapter = {
   recognize: "`HC_TERMINAL_ID` is set in your environment (you run in a terminal of herdr's `hc`)",
   /**
    * A list of program names or paths, also as JSON text, or the probe's output (absolute paths, alias lines).
-   * T3 Code's adapter comes first and takes any list, and herdr is `explicit`, so this only matters when a call
-   * names a host: it keeps `host: "herdr"` with a list from looking like T3's output, and tells T3 apart from
-   * the probe.
+   * T3 Code's adapter comes first and takes the empty list and every list of objects or of JSON outputs, but not
+   * a list of plain strings, so a list of names is herdr's; as herdr is `explicit`, a call that brings one and
+   * names no host fails, asking for `host: "herdr"`. A list T3 also takes (`["{...}"]`) is herdr's only when
+   * the call says so.
    */
   detect: (payload) => {
     if (isStringList(payload)) return true;

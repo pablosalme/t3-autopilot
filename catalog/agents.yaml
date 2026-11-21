@@ -39,8 +39,8 @@ agents:
     efforts: [low, medium, high, xhigh, max]
     exe: claude
     flags: { model: [--model, "{model}"], effort: [--effort, "{effort}"] }
-    prompt: positional # `claude "<brief>"` starts an interactive session with it
-    checked: "2.1.327" # --help names fable, opus and sonnet as aliases; haiku comes from Orca
+    prompt: positional # `claude "<brief>"` starts an interactive session with it (run in hc)
+    checked: "2.1.327" # --help names fable, opus and sonnet as aliases; a run in hc started Haiku with haiku
 
   codex:
     driver: codex
@@ -51,7 +51,7 @@ agents:
     exe: codex
     args: [--no-daemon] # herdr's guide asks for it: no shared background server
     flags: { model: [-m, "{model}"], effort: [-c, "model_reasoning_effort={effort}"] }
-    prompt: positional
+    prompt: positional # in its --help; Orca passes the brief as an argument too
     checked: "0.158.0-alpha.2.1" # -c takes any config key; model_reasoning_effort comes from Orca
 
   cursor:
@@ -62,7 +62,7 @@ agents:
     # No efforts: Cursor writes the effort into the model id (gpt-9.3-codex-high).
     exe: cursor-agent
     flags: { model: [--model, "{model}"] }
-    prompt: positional
+    prompt: positional # as Orca passes it; herdr-core's manual says nothing about Cursor
     # Not checked. Cursor's newer `agent` is not an alias: on some machines `agent` is Grok's.
 
   grok:
@@ -94,7 +94,9 @@ agents:
     efforts: [minimal, low, medium, high, xhigh, max]
     exe: pi
     flags: { model: [--model, "{model}"], effort: [--thinking, "{effort}"] }
-    prompt: positional
+    # herdr-core's manual (hc --skill) starts pi with its flags only, then `hc wait` and `hc send` the task;
+    # Orca passes the brief as an argument instead.
+    prompt: send
     # Not checked.
 
   antigravity:

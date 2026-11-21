@@ -46,8 +46,8 @@ describe("agentCommand: argv per agent of the built-in catalog", () => {
     [
       "pi",
       { model: "openai/gpt-9.1-sol", effort: "medium" },
-      ["pi", "--model", "openai/gpt-9.1-sol", "--thinking", "medium", BRIEF],
-      "argv",
+      ["pi", "--model", "openai/gpt-9.1-sol", "--thinking", "medium"],
+      "send",
     ],
     ["gemini", {}, ["gemini", "--prompt-interactive", BRIEF], "argv"],
     ["gemini", { model: "gemini-9-pro" }, ["gemini", "-m", "gemini-9-pro", "--prompt-interactive", BRIEF], "argv"],
