@@ -1,6 +1,7 @@
-import { type Capabilities, CapabilitiesSchema, type Provider } from "../capabilities.js";
+import { CapabilitiesSchema, type Provider } from "../capabilities.js";
 import { agentCommand, agentProvider, BRIEF, DEFAULT_MODEL_ID, isToken, resolveAgent } from "../catalog.js";
 import type { Candidate } from "../recommend.js";
+import { list, noModelsNote, onlyDefaultModel, orchestratorOf, parseJson } from "./common.js";
 import type { CallOptions, HostAdapter, HostCatalog, HostContext, Launch, Orchestrator } from "./types.js";
 
 /**
@@ -55,14 +56,6 @@ const PATH_LIKE = /^(?:\/|[A-Za-z]:[\\/])/;
 
 /** `alias claude='…'`: what bash and zsh print for an alias. */
 const ALIAS_LINE = /^alias\s+([^=\s]+)=/;
-
-function parseJson(text: string): unknown {
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return undefined;
-  }
-}
 
 const isStringList = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -128,22 +121,6 @@ export function readProbe(payload: unknown): Probe {
   return { names, ignored };
 }
 
-/** "a", "a and b", "a, b and c". */
-function list(items: readonly string[]): string {
-  return items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
-}
-
-/** The orchestrator a kept catalog names. */
-function orchestratorOf(capabilities: Capabilities): Orchestrator | undefined {
-  const agent = capabilities.inheritedProviderInstanceId;
-  if (!agent) return undefined;
-  return {
-    agent,
-    ...(capabilities.inheritedModel ? { model: capabilities.inheritedModel } : {}),
-    ...(capabilities.inheritedOptions ? { options: capabilities.inheritedOptions } : {}),
-  };
-}
-
 /**
  * The canonical catalog for the programs found: one provider per agent, its instance id the catalog's id for it
  * (`cursor` for `cursor-agent`), with the program to run kept on it, and the orchestrator's agent and model.
@@ -204,15 +181,9 @@ function buildCatalog(programs: readonly string[], orchestrator: Orchestrator | 
   }
   const bare = providers
     .filter((p) => !unknown.includes(p.providerInstanceId))
-    .filter((p) => p.models.every((m) => m.id === DEFAULT_MODEL_ID && m.policyFamily === undefined))
+    .filter(onlyDefaultModel)
     .map((p) => p.providerInstanceId);
-  if (bare.length) {
-    notes.push(
-      `No models are declared for ${list(bare)} in the agent catalog, so only ${bare.length === 1 ? "its" : "their"} ` +
-        "default model is offered, by the generic fallback with low confidence. List the models you use under " +
-        `agents.<id>.models in catalog.yaml (in ${ctx.dataDir}).`,
-    );
-  }
+  if (bare.length) notes.push(noModelsNote(bare, ctx.dataDir));
   return { capabilities, notes };
 }
 
