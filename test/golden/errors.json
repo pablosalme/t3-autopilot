@@ -1,0 +1,71 @@
+{
+  "no capabilities yet": {
+    "error": "No capabilities yet: call orchestrator_capabilities and pass its full output as `capabilities` (later calls can omit it)."
+  },
+  "capabilities: not JSON": {
+    "error": "capabilities is a string but not valid JSON. Pass the output of orchestrator_capabilities as-is."
+  },
+  "capabilities: no providers key": {
+    "error": "capabilities does not look like orchestrator_capabilities output: ✖ Invalid input: expected array, received undefined\n  → at providers"
+  },
+  "capabilities: a list item that is not JSON": {
+    "error": "capabilities[0] is a string but not valid JSON. Pass the output of orchestrator_capabilities as-is."
+  },
+  "capabilities: an empty providers list": {
+    "error": "orchestrator_capabilities lists no provider, so there is nothing to recommend. Call it again without `search`, or delegate inheriting your own model."
+  },
+  "every provider disabled": {
+    "error": "No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders."
+  },
+  "unknown taskType": {
+    "error": "Unknown taskType \"frobnicate\". Known types: review, debug, plan, research, quick, code, design, writing. Accepted aliases, by type: review (code-review, pr-review, audit); debug (bugfix, bug-fix, fix, hotfix, bug, debugging, troubleshooting); plan (planning, architecture); research (investigation, analysis); quick (trivial, chore); code (implementation, implement, coding, feature, refactor, refactoring, development, programming, tests, testing); design (ui, ux); writing (docs, documentation, write, copywriting)."
+  },
+  "prototype key as taskType": {
+    "error": "Unknown taskType \"constructor\". Known types: review, debug, plan, research, quick, code, design, writing. Accepted aliases, by type: review (code-review, pr-review, audit); debug (bugfix, bug-fix, fix, hotfix, bug, debugging, troubleshooting); plan (planning, architecture); research (investigation, analysis); quick (trivial, chore); code (implementation, implement, coding, feature, refactor, refactoring, development, programming, tests, testing); design (ui, ux); writing (docs, documentation, write, copywriting)."
+  },
+  "log_delegation: unknown taskType": {
+    "error": "Unknown taskType \"frobnicate\". Known types: review, debug, plan, research, quick, code, design, writing. Accepted aliases, by type: review (code-review, pr-review, audit); debug (bugfix, bug-fix, fix, hotfix, bug, debugging, troubleshooting); plan (planning, architecture); research (investigation, analysis); quick (trivial, chore); code (implementation, implement, coding, feature, refactor, refactoring, development, programming, tests, testing); design (ui, ux); writing (docs, documentation, write, copywriting)."
+  },
+  "log_outcome: neither delegationId nor the three fields": {
+    "error": "log_outcome needs delegationId, or taskType + providerInstanceId + model"
+  },
+  "log_outcome: unknown delegationId": {
+    "error": "Unknown delegationId \"d_<id>\". Pass taskType + providerInstanceId + model instead."
+  },
+  "log_outcome: unknown taskType": {
+    "error": "Unknown taskType \"__proto__\". Known types: review, debug, plan, research, quick, code, design, writing. Accepted aliases, by type: review (code-review, pr-review, audit); debug (bugfix, bug-fix, fix, hotfix, bug, debugging, troubleshooting); plan (planning, architecture); research (investigation, analysis); quick (trivial, chore); code (implementation, implement, coding, feature, refactor, refactoring, development, programming, tests, testing); design (ui, ux); writing (docs, documentation, write, copywriting)."
+  },
+  "mark_unavailable: no reason": {
+    "error": "mark_unavailable needs a reason (or clear: true)"
+  },
+  "mark_unavailable: until in the past": {
+    "error": "until (2026-11-20T00:00:00Z) is not in the future. To remove a mark, pass clear: true."
+  },
+  "mark_unavailable: until is not a date": {
+    "error": "Invalid date in until: \"soon\""
+  },
+  "set_subscription: no plan or quota": {
+    "error": "set_subscription needs plan and quota (or remove: true). Ask the user which plan they have on codex and whether its quota is generous, standard or tight."
+  },
+  "set_subscription: unknown names": {
+    "error": "Invalid subscription profile for codex:\n- onlyFamilies: unknown family \"gemmini\"\n- onlyTaskTypes: unknown task type \"reviews\"\n- known families: claude-opus, claude-sonnet, claude-haiku, claude-fable, gpt, gpt-mini, gemini, gemini-flash, gemini-flash-lite, grok, grok-build, grok-fast, composer, kimi, glm, deepseek, qwen-coder, minimax, muse-spark, muse-wonder, opencode-free\n- known task types: review, debug, plan, research, quick, code, design, writing"
+  },
+  "set_subscription: invalid values": {
+    "error": "Invalid subscription profile for codex:\n✖ onlyFamilies and avoidFamilies: use one or the other (onlyFamilies already leaves out every other family)\n✖ plan: say which plan it is, in the user's words\n  → at plan\n✖ includedFamilies: a name is repeated\n  → at includedFamilies"
+  },
+  "set_subscription: remove with other fields": {
+    "error": "remove: true takes only providerInstanceId, not plan"
+  },
+  "get_stats: since is not a date": {
+    "error": "Invalid date in since: \"not a date\""
+  },
+  "an invalid user policy": {
+    "error": "Invalid policy (<home>/policy.yaml, on top of the default policy): ✖ Too big: expected number to be <=3\n  → at maxCandidates"
+  },
+  "an invalid user policy: log_delegation": {
+    "error": "Invalid policy (<home>/policy.yaml, on top of the default policy): ✖ Too big: expected number to be <=3\n  → at maxCandidates"
+  },
+  "a user policy with an unknown family": {
+    "error": "Invalid policy (<home>/policy.yaml, on top of the default policy):\n- taskTypes.code.candidates[0]: unknown family \"nope\""
+  }
+}

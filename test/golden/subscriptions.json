@@ -1,0 +1,2302 @@
+{
+  "set_subscription before any capabilities": {
+    "saved": {
+      "providerInstanceId": "claudeAgent",
+      "plan": "Claude Max",
+      "quota": "generous",
+      "role": "primary",
+      "updatedAt": "2026-11-21T09:00:00.000Z"
+    },
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    },
+    "missing": null,
+    "warnings": []
+  },
+  "remove before any capabilities": {
+    "removed": {
+      "providerInstanceId": "claudeAgent",
+      "plan": "Claude Max",
+      "quota": "generous",
+      "role": "primary",
+      "updatedAt": "2026-11-21T09:00:00.000Z"
+    },
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {}
+  },
+  "review without profiles": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gpt-9.1-sol",
+        "options": [
+          {
+            "id": "reasoning",
+            "value": "high"
+          }
+        ],
+        "reason": "review #2 (any provider): latest gpt on cursor is gpt-9.1-sol, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "openai/gpt-9.1-sol",
+        "options": [
+          {
+            "id": "variant",
+            "value": "high"
+          }
+        ],
+        "reason": "review #2 (any provider): latest gpt on opencode is openai/gpt-9.1-sol, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-7-pro",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #3 (any provider): latest gemini on cursor is gemini-7-pro, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [],
+    "warnings": [],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build",
+            "grok-fast"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "families": [
+            "claude-opus",
+            "gpt",
+            "gpt-mini",
+            "gemini",
+            "gemini-flash-lite",
+            "grok",
+            "composer"
+          ],
+          "questions": [
+            "Which plan do you have on Cursor (cursor)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Cursor (cursor) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-sonnet",
+            "gpt",
+            "gemini",
+            "kimi",
+            "glm",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "set_subscription claudeAgent": {
+    "saved": {
+      "providerInstanceId": "claudeAgent",
+      "plan": "Claude Max",
+      "quota": "generous",
+      "role": "primary",
+      "updatedAt": "2026-11-21T09:00:00.000Z"
+    },
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    },
+    "missing": [
+      "grok",
+      "cursor",
+      "opencode"
+    ],
+    "warnings": []
+  },
+  "set_subscription grok": {
+    "saved": {
+      "providerInstanceId": "grok",
+      "plan": "X Subscription Premium ($30)",
+      "quota": "standard",
+      "role": "primary",
+      "quotaPool": "x-premium",
+      "quotaWindow": "weekly",
+      "updatedAt": "2026-11-21T09:00:00.000Z"
+    },
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "grok": {
+        "plan": "X Subscription Premium ($30)",
+        "quota": "standard",
+        "role": "primary",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    },
+    "missing": [
+      "cursor",
+      "opencode"
+    ],
+    "warnings": [
+      "No other provider has quotaPool \"x-premium\" yet; save the same name on the providers that share it."
+    ]
+  },
+  "set_subscription cursor": {
+    "saved": {
+      "providerInstanceId": "cursor",
+      "plan": "X Subscription Premium ($30), includes Cursor Pro",
+      "quota": "standard",
+      "quotaPool": "x-premium",
+      "quotaWindow": "weekly",
+      "includedFamilies": [
+        "composer",
+        "grok",
+        "grok-build",
+        "grok-fast"
+      ],
+      "paidFamilies": [
+        "claude-opus",
+        "claude-sonnet",
+        "gpt",
+        "gpt-mini",
+        "gemini",
+        "gemini-flash",
+        "gemini-flash-lite"
+      ],
+      "updatedAt": "2026-11-21T09:00:00.000Z"
+    },
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "grok": {
+        "plan": "X Subscription Premium ($30)",
+        "quota": "standard",
+        "role": "primary",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "cursor": {
+        "plan": "X Subscription Premium ($30), includes Cursor Pro",
+        "quota": "standard",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "includedFamilies": [
+          "composer",
+          "grok",
+          "grok-build",
+          "grok-fast"
+        ],
+        "paidFamilies": [
+          "claude-opus",
+          "claude-sonnet",
+          "gpt",
+          "gpt-mini",
+          "gemini",
+          "gemini-flash",
+          "gemini-flash-lite"
+        ],
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    },
+    "missing": [
+      "opencode"
+    ],
+    "warnings": []
+  },
+  "set_subscription opencode": {
+    "saved": {
+      "providerInstanceId": "opencode",
+      "plan": "OpenCode Go",
+      "quota": "tight",
+      "purpose": "try models",
+      "role": "experimental",
+      "quotaWindow": "5h",
+      "updatedAt": "2026-11-21T09:00:00.000Z"
+    },
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "cursor": {
+        "plan": "X Subscription Premium ($30), includes Cursor Pro",
+        "quota": "standard",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "includedFamilies": [
+          "composer",
+          "grok",
+          "grok-build",
+          "grok-fast"
+        ],
+        "paidFamilies": [
+          "claude-opus",
+          "claude-sonnet",
+          "gpt",
+          "gpt-mini",
+          "gemini",
+          "gemini-flash",
+          "gemini-flash-lite"
+        ],
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "grok": {
+        "plan": "X Subscription Premium ($30)",
+        "quota": "standard",
+        "role": "primary",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "opencode": {
+        "plan": "OpenCode Go",
+        "quota": "tight",
+        "purpose": "try models",
+        "role": "experimental",
+        "quotaWindow": "5h",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    },
+    "missing": [],
+    "warnings": []
+  },
+  "set_subscription for an id not in the capabilities, with a pool of its own": {
+    "saved": {
+      "providerInstanceId": "codex-old",
+      "plan": "ChatGPT Plus",
+      "quota": "standard",
+      "quotaPool": "solo",
+      "updatedAt": "2026-11-21T09:00:00.000Z"
+    },
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "cursor": {
+        "plan": "X Subscription Premium ($30), includes Cursor Pro",
+        "quota": "standard",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "includedFamilies": [
+          "composer",
+          "grok",
+          "grok-build",
+          "grok-fast"
+        ],
+        "paidFamilies": [
+          "claude-opus",
+          "claude-sonnet",
+          "gpt",
+          "gpt-mini",
+          "gemini",
+          "gemini-flash",
+          "gemini-flash-lite"
+        ],
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "grok": {
+        "plan": "X Subscription Premium ($30)",
+        "quota": "standard",
+        "role": "primary",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "opencode": {
+        "plan": "OpenCode Go",
+        "quota": "tight",
+        "purpose": "try models",
+        "role": "experimental",
+        "quotaWindow": "5h",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "codex-old": {
+        "plan": "ChatGPT Plus",
+        "quota": "standard",
+        "quotaPool": "solo",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    },
+    "missing": [],
+    "warnings": [
+      "codex-old is not in the last orchestrator_capabilities output; check the providerInstanceId (saved anyway).",
+      "No other provider has quotaPool \"solo\" yet; save the same name on the providers that share it."
+    ]
+  },
+  "remove it": {
+    "removed": {
+      "providerInstanceId": "codex-old",
+      "plan": "ChatGPT Plus",
+      "quota": "standard",
+      "quotaPool": "solo",
+      "updatedAt": "2026-11-21T09:00:00.000Z"
+    },
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "cursor": {
+        "plan": "X Subscription Premium ($30), includes Cursor Pro",
+        "quota": "standard",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "includedFamilies": [
+          "composer",
+          "grok",
+          "grok-build",
+          "grok-fast"
+        ],
+        "paidFamilies": [
+          "claude-opus",
+          "claude-sonnet",
+          "gpt",
+          "gpt-mini",
+          "gemini",
+          "gemini-flash",
+          "gemini-flash-lite"
+        ],
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "grok": {
+        "plan": "X Subscription Premium ($30)",
+        "quota": "standard",
+        "role": "primary",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "opencode": {
+        "plan": "OpenCode Go",
+        "quota": "tight",
+        "purpose": "try models",
+        "role": "experimental",
+        "quotaWindow": "5h",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    }
+  },
+  "remove one that does not exist": {
+    "removed": null,
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "cursor": {
+        "plan": "X Subscription Premium ($30), includes Cursor Pro",
+        "quota": "standard",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "includedFamilies": [
+          "composer",
+          "grok",
+          "grok-build",
+          "grok-fast"
+        ],
+        "paidFamilies": [
+          "claude-opus",
+          "claude-sonnet",
+          "gpt",
+          "gpt-mini",
+          "gemini",
+          "gemini-flash",
+          "gemini-flash-lite"
+        ],
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "grok": {
+        "plan": "X Subscription Premium ($30)",
+        "quota": "standard",
+        "role": "primary",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "opencode": {
+        "plan": "OpenCode Go",
+        "quota": "tight",
+        "purpose": "try models",
+        "role": "experimental",
+        "quotaWindow": "5h",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    }
+  },
+  "get_subscriptions": {
+    "file": "<home>/subscriptions.yaml",
+    "subscriptions": {
+      "claudeAgent": {
+        "plan": "Claude Max",
+        "quota": "generous",
+        "role": "primary",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "cursor": {
+        "plan": "X Subscription Premium ($30), includes Cursor Pro",
+        "quota": "standard",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "includedFamilies": [
+          "composer",
+          "grok",
+          "grok-build",
+          "grok-fast"
+        ],
+        "paidFamilies": [
+          "claude-opus",
+          "claude-sonnet",
+          "gpt",
+          "gpt-mini",
+          "gemini",
+          "gemini-flash",
+          "gemini-flash-lite"
+        ],
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "grok": {
+        "plan": "X Subscription Premium ($30)",
+        "quota": "standard",
+        "role": "primary",
+        "quotaPool": "x-premium",
+        "quotaWindow": "weekly",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      },
+      "opencode": {
+        "plan": "OpenCode Go",
+        "quota": "tight",
+        "purpose": "try models",
+        "role": "experimental",
+        "quotaWindow": "5h",
+        "updatedAt": "2026-11-21T09:00:00.000Z"
+      }
+    },
+    "missing": []
+  },
+  "review with profiles": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8.1",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #4: latest grok on grok is grok-8.1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "grok-8",
+        "options": [],
+        "reason": "review #7 (any provider): latest grok on cursor is grok-8 (model has no effort option; using its default; subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: fits its profile (included in the plan: grok))",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "fallback #4 (any provider): latest grok-build on grok is grok-8-build, effort high",
+        "source": "fallback",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "debug with profiles": {
+    "taskType": "debug",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "debug #1: latest claude-opus on claudeAgent is claude-opus-9-2, effort xhigh",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "debug #5: latest grok-build on grok is grok-8-build, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8.1",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "fallback #5 (any provider): latest grok on grok is grok-8.1, effort high (effort xhigh not supported, using high)",
+        "source": "fallback",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "plan with profiles": {
+    "taskType": "plan",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "xhigh"
+          }
+        ],
+        "reason": "plan #1: latest claude-opus on claudeAgent is claude-opus-9-2, effort xhigh",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-fable-8-3",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "plan #3: latest claude-fable on claudeAgent is claude-fable-8-3, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "fallback #4 (any provider): latest grok-build on grok is grok-8-build, effort high (effort xhigh not supported, using high)",
+        "source": "fallback",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "research with profiles": {
+    "taskType": "research",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-sonnet-9-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "medium"
+          }
+        ],
+        "reason": "research #1: latest claude-sonnet on claudeAgent is claude-sonnet-9-1, effort medium",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8.1",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "research #2: latest grok on grok is grok-8.1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "medium"
+          }
+        ],
+        "reason": "fallback #1 (any provider): latest claude-opus on claudeAgent is claude-opus-9-2, effort medium",
+        "source": "fallback",
+        "sameAsOrchestrator": true
+      }
+    ],
+    "skipped": [
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "quick with profiles": {
+    "taskType": "quick",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-haiku-9-0",
+        "options": [
+          {
+            "id": "effort",
+            "value": "low"
+          }
+        ],
+        "reason": "quick #1: latest claude-haiku on claudeAgent is claude-haiku-9-0, effort low",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "composer-4",
+        "options": [],
+        "reason": "quick #2: latest composer on cursor is composer-4 (subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: fits its profile (included in the plan: composer))",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8.1-fast",
+        "options": [],
+        "reason": "quick #6 (any provider): latest grok-fast on grok is grok-8.1-fast (model has no effort option; using its default)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/gpt-8.4-mini: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt-mini is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7.5-flash-lite: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini-flash-lite is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent",
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "code with profiles": {
+    "taskType": "code",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #1: latest claude-opus on claudeAgent is claude-opus-9-2, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #4: latest grok-build on grok is grok-8-build, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "composer-4",
+        "options": [],
+        "reason": "code #5: latest composer on cursor is composer-4 (subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: fits its profile (included in the plan: composer))",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "design with profiles": {
+    "taskType": "design",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "design #1: latest claude-opus on claudeAgent is claude-opus-9-2, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-fable-8-3",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "design #3: latest claude-fable on claudeAgent is claude-fable-8-3, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "fallback #4 (any provider): latest grok-build on grok is grok-8-build, effort high",
+        "source": "fallback",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "writing with profiles": {
+    "taskType": "writing",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "writing #1: latest claude-opus on claudeAgent is claude-opus-9-2, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-fable-8-3",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "writing #2: latest claude-fable on claudeAgent is claude-fable-8-3, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-sonnet-9-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "writing #4: latest claude-sonnet on claudeAgent is claude-sonnet-9-1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "code, large and highly critical, with profiles": {
+    "taskType": "code",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "max"
+          }
+        ],
+        "reason": "code #1: latest claude-opus on claudeAgent is claude-opus-9-2, effort max",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #4: latest grok-build on grok is grok-8-build, effort high (effort max not supported, using high)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "composer-4",
+        "options": [],
+        "reason": "code #5: latest composer on cursor is composer-4 (subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: fits its profile (included in the plan: composer))",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "opencode/openai/gpt-9.1-sol: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): the task is large; the task is highly critical",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "opencode/opencode-go/gemini-7.5-pro: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): the task is large; the task is highly critical",
+      "opencode/opencode-go/kimi-k5: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): the task is large; the task is highly critical",
+      "opencode/opencode-go/glm-8: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): the task is large; the task is highly critical",
+      "opencode/opencode/big-pickle: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): the task is large; the task is highly critical",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent; the task is large; the task is highly critical"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "mark grok (quotaWindow from its profile)": {
+    "marked": {
+      "providerInstanceId": "grok",
+      "reason": "weekly limit reached",
+      "markedAt": "2026-11-21T09:00:00.000Z",
+      "until": "2026-11-28T09:00:00.000Z"
+    },
+    "untilFrom": "quotaWindow weekly of grok's subscription profile",
+    "active": [
+      {
+        "providerInstanceId": "grok",
+        "reason": "weekly limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-28T09:00:00.000Z"
+      }
+    ]
+  },
+  "review with grok marked": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #5: latest claude-opus on claudeAgent is claude-opus-9-2, effort high (same provider as the orchestrator; demoted for an independent review)",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-sonnet-9-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "fallback #6 (any provider): latest claude-sonnet on claudeAgent is claude-sonnet-9-1, effort high (same provider as the orchestrator; demoted for an independent review)",
+        "source": "fallback",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "openai/gpt-9.1-sol",
+        "options": [
+          {
+            "id": "variant",
+            "value": "high"
+          }
+        ],
+        "reason": "review #2 (any provider): latest gpt on opencode is openai/gpt-9.1-sol, effort high (subscription OpenCode Go, quota tight, resets 5h, experimental: fits its profile, ranked after unrestricted subscriptions)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent",
+      "grok (every model): marked unavailable until 2026-11-28T09:00:00.000Z (weekly limit reached)"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "mark opencode (quotaWindow 5h from its profile)": {
+    "marked": {
+      "providerInstanceId": "opencode",
+      "reason": "out of credits",
+      "markedAt": "2026-11-21T09:00:00.000Z",
+      "until": "2026-11-21T14:00:00.000Z"
+    },
+    "untilFrom": "quotaWindow 5h of opencode's subscription profile",
+    "active": [
+      {
+        "providerInstanceId": "grok",
+        "reason": "weekly limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-28T09:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "opencode",
+        "reason": "out of credits",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      }
+    ]
+  },
+  "code with grok and opencode marked: cursor shares grok's pool": {
+    "taskType": "code",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #1: latest claude-opus on claudeAgent is claude-opus-9-2, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-sonnet-9-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "fallback #6 (any provider): latest claude-sonnet on claudeAgent is claude-sonnet-9-1, effort high",
+        "source": "fallback",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #4: latest grok-build on grok is grok-8-build, effort high (marked unavailable until 2026-11-28T09:00:00.000Z: weekly limit reached; ranked after available candidates)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "opencode/anthropic/claude-sonnet-9-1: left out by its subscription profile (OpenCode Go, quota tight, resets 5h, experimental): claude-sonnet is also on claudeAgent",
+      "grok (every model): marked unavailable until 2026-11-28T09:00:00.000Z (weekly limit reached)",
+      "opencode (every model): marked unavailable until 2026-11-21T14:00:00.000Z (out of credits)"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "mark claudeAgent until a date": {
+    "marked": {
+      "providerInstanceId": "claudeAgent",
+      "reason": "session limit",
+      "markedAt": "2026-11-21T09:00:00.000Z",
+      "until": "2026-11-21T14:00:00.000Z"
+    },
+    "untilFrom": "until",
+    "active": [
+      {
+        "providerInstanceId": "grok",
+        "reason": "weekly limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-28T09:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "opencode",
+        "reason": "out of credits",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "reason": "session limit",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      }
+    ]
+  },
+  "code with every included provider marked": {
+    "taskType": "code",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "model": "claude-opus-9-2",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #1: latest claude-opus on claudeAgent is claude-opus-9-2, effort high (marked unavailable until 2026-11-21T14:00:00.000Z: session limit; quota may be exhausted; no available candidate ranks higher)",
+        "source": "taskType",
+        "sameAsOrchestrator": true
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #4: latest grok-build on grok is grok-8-build, effort high (marked unavailable until 2026-11-28T09:00:00.000Z: weekly limit reached; quota may be exhausted; no available candidate ranks higher)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "claude-opus-9-1",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "code #3 (any provider): latest claude-opus on cursor is claude-opus-9-1, effort high (subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: outside its profile (extra cost: claude-opus is billed apart from the plan (paidFamilies))) Used only because no candidate within the subscription profiles can run.",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "grok (every model): marked unavailable until 2026-11-28T09:00:00.000Z (weekly limit reached)",
+      "claudeAgent (every model): marked unavailable until 2026-11-21T14:00:00.000Z (session limit)",
+      "opencode (every model): marked unavailable until 2026-11-21T14:00:00.000Z (out of credits)",
+      "cursor/gpt-9.1-sol: costs extra (gpt is billed apart from the plan (paidFamilies)); left out of the list after the models the plans include",
+      "cursor/gemini-7-pro: costs extra (gemini is billed apart from the plan (paidFamilies)); left out of the list after the models the plans include"
+    ],
+    "warnings": [
+      "cursor/claude-opus-9-1 (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly) costs extra: claude-opus is billed apart from the plan (paidFamilies), so it is paid at API prices or from prepaid credit. It is recommended only because no included model is free to run. Ask the user before delegating.",
+      "claudeAgent/claude-opus-9-2, grok/grok-8-build fit their subscription but are marked unavailable or out of quota, so the child may not start. They come first because they cost nothing extra; if a child cannot start, take the next candidate.",
+      "Every candidate is marked unavailable, out of quota or costs extra. Before delegating to one that costs extra (cursor/claude-opus-9-1, cursor/gpt-9.1-sol, cursor/gemini-7-pro), ask the user whether to pay for it, wait until 2026-11-21T14:00:00.000Z (when the mark on claudeAgent (every model) ends) or use another provider."
+    ],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "review with every included provider marked": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8.1",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #4: latest grok on grok is grok-8.1, effort high (marked unavailable until 2026-11-28T09:00:00.000Z: weekly limit reached; quota may be exhausted; no available candidate ranks higher)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "grok-8",
+        "options": [],
+        "reason": "review #7 (any provider): latest grok on cursor is grok-8 (model has no effort option; using its default; shares quota pool \"x-premium\" with grok, marked unavailable until 2026-11-28T09:00:00.000Z: weekly limit reached; quota may be exhausted; no available candidate ranks higher; subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: fits its profile (included in the plan: grok))",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gpt-9.1-sol",
+        "options": [
+          {
+            "id": "reasoning",
+            "value": "high"
+          }
+        ],
+        "reason": "review #2 (any provider): latest gpt on cursor is gpt-9.1-sol, effort high (subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: outside its profile (extra cost: gpt is billed apart from the plan (paidFamilies))) Used only because no candidate within the subscription profiles can run.",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "grok (every model): marked unavailable until 2026-11-28T09:00:00.000Z (weekly limit reached)",
+      "claudeAgent (every model): marked unavailable until 2026-11-21T14:00:00.000Z (session limit)",
+      "opencode (every model): marked unavailable until 2026-11-21T14:00:00.000Z (out of credits)",
+      "cursor/gemini-7-pro: costs extra (gemini is billed apart from the plan (paidFamilies)); left out of the list after the models the plans include",
+      "cursor/claude-opus-9-1: costs extra (claude-opus is billed apart from the plan (paidFamilies)); left out of the list after the models the plans include"
+    ],
+    "warnings": [
+      "cursor/gpt-9.1-sol (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly) costs extra: gpt is billed apart from the plan (paidFamilies), so it is paid at API prices or from prepaid credit. It is recommended only because no included model is free to run. Ask the user before delegating.",
+      "grok/grok-8.1, cursor/grok-8 fit their subscription but are marked unavailable or out of quota, so the child may not start. They come first because they cost nothing extra; if a child cannot start, take the next candidate.",
+      "Every candidate is marked unavailable, out of quota or costs extra. Before delegating to one that costs extra (cursor/gpt-9.1-sol, cursor/gemini-7-pro, cursor/claude-opus-9-1), ask the user whether to pay for it, wait until 2026-11-28T09:00:00.000Z (when the mark on grok (every model) ends) or use another provider."
+    ],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "clear opencode": {
+    "cleared": [
+      {
+        "providerInstanceId": "opencode",
+        "reason": "out of credits",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      }
+    ],
+    "active": [
+      {
+        "providerInstanceId": "grok",
+        "reason": "weekly limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-28T09:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "reason": "session limit",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      }
+    ]
+  },
+  "mark the OpenCode Go models (quotaWindow 5h)": {
+    "marked": {
+      "providerInstanceId": "opencode",
+      "model": "opencode-go/*",
+      "reason": "5-hour limit reached",
+      "markedAt": "2026-11-21T09:00:00.000Z",
+      "until": "2026-11-21T14:00:00.000Z"
+    },
+    "untilFrom": "quotaWindow 5h of opencode's subscription profile",
+    "active": [
+      {
+        "providerInstanceId": "grok",
+        "reason": "weekly limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-28T09:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "reason": "session limit",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "opencode-go/*",
+        "reason": "5-hour limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      }
+    ]
+  },
+  "quick with the Go models marked": {
+    "taskType": "quick",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "opencode",
+        "model": "opencode/big-pickle",
+        "options": [],
+        "reason": "quick #5: latest opencode-free on opencode is opencode/big-pickle (subscription OpenCode Go, quota tight, resets 5h, experimental: fits its profile, ranked after unrestricted subscriptions)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "anthropic/claude-sonnet-9-1",
+        "options": [
+          {
+            "id": "variant",
+            "value": "low"
+          }
+        ],
+        "reason": "quick #11 (any provider): latest claude-sonnet on opencode is anthropic/claude-sonnet-9-1, effort low (subscription OpenCode Go, quota tight, resets 5h, experimental: fits its profile, ranked after unrestricted subscriptions)",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "openai/gpt-9.1-sol",
+        "options": [
+          {
+            "id": "variant",
+            "value": "low"
+          }
+        ],
+        "reason": "fallback #2 (any provider): latest gpt on opencode is openai/gpt-9.1-sol, effort low (subscription OpenCode Go, quota tight, resets 5h, experimental: fits its profile, ranked after unrestricted subscriptions)",
+        "source": "fallback",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/gpt-8.4-mini: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt-mini is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7.5-flash-lite: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini-flash-lite is billed apart from the plan (paidFamilies)",
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "claudeAgent (every model): marked unavailable until 2026-11-21T14:00:00.000Z (session limit)",
+      "grok (every model): marked unavailable until 2026-11-28T09:00:00.000Z (weekly limit reached)",
+      "opencode/opencode-go/*: marked unavailable until 2026-11-21T14:00:00.000Z (5-hour limit reached)"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "mark a provider with no profile (default 24 h)": {
+    "marked": {
+      "providerInstanceId": "codex",
+      "model": "gpt-6.2-codex",
+      "reason": "not included in your plan",
+      "markedAt": "2026-11-21T09:00:00.000Z",
+      "until": "2026-11-22T09:00:00.000Z"
+    },
+    "untilFrom": "default 24 h",
+    "active": [
+      {
+        "providerInstanceId": "grok",
+        "reason": "weekly limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-28T09:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "reason": "session limit",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "opencode-go/*",
+        "reason": "5-hour limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "reason": "not included in your plan",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ]
+  },
+  "clear one model": {
+    "cleared": [
+      {
+        "providerInstanceId": "codex",
+        "model": "gpt-6.2-codex",
+        "reason": "not included in your plan",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ],
+    "active": [
+      {
+        "providerInstanceId": "grok",
+        "reason": "weekly limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-28T09:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "claudeAgent",
+        "reason": "session limit",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "opencode-go/*",
+        "reason": "5-hour limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      }
+    ]
+  },
+  "clear grok": {
+    "cleared": [
+      {
+        "providerInstanceId": "grok",
+        "reason": "weekly limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-28T09:00:00.000Z"
+      }
+    ],
+    "active": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "reason": "session limit",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "opencode-go/*",
+        "reason": "5-hour limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      }
+    ]
+  },
+  "review after clearing grok": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8.1",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #4: latest grok on grok is grok-8.1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "grok-8",
+        "options": [],
+        "reason": "review #7 (any provider): latest grok on cursor is grok-8 (model has no effort option; using its default; subscription X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly: fits its profile (included in the plan: grok))",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8-build",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "fallback #4 (any provider): latest grok-build on grok is grok-8-build, effort high",
+        "source": "fallback",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/gpt-9.1-sol: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gpt is billed apart from the plan (paidFamilies)",
+      "cursor/gemini-7-pro: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: gemini is billed apart from the plan (paidFamilies)",
+      "cursor/claude-opus-9-1: left out by its subscription profile (X Subscription Premium ($30), includes Cursor Pro, quota standard, pool x-premium, resets weekly): extra cost: claude-opus is billed apart from the plan (paidFamilies)",
+      "claudeAgent (every model): marked unavailable until 2026-11-21T14:00:00.000Z (session limit)",
+      "opencode/opencode-go/*: marked unavailable until 2026-11-21T14:00:00.000Z (5-hour limit reached)"
+    ],
+    "warnings": [],
+    "usageSource": "none",
+    "capabilitiesFrom": "cache",
+    "capabilitiesAgeMinutes": 0
+  },
+  "subscriptions.yaml": "# t3-autopilot subscription profiles, one per provider instance id.\n# Written by the set_subscription tool; you can also edit it by hand.\n# Keys: plan, quota (generous | standard | tight), purpose, role\n# (primary | secondary | experimental | lastResort), quotaPool, quotaWindow\n# (5h | weekly | monthly),\n# includedFamilies or paidFamilies, onlyFamilies or avoidFamilies,\n# onlyTaskTypes. See docs/reference.md#subscription-profiles:\n# https://github.com/pablosalme/t3-autopilot/blob/main/docs/reference.md#subscription-profiles\n\nversion: 1\nsubscriptions:\n  claudeAgent:\n    plan: Claude Max\n    quota: generous\n    role: primary\n    updatedAt: 2026-11-21T09:00:00.000Z\n  cursor:\n    plan: X Subscription Premium ($30), includes Cursor Pro\n    quota: standard\n    quotaPool: x-premium\n    quotaWindow: weekly\n    includedFamilies:\n      - composer\n      - grok\n      - grok-build\n      - grok-fast\n    paidFamilies:\n      - claude-opus\n      - claude-sonnet\n      - gpt\n      - gpt-mini\n      - gemini\n      - gemini-flash\n      - gemini-flash-lite\n    updatedAt: 2026-11-21T09:00:00.000Z\n  grok:\n    plan: X Subscription Premium ($30)\n    quota: standard\n    role: primary\n    quotaPool: x-premium\n    quotaWindow: weekly\n    updatedAt: 2026-11-21T09:00:00.000Z\n  opencode:\n    plan: OpenCode Go\n    quota: tight\n    purpose: try models\n    role: experimental\n    quotaWindow: 5h\n    updatedAt: 2026-11-21T09:00:00.000Z\n",
+  "unavailable.json": {
+    "version": 1,
+    "marks": [
+      {
+        "providerInstanceId": "claudeAgent",
+        "reason": "session limit",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "opencode-go/*",
+        "reason": "5-hour limit reached",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-21T14:00:00.000Z"
+      }
+    ]
+  },
+  "capabilities-cache.json": {
+    "version": 1,
+    "capabilities": {
+      "inheritedProviderInstanceId": "claudeAgent",
+      "inheritedModel": "claude-opus-9-2",
+      "inheritedOptions": [
+        {
+          "id": "effort",
+          "value": "high"
+        }
+      ],
+      "providers": [
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "models": [
+            {
+              "id": "claude-opus-9-2",
+              "label": "Claude Opus 9.2",
+              "options": [
+                {
+                  "id": "effort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max"
+                  ],
+                  "default": "medium"
+                },
+                {
+                  "id": "ultracode",
+                  "values": [
+                    false,
+                    true
+                  ]
+                },
+                {
+                  "id": "contextWindow",
+                  "values": [
+                    "200k",
+                    "1m"
+                  ],
+                  "default": "200k"
+                }
+              ]
+            },
+            {
+              "id": "claude-opus-9-1",
+              "label": "Claude Opus 9.1",
+              "options": [
+                {
+                  "id": "effort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            },
+            {
+              "id": "claude-sonnet-9-1",
+              "label": "Claude Sonnet 9.1",
+              "options": [
+                {
+                  "id": "effort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max"
+                  ],
+                  "default": "high"
+                }
+              ]
+            },
+            {
+              "id": "claude-haiku-9-0",
+              "label": "Claude Haiku 9.0",
+              "options": [
+                {
+                  "id": "effort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            },
+            {
+              "id": "claude-fable-8-3",
+              "label": "Claude Fable 8.3",
+              "options": [
+                {
+                  "id": "effort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            }
+          ],
+          "canRunChildTask": true,
+          "canRunCrossProviderChildTask": true,
+          "constraints": []
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "models": [
+            {
+              "id": "grok-build",
+              "label": "Grok Build"
+            },
+            {
+              "id": "grok-8.1",
+              "label": "Grok 8.1",
+              "options": [
+                {
+                  "id": "reasoningEffort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "default": "high"
+                }
+              ]
+            },
+            {
+              "id": "grok-8",
+              "label": "Grok 8",
+              "options": [
+                {
+                  "id": "reasoningEffort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "default": "high"
+                }
+              ]
+            },
+            {
+              "id": "grok-8.1-fast",
+              "label": "Grok 8.1 Fast"
+            },
+            {
+              "id": "grok-8-build",
+              "label": "Grok 8 Build",
+              "options": [
+                {
+                  "id": "reasoningEffort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "default": "high"
+                }
+              ]
+            }
+          ],
+          "canRunChildTask": true,
+          "canRunCrossProviderChildTask": true,
+          "constraints": []
+        },
+        {
+          "providerInstanceId": "cursor",
+          "driverKind": "cursor",
+          "displayName": "Cursor",
+          "models": [
+            {
+              "id": "default",
+              "label": "Auto"
+            },
+            {
+              "id": "composer-4",
+              "label": "Composer 4",
+              "options": [
+                {
+                  "id": "fastMode",
+                  "values": [
+                    false,
+                    true
+                  ],
+                  "default": false
+                }
+              ]
+            },
+            {
+              "id": "composer-3.5",
+              "label": "Composer 3.5",
+              "options": [
+                {
+                  "id": "fastMode",
+                  "values": [
+                    false,
+                    true
+                  ],
+                  "default": false
+                }
+              ]
+            },
+            {
+              "id": "claude-opus-9-1",
+              "label": "Claude Opus 9.1",
+              "options": [
+                {
+                  "id": "effort",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max"
+                  ],
+                  "default": "high"
+                },
+                {
+                  "id": "thinking",
+                  "values": [
+                    false,
+                    true
+                  ],
+                  "default": true
+                }
+              ]
+            },
+            {
+              "id": "gpt-9.1-sol",
+              "label": "GPT-9.1 Sol",
+              "options": [
+                {
+                  "id": "reasoning",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            },
+            {
+              "id": "gpt-8.4-mini",
+              "label": "GPT 8.4 Mini",
+              "options": [
+                {
+                  "id": "reasoning",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            },
+            {
+              "id": "gemini-7-pro",
+              "label": "Gemini 7 Pro",
+              "options": [
+                {
+                  "id": "thinking",
+                  "values": [
+                    false,
+                    true
+                  ],
+                  "default": true
+                },
+                {
+                  "id": "effort",
+                  "values": [
+                    "low",
+                    "high"
+                  ],
+                  "default": "high"
+                }
+              ]
+            },
+            {
+              "id": "gemini-7.5-flash-lite",
+              "label": "Gemini 7.5 Flash Lite"
+            },
+            {
+              "id": "grok-8",
+              "label": "Grok 8"
+            }
+          ],
+          "omittedModels": 0,
+          "canRunChildTask": true,
+          "canRunCrossProviderChildTask": true,
+          "constraints": []
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "models": [
+            {
+              "id": "opencode/big-pickle",
+              "label": "Big Pickle",
+              "options": [
+                {
+                  "id": "variant",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "default": "medium"
+                },
+                {
+                  "id": "agent",
+                  "values": [
+                    "build",
+                    "plan"
+                  ],
+                  "default": "build"
+                }
+              ]
+            },
+            {
+              "id": "opencode-go/kimi-k5",
+              "label": "Kimi K5",
+              "options": [
+                {
+                  "id": "variant",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            },
+            {
+              "id": "opencode-go/gemini-7.5-pro",
+              "label": "Gemini 7.5 Pro",
+              "options": [
+                {
+                  "id": "variant",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            },
+            {
+              "id": "anthropic/claude-sonnet-9-1",
+              "label": "Claude Sonnet 9.1",
+              "options": [
+                {
+                  "id": "variant",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh",
+                    "max"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            },
+            {
+              "id": "openai/gpt-9.1-sol",
+              "label": "GPT-9.1 Sol",
+              "options": [
+                {
+                  "id": "variant",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high",
+                    "xhigh"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            },
+            {
+              "id": "opencode-go/glm-8",
+              "label": "GLM 8",
+              "options": [
+                {
+                  "id": "variant",
+                  "values": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "default": "medium"
+                }
+              ]
+            }
+          ],
+          "omittedModels": 0,
+          "canRunChildTask": true,
+          "canRunCrossProviderChildTask": true,
+          "constraints": []
+        }
+      ],
+      "parentThreadId": "thread:fixture-orchestrator",
+      "runtimeMode": "full-access",
+      "interactionMode": "default"
+    },
+    "receivedAt": "2026-11-21T09:00:00.000Z",
+    "merged": false
+  },
+  "a profile with unknown names": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "opencode",
+        "model": "openai/gpt-9.1-sol",
+        "options": [
+          {
+            "id": "variant",
+            "value": "high"
+          }
+        ],
+        "reason": "review #2 (any provider): latest gpt on opencode is openai/gpt-9.1-sol, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "opencode-go/gemini-7.5-pro",
+        "options": [
+          {
+            "id": "variant",
+            "value": "high"
+          }
+        ],
+        "reason": "review #3 (any provider): latest gemini on opencode is opencode-go/gemini-7.5-pro, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "grok",
+        "model": "grok-8.1",
+        "options": [
+          {
+            "id": "reasoningEffort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #4: latest grok on grok is grok-8.1, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [
+      "cursor/gpt-9.1-sol: left out by its subscription profile (Cursor Pro, quota standard): gpt is not in onlyFamilies (gemmini); task type review is not in onlyTaskTypes (reviews)",
+      "cursor/gemini-7-pro: left out by its subscription profile (Cursor Pro, quota standard): gemini is not in onlyFamilies (gemmini); task type review is not in onlyTaskTypes (reviews)",
+      "cursor/claude-opus-9-1: left out by its subscription profile (Cursor Pro, quota standard): claude-opus is not in onlyFamilies (gemmini); task type review is not in onlyTaskTypes (reviews)",
+      "cursor/grok-8: left out by its subscription profile (Cursor Pro, quota standard): grok is not in onlyFamilies (gemmini); task type review is not in onlyTaskTypes (reviews)",
+      "cursor/default: left out by its subscription profile (Cursor Pro, quota standard): a model no policy family matches is not in onlyFamilies (gemmini); task type review is not in onlyTaskTypes (reviews)"
+    ],
+    "warnings": [
+      "cursor: its subscription profile names onlyFamilies: unknown family \"gemmini\"; onlyTaskTypes: unknown task type \"reviews\"; those names never match. Ask the user and save the profile again with set_subscription."
+    ],
+    "usageSource": "none",
+    "setupNeeded": {
+      "providers": [
+        {
+          "providerInstanceId": "claudeAgent",
+          "driverKind": "claudeAgent",
+          "displayName": "Claude",
+          "families": [
+            "claude-opus",
+            "claude-sonnet",
+            "claude-haiku",
+            "claude-fable"
+          ],
+          "questions": [
+            "Which plan do you have on Claude (claudeAgent)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Claude (claudeAgent) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "grok",
+          "driverKind": "grok",
+          "displayName": "Grok",
+          "families": [
+            "grok",
+            "grok-build",
+            "grok-fast"
+          ],
+          "questions": [
+            "Which plan do you have on Grok (grok)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want Grok (grok) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        },
+        {
+          "providerInstanceId": "opencode",
+          "driverKind": "opencode",
+          "displayName": "OpenCode",
+          "families": [
+            "claude-sonnet",
+            "gpt",
+            "gemini",
+            "kimi",
+            "glm",
+            "opencode-free"
+          ],
+          "questions": [
+            "Which plan do you have on OpenCode (opencode)? For example a monthly subscription such as \"Claude Max\" or \"OpenCode Go\", a free tier, or pay per use.",
+            "Is its quota generous (you rarely hit the limit), standard, or tight (it runs out quickly)? Does the limit reset every 5 hours, weekly or monthly?",
+            "Does the same plan cover another provider, so they share one quota (for example one plan for Grok and Cursor)?",
+            "Which models does the plan include, and are any billed apart at API prices or from prepaid credit?",
+            "What do you want OpenCode (opencode) for: any task, as a backup, or only something specific (for example trying models your other subscriptions do not have)?"
+          ]
+        }
+      ],
+      "instructions": "These providers have no subscription profile, so they are ranked as if their quota were unlimited and every model were included in the plan. Without holding up the current task (this recommendation works without them), ask the user these questions, for every provider at once, and save each answer with set_subscription: plan and purpose in the user's words; quota (generous, standard or tight); quotaWindow (5h, weekly or monthly), how often its limit resets; quotaPool, the same name on every provider that shares one quota; includedFamilies or paidFamilies when some models are billed apart from the plan; and, if the purpose narrows it, role (primary, secondary, experimental or lastResort), onlyFamilies or avoidFamilies and onlyTaskTypes. Families come from each provider's `families`. A cheap plan kept to try models the other subscriptions lack is quota tight and role experimental. If the user would rather not say, save plan \"not given\" and quota standard, so they are not asked again."
+    },
+    "capabilitiesFrom": "call"
+  },
+  "an invalid file: recommend_model": {
+    "taskType": "review",
+    "classification": {
+      "source": "given",
+      "reason": "taskType given by the caller",
+      "matched": []
+    },
+    "candidates": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gpt-9.1-sol",
+        "options": [
+          {
+            "id": "reasoning",
+            "value": "high"
+          }
+        ],
+        "reason": "review #2 (any provider): latest gpt on cursor is gpt-9.1-sol, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "opencode",
+        "model": "openai/gpt-9.1-sol",
+        "options": [
+          {
+            "id": "variant",
+            "value": "high"
+          }
+        ],
+        "reason": "review #2 (any provider): latest gpt on opencode is openai/gpt-9.1-sol, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      },
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-7-pro",
+        "options": [
+          {
+            "id": "effort",
+            "value": "high"
+          }
+        ],
+        "reason": "review #3 (any provider): latest gemini on cursor is gemini-7-pro, effort high",
+        "source": "taskType",
+        "sameAsOrchestrator": false
+      }
+    ],
+    "skipped": [],
+    "warnings": [
+      "Subscription profiles are ignored until the file is fixed: <home>/subscriptions.yaml: ✖ Invalid input: expected 1\n  → at version. Tell the user; set_subscription cannot save over an invalid file."
+    ],
+    "usageSource": "none",
+    "capabilitiesFrom": "call"
+  },
+  "an invalid file: set_subscription": {
+    "error": "<home>/subscriptions.yaml: ✖ Invalid input: expected 1\n  → at version\nFix or delete that file first; it was not changed."
+  },
+  "an invalid file: get_subscriptions": {
+    "error": "<home>/subscriptions.yaml: ✖ Invalid input: expected 1\n  → at version"
+  }
+}

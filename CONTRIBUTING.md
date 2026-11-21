@@ -53,6 +53,7 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 | `src/server.ts` | The seven MCP tools |
 | `src/cli.ts`, `src/cliMain.ts`, `src/snippet.ts` | CLI commands and the orchestrator snippet |
 | `test/` | Vitest unit and in-memory MCP tests |
+| `test/golden.test.ts`, `test/golden/` | Golden snapshots of what a T3 Code orchestrator gets: tool results, errors, tool schemas, files written, CLI output |
 | `test/e2e/stdio.e2e.mjs` | End-to-end test over stdio (Node's test runner) |
 | `test/fixtures/` | Invented `orchestrator_capabilities` outputs |
 | `scripts/` | Smoke test and packed-tarball check |
@@ -70,6 +71,7 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 - **Invented model versions.** Fixtures and examples use made-up versions so they never read as claims about real models.
 - **The snippet.** If you change `src/snippet.ts`, update its two copies, in `README.md` and in `docs/README.es.md` (in English in both); a test in `test/cli.test.ts` checks that they match word for word.
 - **One README at the root.** Translations go in `docs/` (`docs/README.es.md`). npm packs every `README.*` at the root and takes the first one its directory listing returns as the package's front page, so a `README.es.md` next to `README.md` could replace it on npmjs.com; `npm run test:pack` fails if the package has one.
+- **Golden snapshots.** `test/golden/` freezes what a T3 Code orchestrator gets: the results of a series of tool calls, the error messages, each tool's description and 0.1.3 parameters, the files the server writes and the CLI's output. A change that is not meant to alter T3's behaviour leaves them byte for byte as they are. Update them (`npx vitest run test/golden.test.ts -u`) only in a pull request that says what changes for T3 and why.
 - **Bug fixes come with a regression test.**
 
 ## Commits and pull requests

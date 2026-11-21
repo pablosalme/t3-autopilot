@@ -1,0 +1,481 @@
+{
+  "log_delegation with every field": {
+    "delegationId": "d_<id>",
+    "logged": {
+      "kind": "delegation",
+      "id": "d_<id>",
+      "ts": "<ts>",
+      "taskType": "code",
+      "providerInstanceId": "codex",
+      "model": "gpt-6.2-codex",
+      "options": [
+        {
+          "id": "reasoningEffort",
+          "value": "high"
+        }
+      ],
+      "recommendedRank": 1,
+      "childThreadId": "thread:child-1",
+      "summary": "CSV export endpoint and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more…"
+    }
+  },
+  "log_delegation with an alias and no rank": {
+    "delegationId": "d_<id>",
+    "logged": {
+      "kind": "delegation",
+      "id": "d_<id>",
+      "ts": "<ts>",
+      "taskType": "debug",
+      "providerInstanceId": "claudeAgent",
+      "model": "claude-opus-7-1",
+      "recommendedRank": null
+    }
+  },
+  "log_delegation with a rank of 2": {
+    "delegationId": "d_<id>",
+    "logged": {
+      "kind": "delegation",
+      "id": "d_<id>",
+      "ts": "<ts>",
+      "taskType": "review",
+      "providerInstanceId": "cursor",
+      "model": "gemini-4-neon",
+      "recommendedRank": 2
+    }
+  },
+  "log_outcome with a delegationId": {
+    "logged": {
+      "kind": "outcome",
+      "ts": "<ts>",
+      "delegationId": "d_<id>",
+      "outcome": "success",
+      "note": "accepted as is"
+    }
+  },
+  "log_outcome corrected": {
+    "logged": {
+      "kind": "outcome",
+      "ts": "<ts>",
+      "delegationId": "d_<id>",
+      "outcome": "corrected"
+    }
+  },
+  "log_outcome on its own": {
+    "logged": {
+      "kind": "outcome",
+      "ts": "<ts>",
+      "delegationId": "d_<id>",
+      "outcome": "failure",
+      "note": "missed the bug",
+      "taskType": "review",
+      "providerInstanceId": "grok",
+      "model": "grok-8.1"
+    }
+  },
+  "mark one model": {
+    "marked": {
+      "providerInstanceId": "cursor",
+      "model": "gemini-4-neon",
+      "reason": "not included in your weekly usage",
+      "markedAt": "2026-11-21T09:00:00.000Z",
+      "until": "2026-11-22T09:00:00.000Z"
+    },
+    "untilFrom": "until",
+    "active": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-4-neon",
+        "reason": "not included in your weekly usage",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ]
+  },
+  "get_stats": {
+    "log": "<home>/log.jsonl",
+    "total": {
+      "delegations": 4,
+      "success": 1,
+      "failure": 1,
+      "corrected": 1,
+      "pending": 1,
+      "successRate": 0.333
+    },
+    "byTaskType": {
+      "code": {
+        "delegations": 1,
+        "success": 1,
+        "failure": 0,
+        "corrected": 0,
+        "pending": 0,
+        "successRate": 1,
+        "byModel": {
+          "codex/gpt-6.2-codex": {
+            "delegations": 1,
+            "success": 1,
+            "failure": 0,
+            "corrected": 0,
+            "pending": 0,
+            "successRate": 1
+          }
+        }
+      },
+      "debug": {
+        "delegations": 1,
+        "success": 0,
+        "failure": 0,
+        "corrected": 1,
+        "pending": 0,
+        "successRate": 0,
+        "byModel": {
+          "claudeAgent/claude-opus-7-1": {
+            "delegations": 1,
+            "success": 0,
+            "failure": 0,
+            "corrected": 1,
+            "pending": 0,
+            "successRate": 0
+          }
+        }
+      },
+      "review": {
+        "delegations": 2,
+        "success": 0,
+        "failure": 1,
+        "corrected": 0,
+        "pending": 1,
+        "successRate": 0,
+        "byModel": {
+          "cursor/gemini-4-neon": {
+            "delegations": 1,
+            "success": 0,
+            "failure": 0,
+            "corrected": 0,
+            "pending": 1,
+            "successRate": null
+          },
+          "grok/grok-8.1": {
+            "delegations": 1,
+            "success": 0,
+            "failure": 1,
+            "corrected": 0,
+            "pending": 0,
+            "successRate": 0
+          }
+        }
+      }
+    },
+    "byModel": {
+      "codex/gpt-6.2-codex": {
+        "delegations": 1,
+        "success": 1,
+        "failure": 0,
+        "corrected": 0,
+        "pending": 0,
+        "successRate": 1
+      },
+      "claudeAgent/claude-opus-7-1": {
+        "delegations": 1,
+        "success": 0,
+        "failure": 0,
+        "corrected": 1,
+        "pending": 0,
+        "successRate": 0
+      },
+      "cursor/gemini-4-neon": {
+        "delegations": 1,
+        "success": 0,
+        "failure": 0,
+        "corrected": 0,
+        "pending": 1,
+        "successRate": null
+      },
+      "grok/grok-8.1": {
+        "delegations": 1,
+        "success": 0,
+        "failure": 1,
+        "corrected": 0,
+        "pending": 0,
+        "successRate": 0
+      }
+    },
+    "followedFirstRecommendation": {
+      "followed": 1,
+      "logged": 3
+    },
+    "unavailable": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-4-neon",
+        "reason": "not included in your weekly usage",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ]
+  },
+  "get_stats since 2000-01-01": {
+    "log": "<home>/log.jsonl",
+    "total": {
+      "delegations": 4,
+      "success": 1,
+      "failure": 1,
+      "corrected": 1,
+      "pending": 1,
+      "successRate": 0.333
+    },
+    "byTaskType": {
+      "code": {
+        "delegations": 1,
+        "success": 1,
+        "failure": 0,
+        "corrected": 0,
+        "pending": 0,
+        "successRate": 1,
+        "byModel": {
+          "codex/gpt-6.2-codex": {
+            "delegations": 1,
+            "success": 1,
+            "failure": 0,
+            "corrected": 0,
+            "pending": 0,
+            "successRate": 1
+          }
+        }
+      },
+      "debug": {
+        "delegations": 1,
+        "success": 0,
+        "failure": 0,
+        "corrected": 1,
+        "pending": 0,
+        "successRate": 0,
+        "byModel": {
+          "claudeAgent/claude-opus-7-1": {
+            "delegations": 1,
+            "success": 0,
+            "failure": 0,
+            "corrected": 1,
+            "pending": 0,
+            "successRate": 0
+          }
+        }
+      },
+      "review": {
+        "delegations": 2,
+        "success": 0,
+        "failure": 1,
+        "corrected": 0,
+        "pending": 1,
+        "successRate": 0,
+        "byModel": {
+          "cursor/gemini-4-neon": {
+            "delegations": 1,
+            "success": 0,
+            "failure": 0,
+            "corrected": 0,
+            "pending": 1,
+            "successRate": null
+          },
+          "grok/grok-8.1": {
+            "delegations": 1,
+            "success": 0,
+            "failure": 1,
+            "corrected": 0,
+            "pending": 0,
+            "successRate": 0
+          }
+        }
+      }
+    },
+    "byModel": {
+      "codex/gpt-6.2-codex": {
+        "delegations": 1,
+        "success": 1,
+        "failure": 0,
+        "corrected": 0,
+        "pending": 0,
+        "successRate": 1
+      },
+      "claudeAgent/claude-opus-7-1": {
+        "delegations": 1,
+        "success": 0,
+        "failure": 0,
+        "corrected": 1,
+        "pending": 0,
+        "successRate": 0
+      },
+      "cursor/gemini-4-neon": {
+        "delegations": 1,
+        "success": 0,
+        "failure": 0,
+        "corrected": 0,
+        "pending": 1,
+        "successRate": null
+      },
+      "grok/grok-8.1": {
+        "delegations": 1,
+        "success": 0,
+        "failure": 1,
+        "corrected": 0,
+        "pending": 0,
+        "successRate": 0
+      }
+    },
+    "followedFirstRecommendation": {
+      "followed": 1,
+      "logged": 3
+    },
+    "unavailable": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-4-neon",
+        "reason": "not included in your weekly usage",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ]
+  },
+  "get_stats since 2999-01-01": {
+    "log": "<home>/log.jsonl",
+    "total": {
+      "delegations": 0,
+      "success": 0,
+      "failure": 0,
+      "corrected": 0,
+      "pending": 0,
+      "successRate": null
+    },
+    "byTaskType": {},
+    "byModel": {},
+    "followedFirstRecommendation": {
+      "followed": 0,
+      "logged": 0
+    },
+    "unavailable": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-4-neon",
+        "reason": "not included in your weekly usage",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ]
+  },
+  "get_stats for code": {
+    "log": "<home>/log.jsonl",
+    "taskType": "code",
+    "stats": {
+      "delegations": 1,
+      "success": 1,
+      "failure": 0,
+      "corrected": 0,
+      "pending": 0,
+      "successRate": 1,
+      "byModel": {
+        "codex/gpt-6.2-codex": {
+          "delegations": 1,
+          "success": 1,
+          "failure": 0,
+          "corrected": 0,
+          "pending": 0,
+          "successRate": 1
+        }
+      }
+    },
+    "unavailable": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-4-neon",
+        "reason": "not included in your weekly usage",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ]
+  },
+  "get_stats for a type with no record": {
+    "log": "<home>/log.jsonl",
+    "taskType": "design",
+    "stats": null,
+    "unavailable": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-4-neon",
+        "reason": "not included in your weekly usage",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ]
+  },
+  "log.jsonl": [
+    {
+      "kind": "delegation",
+      "id": "d_<id>",
+      "ts": "<ts>",
+      "taskType": "code",
+      "providerInstanceId": "codex",
+      "model": "gpt-6.2-codex",
+      "options": [
+        {
+          "id": "reasoningEffort",
+          "value": "high"
+        }
+      ],
+      "recommendedRank": 1,
+      "childThreadId": "thread:child-1",
+      "summary": "CSV export endpoint and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more and more…"
+    },
+    {
+      "kind": "delegation",
+      "id": "d_<id>",
+      "ts": "<ts>",
+      "taskType": "debug",
+      "providerInstanceId": "claudeAgent",
+      "model": "claude-opus-7-1",
+      "recommendedRank": null
+    },
+    {
+      "kind": "delegation",
+      "id": "d_<id>",
+      "ts": "<ts>",
+      "taskType": "review",
+      "providerInstanceId": "cursor",
+      "model": "gemini-4-neon",
+      "recommendedRank": 2
+    },
+    {
+      "kind": "outcome",
+      "ts": "<ts>",
+      "delegationId": "d_<id>",
+      "outcome": "success",
+      "note": "accepted as is"
+    },
+    {
+      "kind": "outcome",
+      "ts": "<ts>",
+      "delegationId": "d_<id>",
+      "outcome": "corrected"
+    },
+    {
+      "kind": "outcome",
+      "ts": "<ts>",
+      "delegationId": "d_<id>",
+      "outcome": "failure",
+      "note": "missed the bug",
+      "taskType": "review",
+      "providerInstanceId": "grok",
+      "model": "grok-8.1"
+    }
+  ],
+  "unavailable.json": {
+    "version": 1,
+    "marks": [
+      {
+        "providerInstanceId": "cursor",
+        "model": "gemini-4-neon",
+        "reason": "not included in your weekly usage",
+        "markedAt": "2026-11-21T09:00:00.000Z",
+        "until": "2026-11-22T09:00:00.000Z"
+      }
+    ]
+  }
+}
