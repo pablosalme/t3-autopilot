@@ -4,14 +4,14 @@ import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import type { Model, Provider } from "./capabilities.js";
-import { autopilotHome } from "./paths.js";
+import { autopilotHome, DATA_FILES } from "./paths.js";
 
 /**
  * The agent catalog: the agent CLIs that hosts without a model list (Orca,
  * herdr) start, and the models and efforts each takes. The package ships
  * catalog/agents.yaml; the user extends it in <data dir>/catalog.yaml. T3 Code
- * lists its own models and never reads it. Pure functions plus a loader: no
- * tool output uses the catalog yet.
+ * lists its own models and never reads it. Pure functions plus a loader; host
+ * adapters get it as `HostContext.catalog` (src/hosts/index.ts).
  */
 
 /** Hosts that read the catalog. T3 Code is not one of them. */
@@ -340,7 +340,7 @@ export function builtinCatalogPath(): string {
 
 /** The user's additions: catalog.yaml in the data directory ($T3_AUTOPILOT_HOME or ~/.t3-autopilot). */
 export function userCatalogPath(): string {
-  return join(autopilotHome(), "catalog.yaml");
+  return join(autopilotHome(), DATA_FILES.catalog);
 }
 
 function readYaml(path: string): Plain {

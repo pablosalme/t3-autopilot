@@ -1,4 +1,5 @@
 import type { Capabilities } from "../capabilities.js";
+import type { LoadedCatalog } from "../catalog.js";
 import type { Policy } from "../policy.js";
 import type { Candidate, RecommendText } from "../recommend.js";
 
@@ -17,6 +18,14 @@ export interface HostContext {
   now: Date;
   /** The policy in force for this call (the default merged with the user's override). */
   policy: Policy;
+  /**
+   * The agent catalog in force for this call, for hosts that do not list models: catalog/agents.yaml with the
+   * user's catalog.yaml (in the data directory) merged onto it and checked against the policy's families, with
+   * the warnings that gave. The files are read the first time an adapter reads this field, at most once per
+   * call, so a host that never reads it (T3 Code) never reads them and an invalid catalog.yaml never fails its
+   * calls. Reading it throws, naming the file, when the user's catalog is invalid.
+   */
+  readonly catalog: LoadedCatalog;
   /** The orchestrator's platform: the server is a stdio child of its agent CLI, on the same machine. */
   platform: NodeJS.Platform;
 }

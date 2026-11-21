@@ -1,10 +1,9 @@
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseCapabilitiesInput } from "../src/capabilities.js";
-import { DEFAULT_HOST, HOSTS } from "../src/hosts/index.js";
+import { DEFAULT_HOST, HOSTS, hostContext } from "../src/hosts/index.js";
 import { t3 } from "../src/hosts/t3.js";
-import type { HostContext } from "../src/hosts/types.js";
 import { DEFAULT_RECOMMEND_TEXT, type Recommendation } from "../src/recommend.js";
 import { INSTRUCTIONS_SNIPPET } from "../src/snippet.js";
 import { fake, fakePayload } from "./fakeHost.js";
@@ -13,7 +12,7 @@ import { connectServer, defaultPolicy, driverFixtureRaw, resultText, tempDir } f
 type Result = Recommendation & { capabilitiesFrom: string };
 
 const T0 = new Date("2026-11-21T09:00:00Z");
-const ctx: HostContext = { dataDir: tempDir(), now: T0, policy: defaultPolicy(), platform: process.platform };
+const ctx = hostContext(tempDir(), T0, defaultPolicy());
 
 describe("the host registry", () => {
   it("knows T3 Code, the default host", () => {
@@ -26,6 +25,44 @@ describe("the host registry", () => {
     for (const key of ["id", "cacheFile", "snippet"] as const) {
       expect(new Set(all.map((h) => h[key])).size, key).toBe(all.length);
     }
+  });
+});
+
+describe("the context an adapter gets", () => {
+  it("reads the agent catalog from the data directory when the adapter first reads it, once per call", () => {
+    const home = tempDir();
+    writeFileSync(join(home, "catalog.yaml"), "agents:\n  goose: { models: [default] }\n");
+    const context = hostContext(home, T0, defaultPolicy());
+    const first = context.catalog;
+    expect(first.sources).toEqual([expect.stringMatching(/agents\.yaml$/), join(home, "catalog.yaml")]);
+    expect(Object.keys(first.catalog.agents)).toContain("goose");
+    writeFileSync(join(home, "catalog.yaml"), "agents: { goose: null }\n");
+    expect(context.catalog).toBe(first);
+    // A new call reads the files again.
+    expect(Object.keys(hostContext(home, T0, defaultPolicy()).catalog.catalog.agents)).not.toContain("goose");
+  });
+
+  it("checks the catalog against the policy in force, and names the user's file when it is invalid", () => {
+    const home = tempDir();
+    writeFileSync(join(home, "catalog.yaml"), "agents:\n  claude: { models: [{ id: opus, family: claude-opux }] }\n");
+    expect(hostContext(home, T0, defaultPolicy()).catalog.warnings).toEqual([
+      expect.stringMatching(/"claude-opux" is not a policy family, so "opus" is matched by its id alone/),
+    ]);
+    writeFileSync(join(home, "catalog.yaml"), 'agents:\n  claude: { models: ["opus; rm -rf"] }\n');
+    expect(() => hostContext(home, T0, defaultPolicy()).catalog).toThrow(
+      `Invalid agent catalog (${join(home, "catalog.yaml")}, on top of the built-in catalog)`,
+    );
+  });
+
+  it("never reads the catalog for T3 Code: an invalid catalog.yaml does not fail its calls", async () => {
+    const home = tempDir();
+    writeFileSync(join(home, "catalog.yaml"), "agents: [not, a, mapping]\n");
+    const { client } = await connectServer(home);
+    const res = await client.callTool({
+      name: "recommend_model",
+      arguments: { task: "x", taskType: "code", capabilities: driverFixtureRaw("mixed") },
+    });
+    expect(res.isError, resultText(res)).toBeFalsy();
   });
 });
 

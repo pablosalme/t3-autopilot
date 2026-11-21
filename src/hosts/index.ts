@@ -1,6 +1,9 @@
+import { join } from "node:path";
+import { type LoadedCatalog, loadCatalog } from "../catalog.js";
+import { DATA_FILES } from "../paths.js";
 import type { CandidateRule, Policy } from "../policy.js";
 import { t3 } from "./t3.js";
-import type { HostAdapter, HostId } from "./types.js";
+import type { HostAdapter, HostContext, HostId } from "./types.js";
 
 /**
  * The hosts this version knows, the default one first: a call that names no
@@ -124,5 +127,23 @@ export function viewPolicy(host: HostAdapter, policy: Policy): Policy {
       Object.entries(policy.taskTypes).map(([name, type]) => [name, { ...type, candidates: rules(type.candidates) }]),
     ),
     fallback: rules(policy.fallback),
+  };
+}
+
+/**
+ * The context of one call, for its host's adapter. The agent catalog is read from the data directory the first
+ * time the adapter reads `catalog`, and kept for the rest of the call.
+ */
+export function hostContext(dataDir: string, now: Date, policy: Policy, platform = process.platform): HostContext {
+  let catalog: LoadedCatalog | undefined;
+  return {
+    dataDir,
+    now,
+    policy,
+    platform,
+    get catalog() {
+      catalog ??= loadCatalog({ userPath: join(dataDir, DATA_FILES.catalog), families: Object.keys(policy.families) });
+      return catalog;
+    },
   };
 }

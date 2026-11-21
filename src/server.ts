@@ -16,6 +16,7 @@ import {
 import {
   DEFAULT_HOST,
   HOSTS,
+  hostContext,
   isOwnKey,
   resolveHost,
   splitOwn,
@@ -25,7 +26,7 @@ import {
   viewOf,
   viewPolicy,
 } from "./hosts/index.js";
-import type { HostAdapter, HostContext } from "./hosts/types.js";
+import type { HostAdapter } from "./hosts/types.js";
 import { computeStats, type LogRecord, logDelegation, logOutcome, OUTCOMES, readLog, recordsOf } from "./log.js";
 import { autopilotHome, DATA_FILES } from "./paths.js";
 import { type LoadedPolicy, loadPolicy, type Policy } from "./policy.js";
@@ -283,7 +284,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const usageSource = opts.usageSource ?? createUsageSource(policy);
           const at = now();
           const ttl = policy.capabilitiesCacheTtlHours;
-          const ctx: HostContext = { dataDir: dataDir(), now: at, policy, platform: process.platform };
+          const ctx = hostContext(dataDir(), at, policy);
           const kept = () => keptCapabilities(host, ttl, at, args.session);
           let entry: Kept;
           let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
