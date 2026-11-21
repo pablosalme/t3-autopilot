@@ -68,6 +68,17 @@ function isProviderModel(id: string): boolean {
 /** "its" or "their". */
 const its = (items: readonly unknown[]) => (items.length === 1 ? "its" : "their");
 
+/**
+ * How to write `launch.argv` in the shells of Windows, where step 3's single quotes need more: in PowerShell, a
+ * line that starts with a quoted word is an expression, not a command, so it starts with the call operator, and a
+ * single quote (straight, or one of the curly ones PowerShell also takes for it) is doubled inside single quotes;
+ * cmd.exe has no single quotes, and a Windows path never holds a double quote. `code` writes `&` as the
+ * instructions do (in backticks) or as a note does (plain), so both say the same.
+ */
+const windowsQuoting = (code: (text: string) => string) =>
+  `In PowerShell, start the line with ${code("&")} and a space, and double each single quote inside an element, ` +
+  "straight or curly; in cmd.exe, put each element in double quotes instead.";
+
 /** An agent in `orca agent installed --json`. */
 export interface InstalledAgent {
   /** What Orca's `--agent` takes. */
@@ -297,9 +308,8 @@ function launch(candidate: Candidate, ctx: HostContext, provider: Provider): Lau
     `If ORCA_CLI_COMMAND is set, run its value in place of ${exe}; in an Orca dev checkout (ORCA_DEV_REPO_ROOT ` +
       "set), orca-dev.",
   );
-  if (ctx.platform === "win32") {
-    notes.push("In PowerShell, write each element in single quotes, a ' in one as ''; in cmd.exe, in double quotes.");
-  }
+  // The instructions say it too (step 3), in the same words; a Windows orchestrator is the likeliest to need it.
+  if (ctx.platform === "win32") notes.push(windowsQuoting((text) => text));
   const args = [
     "--agent",
     agent,
@@ -339,7 +349,7 @@ You are authorized to pick the agent, model and effort of every worker you start
 
 1. Before every worker, call \`recommend_model\` with \`host: "orca"\`, \`session\` (the value of \`$ORCA_TERMINAL_HANDLE\`, or of \`$ORCA_AGENT_SESSION_ID\` in an Orca chat), \`task\` (one line), \`taskType\` (always; choose from the types listed in the tool description) and, if you know them, \`size\` and \`criticality\`.
 2. Orca's command is \`$ORCA_CLI_COMMAND\` if that is set, else \`orca-dev\` if \`$ORCA_DEV_REPO_ROOT\` is set, else \`orca-ide\` on Linux and \`orca\` elsewhere; use it wherever \`orca\` appears below. On the first call, and again after an error or when agents change, pass as \`capabilities\` the output of \`${ORCA_DISCOVERY}\`, exactly as printed, and as \`orchestrator\` your own Orca \`agent\` id (\`claude\`, \`codex\`, ...) and \`model\`. If a call fails with "No Orca catalog yet", run it again and pass its output.
-3. Use the first candidate. Write its brief to a file with your file tool (never \`echo\` or a heredoc), self-contained: what to change, what the worker may edit and what proves it is done. Run its \`launch.argv\` as one shell command, each element in single quotes, with its first element replaced by Orca's command and \`{briefFile}\` by the file's absolute path; a \`'\` in a path is written \`'\\''\`. For example: \`'orca' 'orchestration' 'worker-start' '--environment' 'local' '--agent' 'codex' '--worktree' 'current' '--spec-file' '/tmp/review-auth.md' '--json'\`. \`--worktree current\` runs the worker in your workspace; when its changes would clash with yours or another worker's, write \`new-child\` instead and add \`--name <short-name>\`. Follow \`launch.notes\`. Then end your turn: Orca wakes you when the worker reports with \`worker_done\`, asks or stops; never poll. If it has \`sameAsOrchestrator: true\`, your native subagent tool works too.
+3. Use the first candidate. Write its brief to a file with your file tool (never \`echo\` or a heredoc), self-contained: what to change, what the worker may edit and what proves it is done. Run its \`launch.argv\` as one shell command, with its first element replaced by Orca's command and \`{briefFile}\` by the file's absolute path, and each element in single quotes, a \`'\` inside one written \`'\\''\`, as bash, zsh and the other POSIX shells take it (Git Bash on Windows too). For example: \`'orca' 'orchestration' 'worker-start' '--environment' 'local' '--agent' 'codex' '--worktree' 'current' '--spec-file' '/tmp/review-auth.md' '--json'\`. ${windowsQuoting((text) => `\`${text}\``)} \`--worktree current\` runs the worker in your workspace; when its changes would clash with yours or another worker's, write \`new-child\` instead and add \`--name <short-name>\`. Follow \`launch.notes\`. Then end your turn: Orca wakes you when the worker reports with \`worker_done\`, asks or stops; never poll. If it has \`sameAsOrchestrator: true\`, your native subagent tool works too.
 4. If \`worker-start\` fails, or the worker stops at once (an \`escalation\`), because of a usage limit or its plan, call \`mark_unavailable\` with \`host: "orca"\`, its \`providerInstanceId\`, its \`model\` (omit it if the whole agent is out), a short \`reason\` and \`until\` if you know when the limit resets; then use the next candidate. For any other failure, do what Orca prints, and never rerun the same command on your own.
 5. Tell the user in one line which agent and model you picked, and why (the candidate's \`reason\`).
 6. If \`recommend_model\` returns no candidate or fails, start the worker on your own agent without \`--model\`, and say so. If the user names an agent or model for a task, use theirs instead.

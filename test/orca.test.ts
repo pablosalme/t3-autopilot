@@ -1,5 +1,14 @@
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, execSync } from "node:child_process";
+import {
+  copyFileSync,
+  existsSync,
+  linkSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { describe, expect, it } from "vitest";
@@ -27,14 +36,110 @@ const CLI_NOTE =
   "If ORCA_CLI_COMMAND is set, run its value in place of orca; in an Orca dev checkout (ORCA_DEV_REPO_ROOT set), " +
   "orca-dev.";
 
+const WINDOWS = process.platform === "win32";
+/** What launch.notes say on Windows: the instructions' rule for PowerShell and cmd.exe (step 3), in the same words. */
+const WINDOWS_NOTE =
+  "In PowerShell, start the line with & and a space, and double each single quote inside an element, straight or " +
+  "curly; in cmd.exe, put each element in double quotes instead.";
+
+/** A command of `launch` with its first element replaced by Orca's command and `{briefFile}` by the brief's path. */
+const filled = (argv: readonly string[], command: string, briefFile: string) =>
+  argv.map((word, i) => (i === 0 ? command : word === BRIEF_FILE ? briefFile : word));
+
 /**
- * A command of `launch` as the instructions (step 3) have the orchestrator's shell tool run it: one shell command,
- * each element in single quotes (a `'` written as `'\''`), the first element replaced by Orca's command and
- * `{briefFile}` by the brief file's path.
+ * A command of `launch` as the instructions (step 3) have the orchestrator's shell tool run it in a POSIX shell: one
+ * shell command, each element in single quotes (a `'` written as `'\''`).
  */
 function shellLine(argv: readonly string[], command: string, briefFile: string): string {
-  const quote = (word: string) => `'${word.replaceAll("'", "'\\''")}'`;
-  return argv.map((word, i) => quote(i === 0 ? command : word === BRIEF_FILE ? briefFile : word)).join(" ");
+  return filled(argv, command, briefFile)
+    .map((word) => `'${word.replaceAll("'", "'\\''")}'`)
+    .join(" ");
+}
+
+/** PowerShell's single quotes: the straight one and the curly ones it takes for it. Doubled, each stands for itself. */
+const PS_QUOTES = /['‘’‚‛]/g;
+
+/** The same in PowerShell (step 3): the call operator `&`, then each element in single quotes, its quotes doubled. */
+function powershellLine(argv: readonly string[], command: string, briefFile: string): string {
+  const words = filled(argv, command, briefFile).map((word) => `'${word.replace(PS_QUOTES, (q) => q + q)}'`);
+  return `& ${words.join(" ")}`;
+}
+
+/** The same in cmd.exe (step 3): each element in double quotes, which a Windows path never holds. */
+function cmdLine(argv: readonly string[], command: string, briefFile: string): string {
+  return filled(argv, command, briefFile)
+    .map((word) => `"${word}"`)
+    .join(" ");
+}
+
+/** The PowerShells installed here: PowerShell 7 (`pwsh`) and, on Windows, Windows PowerShell 5.1. */
+const POWERSHELLS = (WINDOWS ? ["pwsh", "powershell"] : ["pwsh"]).filter((exe) => {
+  try {
+    execFileSync(exe, ["-NoProfile", "-NonInteractive", "-Command", "exit 0"], { stdio: "ignore", timeout: 60_000 });
+    return true;
+  } catch {
+    return false;
+  }
+});
+
+/** A brief with what a shell would expand or run, quotes of every kind, and words that look like options. */
+const BRIEF_TEXT =
+  "Review the login.\nKeep $HOME, `touch pwned`, $(touch pwned), \"double\", 'single', ’curly’, a \\ and * as " +
+  "they are.\n-- --json --agent codex\nReport with worker_done.\n";
+
+/**
+ * What the shell tests run against. Orca's command, as $ORCA_CLI_COMMAND gives it (an absolute path, here with a
+ * space and a quote in it), writes the arguments it gets and the text of the --spec-file, as JSON, to the file
+ * $ORCA_ARGS, and prints a receipt as worker-start --json does. On Windows it is node.exe, linked or copied there:
+ * an .exe, as Orca's own command is, so the arguments reach it as they would reach Orca; node then runs the script
+ * named by its first argument, `orchestration`, from the working folder. The brief file is in a folder whose names
+ * hold what a shell could expand, run or split on (Windows forbids `"` in a name).
+ */
+function orcaStandIn() {
+  const dir = tempDir();
+  const bin = join(dir, "Orca's app", "bin");
+  mkdirSync(bin, { recursive: true });
+  const script =
+    'const fs = require("node:fs");\n' +
+    `const args = ${WINDOWS ? '["orchestration", ...process.argv.slice(2)]' : "process.argv.slice(2)"};\n` +
+    'const spec = fs.readFileSync(args[args.indexOf("--spec-file") + 1], "utf8");\n' +
+    "fs.writeFileSync(process.env.ORCA_ARGS, JSON.stringify({ args, spec }));\n" +
+    'console.log(JSON.stringify({ ok: true, result: { dispatchId: "dsp_test", state: "ready" } }));\n';
+  let command: string;
+  if (WINDOWS) {
+    command = join(bin, "orca.exe");
+    try {
+      linkSync(process.execPath, command);
+    } catch {
+      copyFileSync(process.execPath, command);
+    }
+    writeFileSync(join(dir, "orchestration"), script);
+  } else {
+    command = join(bin, "orca");
+    writeFileSync(command, `#!/usr/bin/env node\n${script}`, { mode: 0o755 });
+  }
+  const folder = join(
+    dir,
+    WINDOWS ? "it's a $(touch pwned) `touch pwned` ;x & ’y’" : `it's a "dir" $(touch pwned) \`touch pwned\` ;x ’y’`,
+  );
+  mkdirSync(folder);
+  const briefFile = join(folder, "brief $HOME 'it''s' ‘q’.md");
+  writeFileSync(briefFile, BRIEF_TEXT);
+  const out = join(dir, "args.json");
+  return {
+    dir,
+    folder,
+    command,
+    briefFile,
+    env: { ...process.env, ORCA_ARGS: out },
+    /** What the stand-in received in the run that printed `printed`, and that receipt; each run is read once. */
+    received: (printed: string) => {
+      if (!existsSync(out)) throw new Error(`Orca's stand-in did not run. The shell printed: ${printed}`);
+      const got = JSON.parse(readFileSync(out, "utf8")) as { args: string[]; spec: string };
+      rmSync(out);
+      return { ...got, receipt: JSON.parse(printed.trim()) as unknown };
+    },
+  };
 }
 
 type Result = Recommendation & {
@@ -462,14 +567,30 @@ describe("the launch command for Orca", () => {
     expect(linux.notes).toEqual([CLI_NOTE.replace("in place of orca;", "in place of orca-ide;")]);
     const windows = launch(candidate("claude", "opus"), context(tempDir(), "win32"));
     expect(windows.argv[0]).toBe("orca");
-    expect(windows.notes).toEqual([
-      CLI_NOTE,
-      "In PowerShell, write each element in single quotes, a ' in one as ''; in cmd.exe, in double quotes.",
-    ]);
+    expect(windows.notes).toEqual([CLI_NOTE, WINDOWS_NOTE]);
     expect(launch(candidate("claude", "opus", undefined, [{ id: "fastMode", value: true }])).notes).toEqual([
       "Not passed: fastMode; worker-start has no flag for it.",
       CLI_NOTE,
     ]);
+  });
+
+  it("says how to quote on Windows in the words of the instructions, which cover every shell", () => {
+    // The note is step 3's sentence for PowerShell and cmd.exe, with `&` out of its backticks.
+    const step3 = ORCA_SNIPPET.split("\n").find((line) => line.startsWith("3.")) ?? "";
+    expect(step3).toContain(WINDOWS_NOTE.replace("with & and", "with `&` and"));
+    expect(step3).toContain("as bash, zsh and the other POSIX shells take it (Git Bash on Windows too)");
+    // A PowerShell line that started with a quoted word would be an expression, not a command; `&` makes it one.
+    const argv = launch(candidate("claude", "opus", "high"), context(tempDir(), "win32")).argv;
+    const file = "C:\\Users\\O'Brien\\fix-login.md";
+    expect(powershellLine(argv, "orca", file)).toBe(
+      "& 'orca' 'orchestration' 'worker-start' '--environment' 'local' '--agent' 'claude' '--model' 'opus' " +
+        "'--effort' 'high' '--worktree' 'current' '--spec-file' 'C:\\Users\\O''Brien\\fix-login.md' '--json'",
+    );
+    expect(powershellLine(argv, "orca", "C:\\Users\\O’Brien\\a.md")).toContain("'C:\\Users\\O’’Brien\\a.md'");
+    expect(cmdLine(argv, "orca", file)).toBe(
+      '"orca" "orchestration" "worker-start" "--environment" "local" "--agent" "claude" "--model" "opus" ' +
+        '"--effort" "high" "--worktree" "current" "--spec-file" "C:\\Users\\O\'Brien\\fix-login.md" "--json"',
+    );
   });
 
   it("only takes --model for the agents whose worker-start takes one in Orca", () => {
@@ -478,54 +599,70 @@ describe("the launch command for Orca", () => {
     );
   });
 
-  // What the instructions have the orchestrator do, run for real through sh, with a stand-in for Orca's command.
-  it.skipIf(process.platform === "win32")(
-    "through a POSIX shell, hands Orca each element as one argument, and the brief reaches it through its file untouched",
+  // What the instructions have the orchestrator do, run for real through each shell, with a stand-in for Orca's
+  // command: Orca gets each element as one argument, and the brief reaches it through its file untouched.
+  type StandIn = ReturnType<typeof orcaStandIn>;
+  const throughShell = (orca: StandIn, run: (argv: readonly string[]) => string) => {
+    for (const c of [candidate("claude", "opus", "high"), candidate("codex", "default")]) {
+      const { argv } = launch(c);
+      const got = orca.received(run(argv));
+      expect(got.args).toEqual(filled(argv, orca.command, orca.briefFile).slice(1));
+      expect(got.spec).toBe(BRIEF_TEXT);
+      expect(got.receipt).toMatchObject({ ok: true, result: { dispatchId: "dsp_test" } });
+    }
+    // Nothing in the folder's name, the file's name or the brief ran.
+    expect(readdirSync(orca.dir).filter((f) => f.startsWith("pwned"))).toEqual([]);
+    expect(readdirSync(orca.folder)).toEqual([expect.stringMatching(/^brief /)]);
+  };
+
+  it.skipIf(WINDOWS)("through a POSIX shell, in single quotes, a ' written '\\''", () => {
+    const orca = orcaStandIn();
+    throughShell(orca, (argv) =>
+      execFileSync("/bin/sh", ["-c", shellLine(argv, orca.command, orca.briefFile)], {
+        cwd: orca.dir,
+        env: orca.env,
+        encoding: "utf8",
+      }),
+    );
+  });
+
+  // Wherever PowerShell is installed: CI has PowerShell 7 on Linux, macOS and Windows, and 5.1 on Windows.
+  it.skipIf(POWERSHELLS.length === 0)(
+    "through PowerShell, after &, in single quotes, every single quote doubled, curly ones too",
     () => {
-      const dir = tempDir();
-      // Orca's command, as $ORCA_CLI_COMMAND gives it: an absolute path, here with a space and a quote in it.
-      const bin = join(dir, "Orca's app", "bin");
-      mkdirSync(bin, { recursive: true });
-      const command = join(bin, "orca");
-      // The stand-in writes the arguments it gets and the text of the --spec-file, as JSON, to the file $ORCA_ARGS,
-      // and prints a receipt as worker-start --json does.
-      writeFileSync(
-        command,
-        "#!/usr/bin/env node\n" +
-          'const fs = require("node:fs");\n' +
-          "const args = process.argv.slice(2);\n" +
-          'const spec = fs.readFileSync(args[args.indexOf("--spec-file") + 1], "utf8");\n' +
-          "fs.writeFileSync(process.env.ORCA_ARGS, JSON.stringify({ args, spec }));\n" +
-          'console.log(JSON.stringify({ ok: true, result: { dispatchId: "dsp_test", state: "ready" } }));\n',
-        { mode: 0o755 },
-      );
-      const folder = join(dir, `it's a "dir" $(touch pwned) \`touch pwned\` ;x`);
-      mkdirSync(folder);
-      const briefFile = join(folder, "brief $HOME 'it''s'.md");
-      const brief =
-        "Review the login.\nKeep $HOME, `touch pwned`, $(touch pwned), \"double\", 'single', a \\ and * as they are.\n" +
-        "-- --json --agent codex\nReport with worker_done.\n";
-      writeFileSync(briefFile, brief);
-      const out = join(dir, "args.json");
-      const run = (argv: readonly string[]) => {
-        const printed = execFileSync("/bin/sh", ["-c", shellLine(argv, command, briefFile)], {
-          cwd: dir,
-          env: { ...process.env, ORCA_ARGS: out },
-          encoding: "utf8",
+      for (const powershell of POWERSHELLS) {
+        const orca = orcaStandIn();
+        throughShell(orca, (argv) => {
+          // A script file, so the line reaches PowerShell as written; with a BOM, which Windows PowerShell 5.1
+          // needs to read it as UTF-8.
+          const script = join(orca.dir, "start.ps1");
+          writeFileSync(script, `﻿${powershellLine(argv, orca.command, orca.briefFile)}\nexit $LASTEXITCODE\n`);
+          return execFileSync(
+            powershell,
+            ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script],
+            { cwd: orca.dir, env: orca.env, encoding: "utf8" },
+          );
         });
-        return { ...(JSON.parse(readFileSync(out, "utf8")) as { args: string[]; spec: string }), printed };
-      };
-      for (const c of [candidate("claude", "opus", "high"), candidate("codex", "default")]) {
-        const { argv } = launch(c);
-        const got = run(argv);
-        expect(got.args).toEqual(argv.slice(1).map((w) => (w === BRIEF_FILE ? briefFile : w)));
-        expect(got.spec).toBe(brief);
-        expect(JSON.parse(got.printed)).toMatchObject({ ok: true, result: { dispatchId: "dsp_test" } });
       }
-      // Nothing in the folder's name, the file's name or the brief ran.
-      expect(readdirSync(dir).filter((f) => f.startsWith("pwned"))).toEqual([]);
-      expect(readdirSync(folder)).toEqual([expect.stringMatching(/^brief /)]);
     },
+    120_000,
+  );
+
+  it.runIf(WINDOWS)(
+    "through cmd.exe, in double quotes",
+    () => {
+      const orca = orcaStandIn();
+      // execSync hands the line to cmd.exe /d /s /c as it is.
+      throughShell(orca, (argv) =>
+        execSync(cmdLine(argv, orca.command, orca.briefFile), {
+          shell: process.env.ComSpec ?? "cmd.exe",
+          cwd: orca.dir,
+          env: orca.env,
+          encoding: "utf8",
+        }),
+      );
+    },
+    60_000,
   );
 });
 
@@ -859,9 +996,15 @@ describe("snippet --host orca", () => {
     );
   });
 
-  it("runs launch.argv as one shell command, each element in single quotes, with an example of that rule", () => {
-    expect(ORCA_SNIPPET).toContain("Run its `launch.argv` as one shell command, each element in single quotes");
-    expect(ORCA_SNIPPET).toContain("a `'` in a path is written `'\\''`");
+  it("runs launch.argv as one shell command, quoted for the shell it runs in, with examples of that rule", () => {
+    expect(ORCA_SNIPPET).toContain(
+      "Run its `launch.argv` as one shell command, with its first element replaced by Orca's command and " +
+        "`{briefFile}` by the file's absolute path, and each element in single quotes, a `'` inside one written `'\\''`",
+    );
+    expect(ORCA_SNIPPET).toContain(
+      "In PowerShell, start the line with `&` and a space, and double each single quote inside an element, straight " +
+        "or curly; in cmd.exe, put each element in double quotes instead.",
+    );
     // The examples are what that rule makes of a launch command.
     const ctx = context();
     const providers = orca.catalog({ capabilities: { agents: [{ id: "codex" }, { id: "claude" }] } }, ctx).capabilities
@@ -882,9 +1025,11 @@ describe("snippet --host orca", () => {
     expect(ORCA_SNIPPET).toContain(
       `For example: \`${shellLine(start("codex", "default").argv, "orca", "/tmp/review-auth.md")}\`.`,
     );
-    expect(doc()).toContain(
-      `\`\`\`sh\n   ${shellLine(start("claude", "opus", "high").argv, "orca", "/tmp/fix-login.md")}\n   \`\`\``,
-    );
+    const fix = start("claude", "opus", "high").argv;
+    expect(doc()).toContain(`\`\`\`sh\n   ${shellLine(fix, "orca", "/tmp/fix-login.md")}\n   \`\`\``);
+    const windowsFile = "C:\\Users\\O'Brien\\fix-login.md";
+    expect(doc()).toContain(`\`\`\`powershell\n   ${powershellLine(fix, "orca", windowsFile)}\n   \`\`\``);
+    expect(doc()).toContain(`\`\`\`bat\n   ${cmdLine(fix, "orca", windowsFile)}\n   \`\`\``);
   });
 
   it("has the orchestrator end its turn, log the dispatchId and read the result when worker_done arrives", () => {
