@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { list } from "./hosts/common.js";
 import { ALL_HOSTS, allHostsSnippet, DEFAULT_HOST, HOSTS } from "./hosts/index.js";
 import type { HostAdapter } from "./hosts/types.js";
 import { userPolicyPath } from "./paths.js";
@@ -43,23 +44,27 @@ export const POLICY_TEMPLATE = `# t3-autopilot policy override. Keys here replac
 #       - { provider: '*', family: claude-haiku, effort: low }
 `;
 
-/** The usage text. `snippet --host` is listed once there is a host besides the default one. */
+/**
+ * The usage text, which names every host of the registry. `snippet --host` is listed once there is a host besides
+ * the default one, whose instructions `snippet` prints.
+ */
 export function helpText(hosts: readonly HostAdapter[] = HOSTS): string {
+  const [first = DEFAULT_HOST] = hosts;
   const others = hosts.slice(1).map((h) => h.id);
   const snippetHost = others.length
     ? `  t3-autopilot snippet --host <id> Print another host's instructions (${others.join(", ")}), or every host's (${ALL_HOSTS}).\n`
     : "";
-  return `t3-autopilot ${VERSION}: model selection MCP server for T3 Code orchestrators.
+  return `t3-autopilot ${VERSION}: model selection MCP server for orchestrators in ${list(hosts.map((h) => h.name))}.
 
 Usage:
   t3-autopilot [serve]             Start the MCP server on stdio (what your agent CLI runs).
-  t3-autopilot snippet             Print the instructions to paste into CLAUDE.md / AGENTS.md.
+  t3-autopilot snippet             Print ${first.name}'s instructions to paste into CLAUDE.md / AGENTS.md.
 ${snippetHost}  t3-autopilot init-policy         Write a commented override template to the user policy path.
   t3-autopilot --help | -h | help  Print this text.
   t3-autopilot --version | -v      Print the version.
 
-Data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl,
-capabilities-cache.json, unavailable.json).
+Data directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, catalog.yaml,
+subscriptions.yaml, log.jsonl, unavailable.json and the capabilities caches).
 `;
 }
 

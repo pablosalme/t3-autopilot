@@ -558,7 +558,7 @@ describe("CLI commands", () => {
     assert.equal(version.stdout, `${pkg.version}\n`);
     assert.match(
       runCli(["--help"], home).stdout,
-      /^t3-autopilot \d+\.\d+\.\d+: model selection MCP server for T3 Code orchestrators\./,
+      /^t3-autopilot \d+\.\d+\.\d+: model selection MCP server for orchestrators in T3 Code, herdr and Orca\./,
     );
     const snippet = runCli(["snippet"], home);
     assert.equal(snippet.status, 0);
