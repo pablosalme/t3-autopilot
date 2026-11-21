@@ -154,6 +154,12 @@ const HostSectionSchema = z.strictObject({
   aliases: z.record(Token, AgentId).default({}),
 });
 
+const HerdrSectionSchema = z.strictObject({
+  aliases: z.record(Token, AgentId).default({}),
+  /** The agents herdr can start, for a call that brings no probe output: agent ids or program names. */
+  agents: z.array(Token).optional(),
+});
+
 export const AgentCatalogSchema = z.strictObject({
   version: z.literal(1),
   /** When the catalog was last reviewed (informative). */
@@ -162,7 +168,7 @@ export const AgentCatalogSchema = z.strictObject({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "must be a date such as 2026-11-21")
     .optional(),
   agents: z.record(AgentId, CatalogAgentSchema).default({}),
-  hosts: z.strictObject({ orca: HostSectionSchema.optional(), herdr: HostSectionSchema.optional() }).default({}),
+  hosts: z.strictObject({ orca: HostSectionSchema.optional(), herdr: HerdrSectionSchema.optional() }).default({}),
 });
 
 export type CatalogModel = z.infer<typeof CatalogModelSchema>;
@@ -521,7 +527,9 @@ export function agentCommand(catalog: AgentCatalog, id: string, selection: Agent
     throw new Error(`"${id}" is not an agent of the catalog. Add it to catalog.yaml with its exe and flags.`);
   }
   const exe = agent.exe ?? canonical;
-  const program = id === exe || agent.aliases?.includes(id) ? id : exe;
+  // The agent's id runs its exe; any other name herdr found (an executable alias, or a name the user aliased
+  // to the agent under hosts.herdr.aliases, such as `agent` for Cursor) is the program run.
+  const program = id === canonical ? exe : id;
   const argv = [program, ...(agent.args ?? [])];
   const { model, effort } = selection;
   if (model !== undefined && model !== DEFAULT_MODEL_ID) {

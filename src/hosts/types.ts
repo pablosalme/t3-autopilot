@@ -1,11 +1,11 @@
-import type { Capabilities } from "../capabilities.js";
+import type { Capabilities, Provider, SelectedOption } from "../capabilities.js";
 import type { LoadedCatalog } from "../catalog.js";
 import type { Policy } from "../policy.js";
 import type { Candidate, RecommendText } from "../recommend.js";
 
 /**
  * A host is the app the orchestrator runs in and starts children with: T3
- * Code today. Each one has an adapter in this folder, listed in the registry
+ * Code and herdr. Each one has an adapter in this folder, listed in the registry
  * (src/hosts/index.ts); the engine (recommend.ts, families.ts, effort.ts,
  * subscriptions.ts, unavailable.ts, log.ts) never knows which host it serves.
  */
@@ -30,8 +30,23 @@ export interface HostContext {
   platform: NodeJS.Platform;
 }
 
+/**
+ * The orchestrator itself, as recommend_model's `orchestrator` names it, for hosts whose payload does not (T3
+ * Code's does, so its adapter ignores this): its agent as the host names it, and the model and options it runs.
+ */
+export interface Orchestrator {
+  agent: string;
+  model?: string;
+  options?: SelectedOption[];
+}
+
+/** The arguments of a recommend_model call, besides the payload, that a host's catalog is built from. */
+export interface CallOptions {
+  orchestrator?: Orchestrator;
+}
+
 /** The arguments of a recommend_model call that a host's catalog is built from. */
-export interface CallInput {
+export interface CallInput extends CallOptions {
   /** The host's own payload, exactly as the orchestrator passed it. */
   capabilities: unknown;
 }
@@ -121,6 +136,12 @@ export interface HostAdapter {
    * `search`.
    */
   readonly merges: boolean;
+  /**
+   * Whether calls must name the host: a payload of its shape in a call that names no host fails, asking for
+   * `host`, unless the last recommend_model call of the process was for this host. For a host whose payload
+   * is plain text that could be mistaken for something else (herdr's probe output).
+   */
+  readonly explicit?: boolean;
   readonly text: HostText;
   /** The instructions the user pastes into the orchestrator's CLAUDE.md / AGENTS.md. */
   readonly snippet: string;
@@ -129,9 +150,23 @@ export interface HostAdapter {
   /** The canonical catalog for a call; throws, with a message that says what to pass, when the payload is not valid. */
   catalog(input: CallInput, ctx: HostContext): HostCatalog;
   /**
-   * How to start a candidate, added to it as `launch`. Absent when the
-   * candidate is enough (T3 Code). Throws to leave a candidate out (a token
-   * that fails validation, say); the message goes into `skipped`.
+   * Optional. The catalog for a call that brings no payload when none is kept, built from files alone (herdr:
+   * the agents listed in catalog.yaml); undefined when they give none, and the call then fails with
+   * `text.noCatalog`. It is never kept, so edits to the files apply on the next call.
    */
-  launch?(candidate: Candidate, ctx: HostContext): Launch;
+  catalogFromFiles?(input: CallOptions, ctx: HostContext): HostCatalog | undefined;
+  /**
+   * Optional. The kept catalog rebuilt for a call that brings no payload, for a host whose catalog comes partly
+   * from files (herdr: the programs found, with the agent catalog in force now), so edits to them apply without
+   * passing the payload again, and so does the call's `orchestrator`. Absent: the kept catalog as it is.
+   */
+  refresh?(kept: Capabilities, input: CallOptions, ctx: HostContext): HostCatalog;
+  /**
+   * How to start a candidate, added to it as `launch`. Absent when the
+   * candidate is enough (T3 Code). `provider` is the candidate's provider in
+   * the call's catalog, with any field the adapter put on it. Throws to leave a
+   * candidate out (a token that fails validation, say); the message goes into
+   * `skipped`.
+   */
+  launch?(candidate: Candidate, ctx: HostContext, provider: Provider): Launch;
 }

@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { mergeCapabilities, SelectedOptionSchema } from "./capabilities.js";
+import { type Capabilities, mergeCapabilities, SelectedOptionSchema } from "./capabilities.js";
 import {
   type CapabilitiesEntry,
   formatAge,
@@ -115,7 +115,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   // hosts' with their prefix), so the engine recommends only H's providers yet sees quota pool mates of other hosts.
   const host0 = hosts[0] ?? DEFAULT_HOST;
   const hostIds = hosts.map((h) => h.id) as [string, ...string[]];
-  const hostList = hosts.map((h) => `${h.id} (${h.name})`).join(", ");
+  const hostList = hosts.map((h) => (h.name.toLowerCase() === h.id ? h.id : `${h.id} (${h.name})`)).join(", ");
   const hostArg = z
     .enum(hostIds)
     .optional()
@@ -260,7 +260,21 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           .optional()
           .describe(
             `The host you run in: ${hostList}. Default: the host whose output \`capabilities\` is, else the host of ` +
-              `this server's last call, else ${host0.id}.`,
+              `this server's last call, else ${host0.id}. Outside ${host0.name} the result says \`host\` and each ` +
+              "candidate has `launch`, the command that starts it; `t3-autopilot snippet --host <id>` prints what to " +
+              "pass as capabilities there.",
+          ),
+        orchestrator: z
+          .object({
+            agent: z.string().min(1).max(200),
+            model: z.string().min(1).max(200).optional(),
+            options: z.array(SelectedOptionSchema).optional(),
+          })
+          .optional()
+          .describe(
+            `Outside ${host0.name} (herdr): your own agent, as your host names it (claude, codex, cursor-agent...), ` +
+              "and the model and options you run with. It says which candidates are yourself (sameAsOrchestrator) " +
+              `and keeps an independent review off your agent. ${host0.name}'s capabilities already name them.`,
           ),
         session: z
           .string()
@@ -286,15 +300,20 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const ttl = policy.capabilitiesCacheTtlHours;
           const ctx = hostContext(dataDir(), at, policy);
           const kept = () => keptCapabilities(host, ttl, at, args.session);
+          const options = args.orchestrator ? { orchestrator: args.orchestrator } : {};
           let entry: Kept;
-          let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged";
+          let capabilitiesFrom: "call" | "cache" | "disk-cache" | "merged" | "catalog";
+          // What the recommendation uses: the entry's capabilities, or the host's rebuild of the kept ones, whose
+          // notes follow the note on where the kept ones come from.
+          let capabilities: Capabilities | undefined;
+          let refreshNotes: string[] = [];
           let keep = true;
           // The session new capabilities are kept under: the one named, else the one the payload names (T3's thread).
           let saveAs = args.session;
           const notes: string[] = [...policyWarnings];
           if (args.capabilities !== undefined) {
             // `listed`: how many outputs were passed as a list ([full, search, ...]); 0 for a single output.
-            const catalog = host.catalog({ capabilities: args.capabilities }, ctx);
+            const catalog = host.catalog({ capabilities: args.capabilities, ...options }, ctx);
             const { capabilities: given, outputs: listed } = catalog;
             saveAs = args.session ?? catalog.session;
             notes.push(...catalog.notes);
@@ -318,9 +337,29 @@ export function createServer(opts: ServerOptions = {}): McpServer {
             }
           } else {
             const base = kept();
-            if (!base) throw new Error(host.text.noCatalog);
-            entry = base;
-            capabilitiesFrom = base.fromDisk ? "disk-cache" : "cache";
+            if (base) {
+              entry = base;
+              capabilitiesFrom = base.fromDisk ? "disk-cache" : "cache";
+              // A host whose catalog comes partly from files rebuilds the kept one, so edits to them apply now.
+              const fresh = host.refresh?.(base.capabilities, options, ctx);
+              if (fresh) {
+                capabilities = fresh.capabilities;
+                refreshNotes = fresh.notes;
+              }
+            } else {
+              // Nothing kept: a host may build its catalog from files alone. That one is never kept, so edits apply.
+              const files = host.catalogFromFiles?.(options, ctx);
+              if (!files) throw new Error(host.text.noCatalog);
+              notes.push(...files.notes);
+              entry = {
+                capabilities: files.capabilities,
+                receivedAt: at.toISOString(),
+                merged: false,
+                fromDisk: false,
+              };
+              capabilitiesFrom = "catalog";
+              keep = false;
+            }
           }
           const age = at.getTime() - Date.parse(entry.receivedAt);
           if (entry.fromDisk) {
@@ -331,6 +370,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
                 `If that is not you, or a child cannot start or its model id is rejected, ${host.text.capture}.`,
             );
           }
+          notes.push(...refreshNotes);
           // Kept before the recommendation: if that fails (an unknown taskType, say), the capabilities this call
           // brought are still good, and the calls sent with it, which omit them, must find them.
           if (keep) {
@@ -347,7 +387,15 @@ export function createServer(opts: ServerOptions = {}): McpServer {
               }
             }
           }
-          const { mergeCapabilities: _merge, capabilities: _caps, host: _host, session: _session, ...rest } = args;
+          const {
+            mergeCapabilities: _merge,
+            capabilities: _caps,
+            host: _host,
+            session: _session,
+            orchestrator: _orchestrator,
+            ...rest
+          } = args;
+          const used = capabilities ?? entry.capabilities;
           const unavailable = viewItems(host, activeMarks(marksPath(), at));
           const subs = readSubscriptions(subscriptionsPath());
           if (subs.error) {
@@ -359,7 +407,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const result = await recommendModel(
             {
               ...rest,
-              capabilities: entry.capabilities,
+              capabilities: used,
               text: host.text,
               unavailable,
               ...(subs.error ? {} : { subscriptions: viewOf(host, subs.subscriptions) }),
@@ -371,7 +419,9 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const candidates = host.launch
             ? result.candidates.flatMap((candidate) => {
                 try {
-                  return [{ ...candidate, launch: host.launch?.(candidate, ctx) }];
+                  const provider = used.providers.find((p) => p.providerInstanceId === candidate.providerInstanceId);
+                  if (!provider) throw new Error("not in the catalog");
+                  return [{ ...candidate, launch: host.launch?.(candidate, ctx, provider) }];
                 } catch (e) {
                   const why = e instanceof Error ? e.message : String(e);
                   result.skipped.push(`${candidate.providerInstanceId}/${candidate.model}: ${why}`);
@@ -385,7 +435,9 @@ export function createServer(opts: ServerOptions = {}): McpServer {
             candidates,
             warnings: [...notes, ...result.warnings],
             capabilitiesFrom,
-            ...(capabilitiesFrom === "call" ? {} : { capabilitiesAgeMinutes: Math.max(0, Math.floor(age / 60_000)) }),
+            ...(capabilitiesFrom === "call" || capabilitiesFrom === "catalog"
+              ? {}
+              : { capabilitiesAgeMinutes: Math.max(0, Math.floor(age / 60_000)) }),
           });
         } catch (e) {
           return fail(e);

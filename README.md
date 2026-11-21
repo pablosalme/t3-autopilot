@@ -198,6 +198,16 @@ To update later, run `git pull` and then `npm ci` again.
 
 After the first handoff, a folder called `.t3-autopilot` appears in your home folder. If none of this happens, see [the questions below](#questions).
 
+## Using it in herdr
+
+t3-autopilot also works in [herdr](https://herdr.dev), where `hc` runs your agents in terminals that stay alive. herdr knows nothing about models, so your agent tells t3-autopilot which agent CLIs it found on your computer, and each recommendation comes with the `hc run` command that starts the helper, with the task always in a file. Add t3-autopilot to your agent as in step 1, and in step 2 add herdr's paragraph instead:
+
+```sh
+npx -y t3-autopilot snippet --host herdr >> ~/.claude/CLAUDE.md
+```
+
+How it works, and what to add for agents whose models it cannot guess, is in [docs/hosts/herdr.md](docs/hosts/herdr.md).
+
 ## Make it yours
 
 t3-autopilot works with no configuration. To change its preferences, create your own settings file:
@@ -278,6 +288,8 @@ Everything t3-autopilot keeps is in one folder on your computer: `.t3-autopilot`
 | `unavailable.json` | Providers or models that are out for a while because a limit was reached, with the reason and until when. |
 | `capabilities-cache.json` | The last list of providers and models T3 Code gave your agent, and whether each can be used. No passwords or tokens. |
 | `capabilities-cache.t3.json` | The same lists, one per conversation of your agent, so that after a restart each one gets its own back. |
+| `capabilities-cache.herdr.json` | In herdr, the agent CLIs your agent found, one list per conversation. |
+| `catalog.yaml` | The models you added for agents in herdr. Only there if you created it. |
 | `subscriptions.yaml` | What you told your agent about each subscription: the plan, how much room it has, what it is for and which models it includes. |
 
 What it never does:

@@ -412,9 +412,9 @@ describe("snippet --host", () => {
   });
 });
 
-describe("the T3 registry alone", () => {
+describe("T3 Code as the only host", () => {
   it("the tools take host t3 and refuse any other", async () => {
-    const { client } = await connectServer(tempDir(), { now: () => T0 });
+    const { client } = await connectServer(tempDir(), { now: () => T0, hosts: [t3] });
     const ok = await client.callTool({
       name: "recommend_model",
       arguments: { task: "x", taskType: "code", host: "t3", capabilities: t3Caps() },

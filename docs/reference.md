@@ -110,7 +110,7 @@ The package installs one command, `t3-autopilot` (run it with `npx -y t3-autopil
 |---|---|---|
 | `t3-autopilot` (or `t3-autopilot serve`) | Starts the MCP server on stdio. This is what your agent CLI runs. | `0` |
 | `t3-autopilot snippet` | Prints the instructions to paste into `CLAUDE.md` / `AGENTS.md`. | `0` |
-| `t3-autopilot snippet --host <id>` | Prints the instructions for that [host](#hosts) (`t3` is the only one so far). | `0`, or `2` without a host or with an unknown one |
+| `t3-autopilot snippet --host <id>` | Prints the instructions for that [host](#hosts): `t3` or `herdr`. | `0`, or `2` without a host or with an unknown one |
 | `t3-autopilot init-policy` | Writes a commented override template to `policy.yaml` in the [data directory](#data-directory). Never overwrites an existing file. | `0`, or `1` if the file exists |
 | `t3-autopilot --help` (`-h`, `help`) | Prints the usage text. | `0` |
 | `t3-autopilot --version` (`-v`) | Prints the version. | `0` |
@@ -192,11 +192,13 @@ In short, it tells the orchestrator to:
 
 Whether the orchestrator follows it depends on the model; nothing enforces it. `get_stats` shows how often the first candidate was used.
 
+An orchestrator that runs in herdr gets its own instructions from `t3-autopilot snippet --host herdr`: the same steps, with herdr's probe as `capabilities` and the candidate's `launch` to start each child. They are in [hosts/herdr.md](hosts/herdr.md#the-instructions).
+
 ## Tools
 
 | Tool | Input | Output |
 |---|---|---|
-| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage`, `host`, `session` | `host` (only outside T3 Code), `taskType` (the type used), `requestedTaskType` (only when `taskType` was an alias), `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`; `launch` in a host that starts children with a command), `skipped[]`, `warnings[]`, `usageSource`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`), `setupNeeded` (only when an eligible provider has no subscription profile) |
+| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage`, `host`, `session`, `orchestrator` | `host` (only outside T3 Code), `taskType` (the type used), `requestedTaskType` (only when `taskType` was an alias), `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`; `launch` in a host that starts children with a command), `skipped[]`, `warnings[]`, `usageSource`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`/`catalog`), `capabilitiesAgeMinutes` (unless `call` or `catalog`), `setupNeeded` (only when an eligible provider has no subscription profile) |
 | `log_delegation` | `taskType`, `providerInstanceId`, `model`, optional `options`, `recommendedRank` (1-based, or null), `childThreadId`, `summary`, `host` | `delegationId` and `logged` (the stored record; outside T3 Code with `host`, and its id without the host's prefix) |
 | `log_outcome` | `outcome` (`success`/`corrected`/`failure`), optional `note`, plus `delegationId` **or** `taskType` + `providerInstanceId` + `model`; `host` | `logged` (the stored record) |
 | `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model; `prefix*` for every id that starts with `prefix`), `reason` (required unless clearing), `until` (ISO date; by default the provider's `quotaWindow`, else 24 h), or `clear: true` to remove marks; `host` | `marked` and `untilFrom` (`until`, the `quotaWindow` used, or `default 24 h`), or `cleared`; `active`, every mark of the host in force |
@@ -204,7 +206,7 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 | `get_subscriptions` | optional `host` | `file`, `subscriptions`, `otherHosts` (only when other hosts have profiles), `missing` |
 | `get_stats` | optional `since` (ISO date), `taskType`, `host` | `log` (the file path), counts, success rate and pending delegations in total, per task type and per model; `followedFirstRecommendation`; the `unavailable` marks in force. With `taskType`: `stats` for that type only (or `null`). With `host`: only that host's records and marks, and `host` |
 
-- `capabilities` accepts the object as T3 returns it, a JSON string, a bare `providers` array, or a list of several outputs (`[full, search1, ...]`), merged by `providerInstanceId` (see [Merging outputs](#merging-outputs)). Pass each output complete: the server keeps what it gets.
+- `capabilities` accepts the object as T3 returns it, a JSON string, a bare `providers` array, or a list of several outputs (`[full, search1, ...]`), merged by `providerInstanceId` (see [Merging outputs](#merging-outputs)). Pass each output complete: the server keeps what it gets. In herdr it is the output of herdr's probe, or a list of program names (see [hosts/herdr.md](hosts/herdr.md#how-it-works)).
 - `classification` says whether the task type was `given` by the caller or came from the keyword `classifier`, with the keywords that matched.
 - `source` is `taskType`, `fallback`, `generic` (a provider's default model, low confidence) or `inherited` (the orchestrator's own model, used only when nothing else resolves).
 - `sameAsOrchestrator` is `true` when the candidate is the orchestrator's own provider instance and model, so its native subagent tool does the same job.
@@ -212,12 +214,15 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 - `usageSource` is `none`, or `none+call` when the call passed `usage`.
 - `setupNeeded` has `providers[]` (`providerInstanceId`, `driverKind`, `displayName`, `families`: the policy families with a model listed on it, and `questions` for the user) and `instructions` for the orchestrator. It never blocks the recommendation.
 - `host` is the [host](#hosts) the orchestrator runs in. Leave it out in T3 Code.
+- `orchestrator` is the orchestrator itself, for hosts whose `capabilities` do not name it (herdr): `agent`, as the host names it (`claude`, or a program such as `cursor-agent`), and optional `model` and `options`. It decides `sameAsOrchestrator` and the independent-review rule. T3 Code's capabilities name the orchestrator, so it is ignored there.
+- `launch` says how to start the candidate in a host that starts children with a command: `mode`, `agent`, `model` and `effort` (absent when the CLI's own default applies), `args` (the program and its selection flags), `argv` (the recommended command, one element per argument, with whole-element placeholders such as `{brief}`) and `then` (commands to run next). Never a shell string; a candidate whose command cannot be built is left out and named in `skipped`. herdr's is described in [hosts/herdr.md](hosts/herdr.md#launch).
+- `capabilitiesFrom: "catalog"` means a host built the catalog from files alone, because the call brought no `capabilities` and none were kept (herdr, from `hosts.herdr.agents` in the [agent catalog](#agent-catalog)).
 - `session` is the orchestrator session's id (in T3 Code, the `parentThreadId` of `orchestrator_capabilities`). The capabilities are kept per session, so after a restart a call with it gets its own back and never another orchestrator's (see [Capabilities and restarts](#capabilities-and-restarts)).
 - Errors (unknown `taskType`, no capabilities yet, no eligible provider, an invalid policy file) come back as tool errors with a message that says what to fix; the server keeps running.
 
 ### Hosts
 
-A host is the app the orchestrator runs in and starts children with. T3 Code (`t3`) is the only one so far, and the default; support for Orca and herdr is planned. Every tool takes an optional `host`; a call without one is for the host of this server's last `recommend_model` call (a server process serves one agent session), else T3 Code. `recommend_model` also tells the host from the shape of `capabilities`, and fails when `host` names one and `capabilities` look like another host's output. Outside T3 Code the result says `host`, and in a host that starts children with a command each candidate has `launch`: the tokens and the command to start it, one element per argument.
+A host is the app the orchestrator runs in and starts children with: T3 Code (`t3`), the default, and [herdr](hosts/herdr.md) (`herdr`, through herdr-core's `hc`); support for Orca is coming. Every tool takes an optional `host`; a call without one is for the host of this server's last `recommend_model` call (a server process serves one agent session), else T3 Code. `recommend_model` also tells T3 Code's output from the shape of `capabilities`, and fails when `host` names one host and `capabilities` look like another's output. herdr's probe output is plain text, so herdr is never assumed: a call with it that names no host fails, asking for `host: "herdr"` (unless this server's last call was for herdr). Outside T3 Code the result says `host`, and in a host that starts children with a command each candidate has `launch`: the tokens and the command to start it, one element per argument.
 
 What t3-autopilot keeps is kept per host: [marks](#unavailable-marks), [subscription profiles](#subscription-profiles), the [log](#log-and-statistics) and the ids of the policy's `excludeProviders` and `instance`. T3 Code's ids are stored as they are, as in every 0.1 version; another host's carry its prefix (`orca:codex`), so a `codex` in one host never meets the other's. Tools take and return ids without the prefix, in the calling host; a stored id with `:` is another host's, because T3's provider instance ids never have one. A quota shared across hosts is said with the same [`quotaPool`](#shared-quota-quotapool) on both profiles; nothing else is shared.
 
@@ -458,9 +463,9 @@ Everything lives in `~/.t3-autopilot/` (or the directory named by the `T3_AUTOPI
 | `log.jsonl` | Delegations and outcomes. |
 | `unavailable.json` | `mark_unavailable` marks: provider instance, model, a reason cut to 200 characters, until when. |
 | `capabilities-cache.json` | The last `orchestrator_capabilities` output saved, of any session: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens. The file every 0.1 version reads and writes. |
-| `capabilities-cache.<host>.json` | A [host](#hosts)'s capabilities by session, as above (`capabilities-cache.t3.json` for T3 Code): the 32 sessions saved last, none older than `capabilitiesCacheTtlHours`. |
+| `capabilities-cache.<host>.json` | A [host](#hosts)'s capabilities by session, as above (`capabilities-cache.t3.json` for T3 Code, `capabilities-cache.herdr.json` for herdr: the agents its probe found, with the program of each): the 32 sessions saved last, none older than `capabilitiesCacheTtlHours`. |
 | `subscriptions.yaml` | [Subscription profiles](#subscription-profiles): plan, quota, purpose and rules per provider instance, as the user described them. |
-| `catalog.yaml` | Your additions to the [agent catalog](#agent-catalog). No tool reads it yet. |
+| `catalog.yaml` | Your additions to the [agent catalog](#agent-catalog), read on every herdr call. |
 
 Every [host](#hosts) shares these files: another host's ids carry its prefix (`orca:codex`), T3 Code's are stored as they are, so a 0.1 server and a newer one can use the same directory.
 
@@ -478,6 +483,8 @@ Capabilities are kept per [host](#hosts) and per session:
 - **With `session`.** A call gets that session's capabilities, from memory or from the host's file, and never another orchestrator's: with none saved for it, it fails with "No capabilities yet". After a restart, each orchestrator that passes its `session` gets its own back.
 - **Without `session`.** As in 0.1: the last capabilities this server used for the host, else, after a restart, `capabilities-cache.json` in T3 Code, or the entry another host saved last. Every orchestrator that shares the data directory saves there too, so after a restart one may get another's capabilities (its own provider and model decide `sameAsOrchestrator` and the independent-review rule; the warning names them).
 
+In herdr, the kept catalog is built again on every call that brings none, from the programs its probe found and the [agent catalog](#agent-catalog) in force, so an edit to `catalog.yaml` applies on the next call, and so does the call's `orchestrator`. With nothing kept, herdr uses the agents `catalog.yaml` lists under `hosts.herdr.agents`, if any (`capabilitiesFrom: "catalog"`), and never keeps them.
+
 Capabilities are kept as soon as they are read, also when the call that brought them then fails for another reason (an unknown `taskType`, for example), so the calls sent with it still find them. A copy older than the TTL is ignored, so the call fails with "No capabilities yet", like the first call of a thread; a lone search output passed with `mergeCapabilities` and nothing to merge into is used for that call only and not kept. Set `capabilitiesCacheTtlHours: 0` to keep capabilities in memory only.
 
 ### Merging outputs
@@ -493,7 +500,7 @@ Outputs are merged by `providerInstanceId`, whether one is passed with `mergeCap
 
 ## Agent catalog
 
-T3 Code lists the models of every provider in `orchestrator_capabilities`. The other hosts t3-autopilot is being extended to, Orca and herdr, only say which agent CLIs are installed, or nothing at all, so t3-autopilot ships its own catalog of agent CLIs, the models and efforts each takes and, for herdr, which starts a program with arguments and knows nothing about models, how to run it: [`catalog/agents.yaml`](../catalog/agents.yaml). T3 Code never reads it, and no tool uses it yet.
+T3 Code lists the models of every provider in `orchestrator_capabilities`. The other hosts, herdr and (coming) Orca, only say which agent CLIs are installed, or nothing at all, so t3-autopilot ships its own catalog of agent CLIs, the models and efforts each takes and, for herdr, which starts a program with arguments and knows nothing about models, how to run it: [`catalog/agents.yaml`](../catalog/agents.yaml). herdr's calls read it, with your `catalog.yaml`, on every call ([hosts/herdr.md](hosts/herdr.md)); T3 Code never reads it.
 
 Extend it in `~/.t3-autopilot/catalog.yaml` (or `$T3_AUTOPILOT_HOME/catalog.yaml`), with the same keys. Each agent there is merged one level deep onto the built-in one: a key you set (`models`, `efforts`, `hosts`...) replaces the built-in value as a whole, so repeat the entries you want to keep, and `null` removes an agent or one of its keys. Aliases under `hosts.<host>.aliases` are merged by alias (`null` removes one). As with the policy, a key the catalog does not know is ignored with a warning. So are a `family` that is not a policy family (the model is then matched by its id alone), a model listed twice (the first one stays) and an alias to an agent the catalog does not have, or with the name of one of its agents. Anything else that is wrong, such as a model id with a space, a shell character or a leading `-`, is an error that names the file.
 
@@ -524,7 +531,8 @@ agents:
 | `models[].efforts` | This model's efforts, instead of the agent's; `[]` for none (Claude's `haiku`). |
 | `efforts` | Efforts the agent takes. Values outside the policy's scale are ignored. |
 | `hosts.<host>` in an agent | What changes in one host (`orca` or `herdr`): `model: false` (the host rejects a model at launch, so only `default` is offered), `models`, `efforts` and `note`. |
-| `hosts.<host>.aliases` at the top level | Ids a host uses for an agent of the catalog (Orca's `opencode2` is `opencode`). |
+| `hosts.<host>.aliases` at the top level | Ids a host uses for an agent of the catalog (Orca's `opencode2` is `opencode`). In herdr they are program names, and the name found on `PATH` is the program run. |
+| `hosts.herdr.agents` at the top level | The agents herdr can start, as agent ids or program names, for a call that brings no probe output when none is kept. |
 | `exe` | herdr: the program to run. Default: the agent id. |
 | `aliases` in an agent | herdr: other executable names of the agent, to recognize it on `PATH` (`opencode2` for OpenCode); the name found is the program run. |
 | `args` | herdr: words always passed after the program (`--no-daemon` for Codex, `chat --tui` for Kiro). |
@@ -564,7 +572,7 @@ The herdr fields were checked on 2026-11-21 against the `--help` of the CLIs ins
 
 **Why can a warning about omitted models stay after a search?** It goes away once a merged search output lists models for that provider and leaves none out. A search with more than 8 matches is truncated as well, so the warning stays with a narrower search to run. If the search finds nothing for the provider, T3 returns it with no models, which looks the same as a provider the search did not select, so the warning stays too.
 
-**Does it work without T3 Code?** It is built around T3's `orchestrator_capabilities` and `delegate_task`. Another host would have to pass data in the same shape.
+**Does it work without T3 Code?** Yes, in [herdr](hosts/herdr.md): the orchestrator passes what herdr's probe finds on `PATH`, t3-autopilot builds the models from its [agent catalog](#agent-catalog), and each candidate comes with the `hc run` command that starts it. Orca is coming.
 
 **Are the model names in the examples real?** No. Fixtures and examples use invented versions so they never read as claims about real models.
 

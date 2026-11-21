@@ -370,6 +370,96 @@ describe("subscription profiles over stdio", () => {
   });
 });
 
+describe("herdr over stdio", () => {
+  const probe = (name) => readFileSync(join(root, "test", "fixtures", "herdr", `${name}.txt`), "utf8");
+  const task = { task: "Implement the CSV export endpoint", taskType: "code" };
+  // One command-line word, or a whole placeholder.
+  const word = /^(?:\{(?:name|cwd|brief)\}|--?[A-Za-z0-9][\w.:/@+=,[\]-]*|[A-Za-z0-9][\w.:/@+=,[\]-]*|--)$/;
+
+  it("recommends from the probe with the hc command, keeps it per session apart from T3, and logs with host", async () => {
+    const home = newHome();
+    const { client } = await start(home);
+    try {
+      const call = async (name, args) => {
+        const res = await client.callTool({ name, arguments: args });
+        assert.ok(!res.isError, text(res));
+        return res.structuredContent;
+      };
+      const first = await call("recommend_model", {
+        ...task,
+        host: "herdr",
+        session: "t1",
+        capabilities: probe("probe-linux"),
+        orchestrator: { agent: "claude", model: "opus" },
+      });
+      assert.equal(first.host, "herdr");
+      assert.equal(first.capabilitiesFrom, "call");
+      assert.deepEqual(ids(first), ["claude/opus", "codex/default", "claude/sonnet"]);
+      assert.deepEqual(first.candidates[0].launch.argv, [
+        "hc",
+        "run",
+        "--bg",
+        "--name",
+        "{name}",
+        "--cwd",
+        "{cwd}",
+        "claude",
+        "--model",
+        "opus",
+        "--effort",
+        "high",
+        "{brief}",
+      ]);
+      for (const candidate of first.candidates) {
+        for (const arg of candidate.launch.argv) assert.match(arg, word, JSON.stringify(candidate.launch.argv));
+      }
+
+      const review = await call("recommend_model", {
+        task: "Review the export endpoint PR",
+        taskType: "review",
+        host: "herdr",
+        session: "t1",
+      });
+      assert.equal(review.capabilitiesFrom, "cache");
+      assert.equal(review.candidates[0].providerInstanceId, "codex");
+      assert.deepEqual(review.candidates[0].launch.argv.slice(7), [
+        "codex",
+        "--no-daemon",
+        "-c",
+        "model_reasoning_effort=high",
+        "{brief}",
+      ]);
+
+      const logged = await call("log_delegation", {
+        host: "herdr",
+        taskType: "code",
+        providerInstanceId: "claude",
+        model: "opus",
+        recommendedRank: 1,
+        childThreadId: "t7",
+      });
+      assert.equal(logged.logged.host, "herdr");
+      assert.equal(logged.logged.providerInstanceId, "claude");
+      assert.match(readFileSync(join(home, "log.jsonl"), "utf8"), /"providerInstanceId":"herdr:claude"/);
+      assert.ok(existsSync(join(home, "capabilities-cache.herdr.json")));
+      assert.ok(!existsSync(join(home, "capabilities-cache.json")));
+
+      // T3 Code never gets herdr's catalog, and the probe without host asks for it.
+      const t3 = await client.callTool({ name: "recommend_model", arguments: { ...task, host: "t3" } });
+      assert.equal(t3.isError, true);
+      assert.match(text(t3), /^No capabilities yet/);
+      const nameless = await client.callTool({
+        name: "recommend_model",
+        arguments: { ...task, capabilities: probe("probe-linux") },
+      });
+      assert.equal(nameless.isError, true);
+      assert.match(text(nameless), /pass host: "herdr"/);
+    } finally {
+      await client.close();
+    }
+  });
+});
+
 describe("CLI commands", () => {
   it("--version, --help and snippet", () => {
     const home = newHome();
@@ -397,6 +487,22 @@ describe("CLI commands", () => {
     const second = runCli(["init-policy"], home);
     assert.equal(second.status, 1);
     assert.match(second.stderr, /already exists; not overwritten/);
+  });
+
+  it("snippet --host herdr prints herdr's instructions, and --host needs a known host", () => {
+    const home = newHome();
+    const herdr = runCli(["snippet", "--host", "herdr"], home);
+    assert.equal(herdr.status, 0, herdr.stderr);
+    assert.ok(herdr.stdout.startsWith("## Model selection for delegated tasks in herdr (t3-autopilot)\n"));
+    assert.ok(readFileSync(join(root, "docs", "hosts", "herdr.md"), "utf8").includes(herdr.stdout));
+    for (const args of [
+      ["snippet", "--host"],
+      ["snippet", "--host", "nope"],
+    ]) {
+      const res = runCli(args, home);
+      assert.equal(res.status, 2, args.join(" "));
+      assert.match(res.stderr, /t3, herdr/);
+    }
   });
 
   it("rejects an unknown command", () => {

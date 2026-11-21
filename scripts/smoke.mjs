@@ -123,6 +123,22 @@ check(
   !after?.setupNeeded?.providers?.some((p) => p.providerInstanceId === "cursor"),
 );
 
+// 8. herdr: the probe of the agent CLIs on PATH, and the hc command that starts each candidate.
+const herdr = await recommend("herdr: probe output", {
+  task: "Implement the CSV export endpoint",
+  taskType: "code",
+  host: "herdr",
+  capabilities: readFileSync(join(root, "test", "fixtures", "herdr", "probe-linux.txt"), "utf8"),
+  orchestrator: { agent: "claude", model: "opus" },
+});
+check("herdr: host in the result", herdr?.host === "herdr");
+check(
+  "herdr: every candidate starts with hc run, one argument per element",
+  herdr?.candidates.every(
+    (c) => c.launch?.argv.slice(0, 3).join(" ") === "hc run --bg" && c.launch.argv.every((a) => !/\s/.test(a)),
+  ) === true,
+);
+
 const out = await client.callTool({
   name: "log_outcome",
   arguments: {

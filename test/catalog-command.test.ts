@@ -166,10 +166,12 @@ describe("resolveAgent in herdr", () => {
     expect(resolveAgent(catalog, "orca", "cursor-agent")).toBeUndefined();
   });
 
-  it("prefers a host alias to a program name", () => {
+  it("prefers a host alias to a program name, and runs the name herdr found", () => {
     const { catalog: c } = withUser("hosts:\n  herdr:\n    aliases: { agent: cursor }\n");
     expect(resolveAgent(c, "herdr", "agent")).toBe("cursor");
-    expect(agentCommand(c, "agent").argv[0]).toBe("cursor-agent");
+    // herdr names programs, so a host alias is a program name too: the one found on PATH is the one that runs.
+    expect(agentCommand(c, "agent")).toMatchObject({ agent: "cursor", argv: ["agent", BRIEF] });
+    expect(agentCommand(c, "cursor").argv[0]).toBe("cursor-agent");
   });
 });
 

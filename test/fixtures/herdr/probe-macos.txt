@@ -1,0 +1,4 @@
+/Users/dev/.local/bin/claude
+/Users/dev/.grok/bin/grok
+/Users/dev/.opencode/bin/opencode
+/Users/dev/.opencode/bin/opencode2

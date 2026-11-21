@@ -37,7 +37,7 @@ describe("CLI", () => {
     }
     // Every command of the usage text is one runCli knows (serve and the bare command start the server).
     const commands = [...HELP.matchAll(/^ {2}t3-autopilot (\S+)/gm)].map((m) => m[1]);
-    expect(commands).toEqual(["[serve]", "snippet", "init-policy", "--help", "--version"]);
+    expect(commands).toEqual(["[serve]", "snippet", "snippet", "init-policy", "--help", "--version"]);
   });
 
   it("rejects an unknown command with exit code 2", async () => {

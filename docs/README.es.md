@@ -200,6 +200,16 @@ Para actualizarlo más adelante, ejecuta `git pull` y luego otra vez `npm ci`.
 
 Tras el primer encargo aparece una carpeta llamada `.t3-autopilot` en tu carpeta personal. Si no ocurre nada de esto, mira [las preguntas de más abajo](#preguntas).
 
+## Uso en herdr
+
+t3-autopilot también funciona en [herdr](https://herdr.dev), donde `hc` ejecuta tus agentes en terminales que siguen vivas. herdr no sabe nada de modelos, así que tu agente le dice a t3-autopilot qué CLI de agentes ha encontrado en tu ordenador, y cada recomendación llega con la orden `hc run` que arranca al ayudante, siempre con el encargo en un fichero. Añade t3-autopilot a tu agente como en el paso 1 y, en el paso 2, añade el párrafo de herdr en su lugar:
+
+```sh
+npx -y t3-autopilot snippet --host herdr >> ~/.claude/CLAUDE.md
+```
+
+Cómo funciona, y qué añadir para los agentes cuyos modelos no puede adivinar, está en [docs/hosts/herdr.md](hosts/herdr.md) (en inglés).
+
 ## Ajústalo a tu gusto
 
 t3-autopilot funciona sin configurar nada. Para cambiar sus preferencias, crea tu propio fichero de ajustes:
@@ -280,6 +290,8 @@ Todo lo que guarda t3-autopilot está en una sola carpeta de tu ordenador: `.t3-
 | `unavailable.json` | Proveedores o modelos que no se pueden usar durante un tiempo porque se llegó a un límite, con el motivo y hasta cuándo. |
 | `capabilities-cache.json` | La última lista de proveedores y modelos que T3 Code le dio a tu agente, y si cada uno se puede usar. Sin contraseñas ni tokens. |
 | `capabilities-cache.t3.json` | Las mismas listas, una por conversación de tu agente, para que tras un reinicio cada una recupere la suya. |
+| `capabilities-cache.herdr.json` | En herdr, las CLI de agentes que ha encontrado tu agente, una lista por conversación. |
+| `catalog.yaml` | Los modelos que has añadido para los agentes en herdr. Solo existe si lo has creado tú. |
 | `subscriptions.yaml` | Lo que le contaste a tu agente de cada suscripción: el plan, cuánto margen tiene, para qué es y qué modelos incluye. |
 
 Lo que no hace nunca:

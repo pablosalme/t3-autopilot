@@ -51,6 +51,7 @@ const required = [
   "dist/index.d.ts",
   "dist/hosts/index.js",
   "dist/hosts/t3.js",
+  "dist/hosts/herdr.js",
   // Every file listed in "files" that exists in the repository.
   ...pkg.files.filter((f) => existsSync(join(root, f)) && !statSync(join(root, f)).isDirectory()),
 ];

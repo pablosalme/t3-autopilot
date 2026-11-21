@@ -1,0 +1,5 @@
+/home/dev/.local/bin/claude
+/usr/local/bin/codex
+/usr/local/bin/cursor-agent
+/home/dev/.local/bin/agy
+/usr/bin/kiro-cli

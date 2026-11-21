@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { type LoadedCatalog, loadCatalog } from "../catalog.js";
 import { DATA_FILES } from "../paths.js";
 import type { CandidateRule, Policy } from "../policy.js";
+import { herdr } from "./herdr.js";
 import { t3 } from "./t3.js";
 import type { HostAdapter, HostContext, HostId } from "./types.js";
 
@@ -11,7 +12,7 @@ import type { HostAdapter, HostContext, HostId } from "./types.js";
  * file in this folder and one line here (see "Adding a host" in
  * CONTRIBUTING.md).
  */
-export const HOSTS: readonly HostAdapter[] = [t3];
+export const HOSTS: readonly HostAdapter[] = [t3, herdr];
 
 /** The host of calls that name none: T3 Code, as in every 0.1 version. Its ids are stored with no prefix. */
 export const DEFAULT_HOST: HostAdapter = t3;
@@ -29,8 +30,9 @@ export interface HostQuery {
 /**
  * The host a call is for: the one it names, else the one whose shape its
  * payload has, else the host of the last recommend_model call, else the
- * default host. Throws when the named host is unknown, or when the payload
- * looks like another host's output.
+ * default host. Throws when the named host is unknown, when the payload looks
+ * like another host's output, and when it has the shape of an `explicit`
+ * host's payload but the call names no host (unless the last call was for it).
  */
 export function resolveHost(query: HostQuery, hosts: readonly HostAdapter[] = HOSTS): HostAdapter {
   const { host, payload, last } = query;
@@ -49,6 +51,11 @@ export function resolveHost(query: HostQuery, hosts: readonly HostAdapter[] = HO
     return named;
   }
   const detected = payload === undefined ? undefined : hosts.find((h) => h.detect(payload));
+  if (detected?.explicit && detected !== last) {
+    throw new Error(
+      `capabilities look like ${detected.name} output, but the call names no host: pass host: "${detected.id}".`,
+    );
+  }
   return detected ?? last ?? hosts[0] ?? DEFAULT_HOST;
 }
 

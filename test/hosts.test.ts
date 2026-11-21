@@ -15,8 +15,8 @@ const T0 = new Date("2026-11-21T09:00:00Z");
 const ctx = hostContext(tempDir(), T0, defaultPolicy());
 
 describe("the host registry", () => {
-  it("knows T3 Code, the default host", () => {
-    expect(HOSTS.map((h) => h.id)).toEqual(["t3"]);
+  it("knows T3 Code, the default host, and herdr", () => {
+    expect(HOSTS.map((h) => h.id)).toEqual(["t3", "herdr"]);
     expect(DEFAULT_HOST).toBe(t3);
   });
 

@@ -1,0 +1,2 @@
+alias claude='claude --verbose'
+/opt/homebrew/bin/codex
