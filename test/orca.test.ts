@@ -16,7 +16,15 @@ import { CapabilitiesSchema, type Provider } from "../src/capabilities.js";
 import { runCli } from "../src/cliMain.js";
 import { herdr } from "../src/hosts/herdr.js";
 import { allHostsSnippet, HOSTS, hostContext, resolveHost } from "../src/hosts/index.js";
-import { BRIEF_FILE, ORCA_DISCOVERY, ORCA_MODEL_AGENTS, ORCA_SNIPPET, orca, readInstalled } from "../src/hosts/orca.js";
+import {
+  BRIEF_FILE,
+  ORCA_DISCOVERY,
+  ORCA_EFFORTS,
+  ORCA_MODEL_AGENTS,
+  ORCA_SNIPPET,
+  orca,
+  readInstalled,
+} from "../src/hosts/orca.js";
 import { t3 } from "../src/hosts/t3.js";
 import type { Launch } from "../src/hosts/types.js";
 import type { Candidate, Recommendation } from "../src/recommend.js";
@@ -399,6 +407,22 @@ describe("the Orca catalog", () => {
     expect(build({ agents: [{ id: "pi" }] }, home).capabilities.providers[0]?.models).toEqual([{ id: "default" }]);
   });
 
+  it("offers only the efforts Orca takes for an agent: none for OpenCode, whatever catalog.yaml gives it", () => {
+    const home = tempDir();
+    writeFileSync(
+      join(home, "catalog.yaml"),
+      "agents:\n  opencode: { models: [anthropic/claude-opus-9-2, { id: x/y, efforts: [low, high] }], efforts: [high] }\n",
+    );
+    const { capabilities, notes } = build({ agents: [{ id: "opencode" }] }, home);
+    expect(capabilities.providers[0]?.models).toEqual([{ id: "anthropic/claude-opus-9-2" }, { id: "x/y" }]);
+    expect(notes).toEqual([
+      "Orca refuses these efforts at start, so they are not offered: high for opencode's anthropic/claude-opus-9-2; " +
+        "low and high for opencode's x/y.",
+    ]);
+    // Every agent that takes --model in Orca has its menu, copied from Orca's launch catalogs.
+    expect(Object.keys(ORCA_EFFORTS).sort()).toEqual([...ORCA_MODEL_AGENTS].sort());
+  });
+
   it("offers an agent the catalog does not know with its default model, under Orca's name for it", () => {
     const { capabilities, notes } = build({ agents: [{ id: "goose", name: "Goose" }, { id: "omp" }, { id: "x.y" }] });
     expect(capabilities.providers.map((p) => [p.providerInstanceId, p.displayName, p.driverKind])).toEqual([
@@ -522,9 +546,20 @@ describe("the launch command for Orca", () => {
     expect(launch(candidate("gemini", "default")).notes).toEqual([CLI_NOTE]);
     expect(launch(candidate("goose", "default")).notes).toEqual([CLI_NOTE]);
     expect(launch(candidate("kiro", "default", "high")).notes).toEqual([
-      "No --effort: Orca passes one only with --model.",
+      "No --effort: Orca takes none for kiro.",
       CLI_NOTE,
     ]);
+  });
+
+  it("never passes an effort Orca's menu lacks, such as any for OpenCode, which only the orchestrator's options bring", () => {
+    const opencode = launch(candidate("opencode", "anthropic/claude-opus-9-2", "high"));
+    expect(opencode).not.toHaveProperty("effort");
+    expect(opencode.args).toEqual(["--agent", "opencode", "--model", "anthropic/claude-opus-9-2"]);
+    expect(opencode.notes?.[0]).toBe("No --effort: Orca takes none for opencode.");
+    // An effort outside the menu of an agent that takes some.
+    const codex = launch(candidate("codex", "gpt-9.2-codex", "none"));
+    expect(codex.args).toEqual(["--agent", "codex", "--model", "gpt-9.2-codex"]);
+    expect(codex.notes?.[0]).toBe("No --effort: Orca refuses none for codex's gpt-9.2-codex.");
   });
 
   it("passes Orca's id for the agent: opencode2 for OpenCode 2", () => {
@@ -775,6 +810,38 @@ describe("recommend_model in Orca", () => {
     expect(merged.warnings).toContain("mergeCapabilities is ignored: Orca sends its whole catalog in one output.");
     writeFileSync(join(home, "catalog.yaml"), 'agents:\n  claude: { models: ["opus; id"] }\n');
     expect(resultText(await recommend(client, first))).toMatch(/^Invalid agent catalog \(/);
+  });
+
+  it("never starts OpenCode with --effort, which Orca refuses for it, from catalog.yaml or the orchestrator", async () => {
+    const home = tempDir();
+    writeFileSync(
+      join(home, "catalog.yaml"),
+      "agents:\n  opencode: { models: [anthropic/claude-opus-9-2], efforts: [low, medium, high] }\n",
+    );
+    const { client } = await connectServer(home, { now: () => T0 });
+    const res = data(await recommend(client, { host: "orca", capabilities: { agents: [{ id: "opencode" }] } }));
+    expect(res.candidates[0]).toMatchObject({
+      providerInstanceId: "opencode",
+      model: "anthropic/claude-opus-9-2",
+      options: [],
+    });
+    expect(res.candidates[0]?.launch?.args).toEqual(["--agent", "opencode", "--model", "anthropic/claude-opus-9-2"]);
+    expect(res.warnings).toContain(
+      "Orca refuses these efforts at start, so they are not offered: low, medium and high for opencode's " +
+        "anthropic/claude-opus-9-2.",
+    );
+    // The last resort, the orchestrator's own model and options, starts without the effort it names.
+    writeFileSync(join(home, "policy.yaml"), "genericFallback: false\n");
+    writeFileSync(join(home, "catalog.yaml"), "agents:\n  opencode: { models: [x/y] }\n");
+    const last = data(
+      await recommend(client, {
+        host: "orca",
+        orchestrator: { agent: "opencode", model: "x/y", options: [{ id: "effort", value: "high" }] },
+      }),
+    );
+    expect(last.candidates[0]).toMatchObject({ source: "inherited", options: [{ id: "effort", value: "high" }] });
+    expect(last.candidates[0]?.launch?.args).toEqual(["--agent", "opencode", "--model", "x/y"]);
+    expect(last.candidates[0]?.launch?.notes?.[0]).toBe("No --effort: Orca takes none for opencode.");
   });
 
   it("skips a candidate Orca would refuse, and says why", async () => {

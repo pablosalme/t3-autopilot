@@ -41,6 +41,58 @@ export const ORCA_MODEL_AGENTS: ReadonlySet<string> = new Set([
   "codebuddy",
 ]);
 
+const LOW_TO_HIGH = ["low", "medium", "high"];
+const LOW_TO_XHIGH = [...LOW_TO_HIGH, "xhigh"];
+const LOW_TO_MAX = [...LOW_TO_XHIGH, "max"];
+const MINIMAL_TO_MAX = ["minimal", ...LOW_TO_MAX];
+const MINIMAL_TO_ULTRA = [...MINIMAL_TO_MAX, "ultra"];
+const OFF_TO_MAX = ["off", ...MINIMAL_TO_MAX];
+
+/**
+ * The efforts Orca's worker-start takes for the models of each agent of {@link ORCA_MODEL_AGENTS}, by Orca agent id:
+ * the effort menu of the agent's launch catalog for a model id it does not list (`unknownModelOptions`), none when it
+ * has no such menu, as OpenCode's launch catalog. Orca refuses any other effort at start
+ * (checkAgentLaunchModelPreferences, in src/shared/agent-launch/choices/agent-launch-model-preferences.ts). The
+ * menus are in src/shared/agent-session/options/catalog-providers/, read at commit e955bff.
+ */
+export const ORCA_EFFORTS: Readonly<Record<string, readonly string[]>> = {
+  claude: LOW_TO_MAX,
+  codex: MINIMAL_TO_ULTRA,
+  // Orca's Cursor menu belongs to the models it lists; Cursor writes the effort into the model id.
+  cursor: [],
+  antigravity: LOW_TO_HIGH,
+  grok: LOW_TO_XHIGH,
+  muse: MINIMAL_TO_ULTRA,
+  pi: OFF_TO_MAX,
+  opencode: [],
+  omp: [...OFF_TO_MAX, "auto"],
+  codebuddy: MINIMAL_TO_MAX,
+};
+
+/** The efforts Orca's worker-start takes for an agent's models: none for an agent that takes no `--model`. */
+export function orcaEfforts(agent: string): readonly string[] {
+  return Object.hasOwn(ORCA_EFFORTS, agent) ? (ORCA_EFFORTS[agent] ?? []) : [];
+}
+
+/** Whether Orca takes an effort for some model of an agent. */
+const takesEfforts = (agent: string) => orcaEfforts(agent).length > 0;
+
+/**
+ * A model with only the efforts Orca takes for it, so the engine picks an effort among those; what it leaves out is
+ * added to `refused` ("high for opencode's anthropic/claude-opus-9-2").
+ */
+function withOrcaEfforts(agent: string, model: Model, refused: string[]): Model {
+  const effort = model.options?.find((o) => o.id === "effort");
+  if (effort?.values === undefined) return model;
+  const menu = orcaEfforts(agent);
+  const kept = effort.values.filter((v) => typeof v === "string" && menu.includes(v));
+  if (kept.length === effort.values.length) return model;
+  refused.push(`${list(effort.values.filter((v) => !kept.includes(v)).map(String))} for ${agent}'s ${model.id}`);
+  const { options, ...rest } = model;
+  const left = (options ?? []).flatMap((o) => (o !== effort ? [o] : kept.length ? [{ ...o, values: kept }] : []));
+  return left.length ? { ...rest, options: left } : rest;
+}
+
 /** A provider's field (kept in the cache with it) for the id Orca's `--agent` takes, such as `opencode2`. */
 const AGENT = "agent";
 
@@ -177,6 +229,7 @@ function buildCatalog(agents: readonly InstalledAgent[], orchestrator: Orchestra
   const unknown: string[] = [];
   const noModel: string[] = [];
   const notProviderId: string[] = [];
+  const refused: string[] = [];
   const providers = [...found].map(([id, agent]) => {
     const known = Object.hasOwn(catalog.agents, id);
     if (!known) unknown.push(id);
@@ -191,8 +244,9 @@ function buildCatalog(agents: readonly InstalledAgent[], orchestrator: Orchestra
       notProviderId.push(...models.filter((m) => !valid.includes(m)).map((m) => `"${m.id}"`));
       models = valid.length > 0 ? valid : [{ id: DEFAULT_MODEL_ID }];
     }
-    // Orca takes an effort only with --model, so the default model, started without one, takes none.
-    models = models.map((m) => (m.id === DEFAULT_MODEL_ID ? withoutOptions(m) : m));
+    // Orca takes an effort only with --model, so the default model, started without one, takes none; with a model,
+    // only an effort of Orca's menu.
+    models = models.map((m) => (m.id === DEFAULT_MODEL_ID ? withoutOptions(m) : withOrcaEfforts(agent.id, m, refused)));
     return { ...base, ...(!known && agent.name ? { displayName: agent.name } : {}), models, [AGENT]: agent.id };
   });
 
@@ -232,6 +286,9 @@ function buildCatalog(agents: readonly InstalledAgent[], orchestrator: Orchestra
       `Orca starts Pi only with a provider/id model, such as openai/gpt-9.1-sol, so ${list(notProviderId)} ` +
         `${notProviderId.length === 1 ? "is" : "are"} not offered.`,
     );
+  }
+  if (refused.length) {
+    notes.push(`Orca refuses these efforts at start, so they are not offered: ${refused.join("; ")}.`);
   }
   const bare = providers
     .filter((p) => !unknown.includes(p.providerInstanceId) && ORCA_MODEL_AGENTS.has(p[AGENT]))
@@ -284,14 +341,23 @@ function launch(candidate: Candidate, ctx: HostContext, provider: Provider): Lau
   const chosen = candidate.options.find((o) => o.id === "effort");
   const wanted = typeof chosen?.value === "string" ? chosen.value : undefined;
   if (wanted !== undefined && !isToken(wanted)) throw new Error(`effort "${wanted}" is not one command-line word.`);
-  const effort = model === undefined ? undefined : wanted;
+  // Orca refuses an effort without --model, and one its menu does not have. The catalog never offers either, but the
+  // orchestrator's own options, a last resort, may hold one: it is left out, and a note says why.
+  const effort =
+    model !== undefined && wanted !== undefined && orcaEfforts(agent).includes(wanted) ? wanted : undefined;
   const notes: string[] = [];
-  if (model === undefined && (wanted !== undefined || hasEfforts(catalog, id))) {
-    // Declaring the agent's model ids helps only when Orca lets it take one.
-    const how = ORCA_MODEL_AGENTS.has(agent)
-      ? ` To set it, list ${id}'s model ids under agents.${id}.models in catalog.yaml.`
-      : "";
-    notes.push(`No --effort: Orca passes one only with --model.${how}`);
+  if (!takesEfforts(agent)) {
+    if (wanted !== undefined) notes.push(`No --effort: Orca takes none for ${agent}.`);
+  } else if (model === undefined) {
+    // Declaring the agent's model ids helps, as Orca takes an effort for them.
+    if (wanted !== undefined || hasEfforts(catalog, id)) {
+      notes.push(
+        `No --effort: Orca passes one only with --model. To set it, list ${id}'s model ids under ` +
+          `agents.${id}.models in catalog.yaml.`,
+      );
+    }
+  } else if (wanted !== undefined && effort === undefined) {
+    notes.push(`No --effort: Orca refuses ${wanted} for ${agent}'s ${model}.`);
   }
   const others = candidate.options.filter((o) => o !== chosen).map((o) => o.id);
   if (others.length) {

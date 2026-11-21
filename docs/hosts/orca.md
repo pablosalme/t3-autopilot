@@ -64,6 +64,7 @@ T3 Code is not needed.
    - **An effort needs a model.** `default` starts the CLI without `--model`, so it gets no `--effort` either (Codex's and Grok's built-in entry). List their model ids in `catalog.yaml` to choose an effort.
    - **Only some agents take a model.** Orca's `worker-start` takes `--model` for Claude Code, Codex, Cursor Agent, Antigravity, Grok, Muse, Pi, OpenCode (`opencode`), OMP and CodeBuddy. Every other agent, Gemini CLI, Kiro and Orca's `opencode2` among them, starts with the model set in its own configuration, so it is offered `default` only, whatever `catalog.yaml` lists for it.
    - **Pi takes `provider/id` models** (`openai/gpt-9.1-sol`); other ids for it are left out, with a warning.
+   - **Only an effort Orca's menu has.** Orca refuses an effort that is not in its menu for the agent, and OpenCode's has none, so OpenCode never gets `--effort`, whatever `catalog.yaml` gives it. The efforts of yours left out are named in a warning.
    - **Claude Code's `haiku` takes no effort**, as in Orca's own catalog.
 
 3. **It recommends, as in T3 Code,** with the same policy, subscription profiles and marks: up to three candidates, best first, each with its reason. In Orca the result also says `"host": "orca"`, and each candidate has `launch`, the command that starts it:
