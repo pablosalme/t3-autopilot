@@ -59,13 +59,12 @@ T3 Code is not needed.
 
    `--environment local` keeps the command on this machine's Orca, as Orca's own orchestration guide does for every worker it starts here.
 
-2. **t3-autopilot builds the list of agents,** one per agent Orca lists, keyed by the id the [agent catalog](../reference.md#agent-catalog) gives it: Orca's `opencode2` is OpenCode. The models and efforts of each come from that catalog: aliases that do not go stale, such as Claude Code's `opus` and `sonnet`, or `default` for the model set in the CLI's own configuration (Codex, Grok). Your additions go in `catalog.yaml` in the data directory (`~/.t3-autopilot`). Orca checks the model and effort of every worker it starts, and t3-autopilot follows the same rules, so it never recommends a launch Orca would refuse:
+2. **t3-autopilot builds the list of agents,** one per agent Orca lists, keyed by the id the [agent catalog](../reference.md#agent-catalog) gives it: Orca's `opencode2` is OpenCode. The models and efforts of each come from that catalog: aliases that do not go stale, such as Claude Code's `opus` and `sonnet`, or `default` for the model set in the CLI's own configuration (Codex, Grok). Your additions go in `catalog.yaml` in the data directory (`~/.t3-autopilot`). Orca checks the model and effort of every worker it starts, and t3-autopilot follows the same rules, as Orca's source has them at the commit [below](#checked-against), so it does not recommend a launch those checks refuse (what only Orca can know, such as whether it has verified your OpenCode, is under [Limitations](#limitations)):
 
    - **An effort needs a model.** `default` starts the CLI without `--model`, so it gets no `--effort` either (Codex's and Grok's built-in entry). List their model ids in `catalog.yaml` to choose an effort.
    - **Only some agents take a model.** Orca's `worker-start` takes `--model` for Claude Code, Codex, Cursor Agent, Antigravity, Grok, Muse, Pi, OpenCode (`opencode`), OMP and CodeBuddy. Every other agent, Gemini CLI, Kiro and Orca's `opencode2` among them, starts with the model set in its own configuration, so it is offered `default` only, whatever `catalog.yaml` lists for it.
    - **Pi takes `provider/id` models** (`openai/gpt-9.1-sol`); other ids for it are left out, with a warning.
-   - **Only an effort Orca's menu has.** Orca refuses an effort that is not in its menu for the agent, and OpenCode's has none, so OpenCode never gets `--effort`, whatever `catalog.yaml` gives it. The efforts of yours left out are named in a warning.
-   - **Claude Code's `haiku` takes no effort**, as in Orca's own catalog.
+   - **Only an effort of Orca's menu for the model.** Orca keeps a menu of efforts for each model its catalog lists, and one for any other model id of the agent, and refuses an effort that is not in it: OpenCode takes none, nor Claude Code's `haiku`; Grok's `grok-4.5` stops at `high`; Cursor takes one only with the models Orca lists with a menu, such as `gpt-5.3-codex`, and writes it into the model id. t3-autopilot offers each model only the efforts of its menu, whatever `catalog.yaml` gives it, and a warning names the ones of yours left out.
 
 3. **It recommends, as in T3 Code,** with the same policy, subscription profiles and marks: up to three candidates, best first, each with its reason. In Orca the result also says `"host": "orca"`, and each candidate has `launch`, the command that starts it:
 
@@ -132,7 +131,7 @@ Later calls can leave `capabilities` out: the server keeps the list per session 
 | `mode` | `supervised`: the worker reports back to the orchestrator with `worker_done`. |
 | `agent` | The id Orca's `--agent` takes. It is the candidate's `providerInstanceId`, except for an agent Orca names otherwise (`opencode2` for OpenCode 2). |
 | `model` | The model passed with `--model`. Absent for `default`: the CLI uses the model set in its own configuration. |
-| `effort` | The effort passed with `--effort`. Absent when there is no model, or the model takes none. |
+| `effort` | The effort passed with `--effort`. Absent when there is no model, or Orca's menu for the model does not have the candidate's (or has none). |
 | `args` | `--agent`, `--model` and `--effort` with their values: what to use with another Orca command that starts an agent (`orca agent launch` or `orca worktree create --agent`, for a handoff with nothing expected back). |
 | `argv` | The command, one element per argument. `{briefFile}` is a whole element to replace. The orchestrator runs it as one shell command, each element in single quotes (after `&` in PowerShell, in double quotes in cmd.exe) and the first one replaced by Orca's command (see step 4 above). |
 | `notes` | What the orchestrator should know: Orca's command, an option it cannot pass, OpenCode's worktree and, on Windows, how to quote in PowerShell and cmd.exe, in the words of the instructions. |
@@ -166,7 +165,7 @@ agents:
     models: [openai/gpt-9.1-sol, anthropic/claude-opus-9-2]
 ```
 
-Orca checks an effort against its own menu for the model, so an effort it does not list for that model is refused at start. If that happens with a model you declared, give it its own `efforts` in `catalog.yaml` (`{ id: grok-9-mini, efforts: [low, medium, high] }`). The [agent catalog](../reference.md#agent-catalog) section of the reference has every key.
+Orca checks an effort against its own menu for the model (see step 2 of [How it works](#how-it-works)), and t3-autopilot offers a model you declare only the efforts of that menu, with a warning for the ones it leaves out: a model Orca does not list, such as a versioned Claude id, is checked against the agent's menu for other models, which goes from `low` to `max` for Claude Code, from `minimal` to `ultra` for Codex and from `low` to `xhigh` for Grok. To offer fewer, give the model its own `efforts` in `catalog.yaml` (`{ id: grok-9-mini, efforts: [low, medium, high] }`). The [agent catalog](../reference.md#agent-catalog) section of the reference has every key.
 
 ### Agents t3-autopilot does not know
 
@@ -189,7 +188,7 @@ Orca's marks, subscription profiles and log records are kept in the same files a
 - **Other machines are not covered:** workers on a paired Orca server (`--on`), and workspaces on SSH hosts or WSL, whose agents `orca agent installed` without `--worktree` does not list. The recipe pins `worker-start` to this machine's Orca (`--environment local`).
 - **One account per agent CLI.** Orca's account for an agent is global, not chosen per worker, so there is one provider, and one subscription profile, per agent.
 - **Usage limits are shown only in Orca's interface.** Signs that a worker hit one: `worker-start` fails, or the orchestrator gets an `escalation` with `stopReason` `errored` or `exited` right after the start. Then call `mark_unavailable`.
-- **Which agents take `--model` is t3-autopilot's copy of Orca's list** at the version below. An agent that a later Orca lets pick a model is offered its default model until t3-autopilot's list follows.
+- **Which agents take `--model`, and the efforts of each model, are t3-autopilot's copy of Orca's lists** at the version below. An agent that a later Orca lets pick a model is offered its default model, and an effort a later Orca adds to a menu is left out, until t3-autopilot's copy follows; one a later Orca takes out of a menu is refused at start, and the orchestrator moves on to the next candidate.
 - **OpenCode with a model** needs a workspace that exists and an OpenCode that Orca has verified; otherwise Orca refuses the model, and the orchestrator moves on to the next candidate.
 - **Windows** was not tried with Orca itself, only the quoting of the instructions, against a stand-in for Orca's command. In cmd.exe, a `%` in a path can still expand an environment variable, so keep the brief file's path free of `%` there.
 - **`sameAsOrchestrator`** is true only when the orchestrator's `model` is written as the catalog writes it (`opus`, not `claude-opus-9-2`).

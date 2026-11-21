@@ -423,6 +423,44 @@ describe("the Orca catalog", () => {
     expect(Object.keys(ORCA_EFFORTS).sort()).toEqual([...ORCA_MODEL_AGENTS].sort());
   });
 
+  it("checks each effort against Orca's menu for the model, as Orca does: haiku takes none, grok-4.5 stops at high", () => {
+    const home = tempDir();
+    writeFileSync(
+      join(home, "catalog.yaml"),
+      "agents:\n" +
+        "  claude: { models: [opus, { id: haiku, efforts: [low] }, claude-opus-9-2] }\n" +
+        "  grok: { models: [grok-4.5, grok-9] }\n" +
+        "  codex: { models: [gpt-5.5, gpt-9.2-codex], efforts: [low, high, xhigh, max] }\n" +
+        "  cursor: { models: [gpt-5.3-codex, gpt-9.3-codex-high], efforts: [low, medium, high] }\n",
+    );
+    const { capabilities, notes } = build(
+      { agents: [{ id: "claude" }, { id: "grok" }, { id: "codex" }, { id: "cursor" }] },
+      home,
+    );
+    const efforts = Object.fromEntries(
+      capabilities.providers.flatMap((p) =>
+        p.models.map((m) => [`${p.providerInstanceId}/${m.id}`, m.options?.find((o) => o.id === "effort")?.values]),
+      ),
+    );
+    const claude = ["low", "medium", "high", "xhigh", "max"];
+    expect(efforts).toEqual({
+      "claude/opus": claude,
+      "claude/haiku": undefined,
+      // A model Orca's catalog does not list: the agent's menu for other models.
+      "claude/claude-opus-9-2": claude,
+      "grok/grok-4.5": ["low", "medium", "high"],
+      "grok/grok-9": ["low", "medium", "high", "xhigh"],
+      "codex/gpt-5.5": ["low", "high", "xhigh"],
+      "codex/gpt-9.2-codex": ["low", "high", "xhigh", "max"],
+      "cursor/gpt-5.3-codex": ["low", "medium", "high"],
+      "cursor/gpt-9.3-codex-high": undefined,
+    });
+    expect(notes).toEqual([
+      "Orca refuses these efforts at start, so they are not offered: low for claude's haiku; xhigh for grok's " +
+        "grok-4.5; max for codex's gpt-5.5; low, medium and high for cursor's gpt-9.3-codex-high.",
+    ]);
+  });
+
   it("offers an agent the catalog does not know with its default model, under Orca's name for it", () => {
     const { capabilities, notes } = build({ agents: [{ id: "goose", name: "Goose" }, { id: "omp" }, { id: "x.y" }] });
     expect(capabilities.providers.map((p) => [p.providerInstanceId, p.displayName, p.driverKind])).toEqual([
@@ -556,10 +594,25 @@ describe("the launch command for Orca", () => {
     expect(opencode).not.toHaveProperty("effort");
     expect(opencode.args).toEqual(["--agent", "opencode", "--model", "anthropic/claude-opus-9-2"]);
     expect(opencode.notes?.[0]).toBe("No --effort: Orca takes none for opencode.");
-    // An effort outside the menu of an agent that takes some.
+    // An effort outside the menu of an agent that takes some, or of the model: Orca's haiku takes none.
     const codex = launch(candidate("codex", "gpt-9.2-codex", "none"));
     expect(codex.args).toEqual(["--agent", "codex", "--model", "gpt-9.2-codex"]);
     expect(codex.notes?.[0]).toBe("No --effort: Orca refuses none for codex's gpt-9.2-codex.");
+    const haiku = launch(candidate("claude", "haiku", "low"));
+    expect(haiku.args).toEqual(["--agent", "claude", "--model", "haiku"]);
+    expect(haiku.notes?.[0]).toBe("No --effort: Orca refuses low for claude's haiku.");
+    const grok = orca.catalog({ capabilities: { agents: [{ id: "grok" }] } }, ctx).capabilities.providers[0];
+    expect(launch(candidate("grok", "grok-4.5", "xhigh"), ctx, grok).notes?.[0]).toBe(
+      "No --effort: Orca refuses xhigh for grok's grok-4.5.",
+    );
+    expect(launch(candidate("grok", "grok-4.5", "high"), ctx, grok).args).toEqual([
+      "--agent",
+      "grok",
+      "--model",
+      "grok-4.5",
+      "--effort",
+      "high",
+    ]);
   });
 
   it("passes Orca's id for the agent: opencode2 for OpenCode 2", () => {

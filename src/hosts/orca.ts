@@ -44,38 +44,56 @@ export const ORCA_MODEL_AGENTS: ReadonlySet<string> = new Set([
 const LOW_TO_HIGH = ["low", "medium", "high"];
 const LOW_TO_XHIGH = [...LOW_TO_HIGH, "xhigh"];
 const LOW_TO_MAX = [...LOW_TO_XHIGH, "max"];
-const MINIMAL_TO_MAX = ["minimal", ...LOW_TO_MAX];
+const MINIMAL_TO_XHIGH = ["minimal", ...LOW_TO_XHIGH];
+const MINIMAL_TO_MAX = [...MINIMAL_TO_XHIGH, "max"];
 const MINIMAL_TO_ULTRA = [...MINIMAL_TO_MAX, "ultra"];
 const OFF_TO_MAX = ["off", ...MINIMAL_TO_MAX];
 
+/** An agent's effort menus in Orca. */
+export interface OrcaEffortMenus {
+  /** For a model id the agent's launch catalog does not list (`unknownModelOptions`); [] when it has none. */
+  other: readonly string[];
+  /** The models it lists whose menu is another, by model id; [] for a model that takes no effort. */
+  models?: Readonly<Record<string, readonly string[]>>;
+}
+
 /**
  * The efforts Orca's worker-start takes for the models of each agent of {@link ORCA_MODEL_AGENTS}, by Orca agent id:
- * the effort menu of the agent's launch catalog for a model id it does not list (`unknownModelOptions`), none when it
- * has no such menu, as OpenCode's launch catalog. Orca refuses any other effort at start
- * (checkAgentLaunchModelPreferences, in src/shared/agent-launch/choices/agent-launch-model-preferences.ts). The
- * menus are in src/shared/agent-session/options/catalog-providers/, read at commit e955bff.
+ * the effort menus of the agents' launch catalogs, in src/shared/agent-session/options/catalog-providers/, read at
+ * commit e955bff. Orca checks an effort against the menu of the model when its catalog lists the model, else
+ * against the menu for other models, and refuses one that is not there (checkAgentLaunchModelPreferences, in
+ * src/shared/agent-launch/choices/agent-launch-model-preferences.ts). Its checks use these seed lists, not the
+ * models the CLIs list at run time.
  */
-export const ORCA_EFFORTS: Readonly<Record<string, readonly string[]>> = {
-  claude: LOW_TO_MAX,
-  codex: MINIMAL_TO_ULTRA,
-  // Orca's Cursor menu belongs to the models it lists; Cursor writes the effort into the model id.
-  cursor: [],
-  antigravity: LOW_TO_HIGH,
-  grok: LOW_TO_XHIGH,
-  muse: MINIMAL_TO_ULTRA,
-  pi: OFF_TO_MAX,
-  opencode: [],
-  omp: [...OFF_TO_MAX, "auto"],
-  codebuddy: MINIMAL_TO_MAX,
+export const ORCA_EFFORTS: Readonly<Record<string, OrcaEffortMenus>> = {
+  claude: { other: LOW_TO_MAX, models: { haiku: [] } },
+  codex: {
+    other: MINIMAL_TO_ULTRA,
+    models: { "gpt-5.6-luna": MINIMAL_TO_MAX, "gpt-5.5": MINIMAL_TO_XHIGH, "gpt-5.2-codex": MINIMAL_TO_XHIGH },
+  },
+  // Cursor composes the effort into the model id it starts, only for the models Orca lists with a menu.
+  cursor: { other: [], models: { "gpt-5.3-codex": LOW_TO_HIGH, "claude-opus-4-8": LOW_TO_HIGH } },
+  antigravity: { other: LOW_TO_HIGH },
+  grok: { other: LOW_TO_XHIGH, models: { "grok-4.5": LOW_TO_HIGH } },
+  muse: { other: MINIMAL_TO_ULTRA },
+  pi: { other: OFF_TO_MAX },
+  opencode: { other: [] },
+  omp: { other: [...OFF_TO_MAX, "auto"] },
+  codebuddy: { other: MINIMAL_TO_MAX },
 };
 
-/** The efforts Orca's worker-start takes for an agent's models: none for an agent that takes no `--model`. */
-export function orcaEfforts(agent: string): readonly string[] {
-  return Object.hasOwn(ORCA_EFFORTS, agent) ? (ORCA_EFFORTS[agent] ?? []) : [];
+/** The efforts Orca's worker-start takes for a model of an agent: none for an agent that takes no `--model`. */
+export function orcaEfforts(agent: string, model: string): readonly string[] {
+  const menus = Object.hasOwn(ORCA_EFFORTS, agent) ? ORCA_EFFORTS[agent] : undefined;
+  if (menus === undefined) return [];
+  return menus.models !== undefined && Object.hasOwn(menus.models, model) ? (menus.models[model] ?? []) : menus.other;
 }
 
 /** Whether Orca takes an effort for some model of an agent. */
-const takesEfforts = (agent: string) => orcaEfforts(agent).length > 0;
+function takesEfforts(agent: string): boolean {
+  const menus = Object.hasOwn(ORCA_EFFORTS, agent) ? ORCA_EFFORTS[agent] : undefined;
+  return menus !== undefined && [menus.other, ...Object.values(menus.models ?? {})].some((m) => m.length > 0);
+}
 
 /**
  * A model with only the efforts Orca takes for it, so the engine picks an effort among those; what it leaves out is
@@ -84,7 +102,7 @@ const takesEfforts = (agent: string) => orcaEfforts(agent).length > 0;
 function withOrcaEfforts(agent: string, model: Model, refused: string[]): Model {
   const effort = model.options?.find((o) => o.id === "effort");
   if (effort?.values === undefined) return model;
-  const menu = orcaEfforts(agent);
+  const menu = orcaEfforts(agent, model.id);
   const kept = effort.values.filter((v) => typeof v === "string" && menu.includes(v));
   if (kept.length === effort.values.length) return model;
   refused.push(`${list(effort.values.filter((v) => !kept.includes(v)).map(String))} for ${agent}'s ${model.id}`);
@@ -344,7 +362,7 @@ function launch(candidate: Candidate, ctx: HostContext, provider: Provider): Lau
   // Orca refuses an effort without --model, and one its menu does not have. The catalog never offers either, but the
   // orchestrator's own options, a last resort, may hold one: it is left out, and a note says why.
   const effort =
-    model !== undefined && wanted !== undefined && orcaEfforts(agent).includes(wanted) ? wanted : undefined;
+    model !== undefined && wanted !== undefined && orcaEfforts(agent, model).includes(wanted) ? wanted : undefined;
   const notes: string[] = [];
   if (!takesEfforts(agent)) {
     if (wanted !== undefined) notes.push(`No --effort: Orca takes none for ${agent}.`);
