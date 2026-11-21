@@ -1,0 +1,200 @@
+capabilities-2026-11-20.json | code | e9b4052f9fa33bc1 claudeAgent/claude-opus-5-5 cursor/claude-opus-5-5 opencode/opencode/claude-opus-5-5
+capabilities-2026-11-20.json | debug | d7fc0fe05df9ee22 claudeAgent/claude-opus-5-5 cursor/claude-opus-5-5 opencode/opencode/claude-opus-5-5
+capabilities-2026-11-20.json | design | 4412b700ddb5e250 claudeAgent/claude-opus-5-5 cursor/gemini-4-neon claudeAgent/claude-fable-5-2
+capabilities-2026-11-20.json | plan | c670da715faf46b1 claudeAgent/claude-opus-5-5 claudeAgent/claude-fable-5-2 cursor/claude-opus-5-5
+capabilities-2026-11-20.json | quick | 8b52be14c5c14829 claudeAgent/claude-haiku-5-5 cursor/composer-2.5 opencode/opencode-go/beam-free
+capabilities-2026-11-20.json | research | 052e71a0b90f1329 claudeAgent/claude-sonnet-5-5 grok/grok-4.7 cursor/gemini-4-neon
+capabilities-2026-11-20.json | review | 84bca76ef318c17d cursor/gemini-4-neon grok/grok-4.7 cursor/claude-opus-5-5
+capabilities-2026-11-20.json | writing | 43473c93612a98b3 claudeAgent/claude-opus-5-5 claudeAgent/claude-fable-5-2 cursor/claude-opus-5-5
+capabilities-2026-11-20.json | code large high | b42cf8d58bf3e648 claudeAgent/claude-opus-5-5 cursor/claude-opus-5-5 opencode/opencode/claude-opus-5-5
+capabilities-2026-11-20.json | classified | 55ed5400480b1e7b cursor/gemini-4-neon grok/grok-4.7 cursor/claude-opus-5-5
+capabilities.json | code | 6e861ca5f067dcfb claudeAgent/claude-opus-7-1 codex/gpt-6.2-codex cursor/claude-opus-7
+capabilities.json | debug | 37598eeb021cb39c claudeAgent/claude-opus-7-1 codex/gpt-6.2-codex cursor/claude-opus-7
+capabilities.json | design | ba3e13c64e4d1499 claudeAgent/claude-opus-7-1 cursor/gemini-5.1-pro claudeAgent/claude-fable-6-3
+capabilities.json | plan | 895ccd1ae13e60a7 claudeAgent/claude-opus-7-1 codex/gpt-6.2-codex claudeAgent/claude-fable-6-3
+capabilities.json | quick | de6993bf0514f565 claudeAgent/claude-haiku-7-0 cursor/composer-3 codex/gpt-6.2-mini
+capabilities.json | research | ad4ba3f20b3b5ad5 claudeAgent/claude-sonnet-7-1 grok/grok-6 cursor/gemini-5.1-pro
+capabilities.json | review | bc505a403c68e1b7 codex/gpt-6.2-codex cursor/gemini-5.1-pro grok/grok-6
+capabilities.json | writing | 171dee61f94c173e claudeAgent/claude-opus-7-1 claudeAgent/claude-fable-6-3 cursor/claude-opus-7
+capabilities.json | code large high | c4f53419c5d9f7ba claudeAgent/claude-opus-7-1 codex/gpt-6.2-codex cursor/claude-opus-7
+capabilities.json | classified | 09f24299b37b750b codex/gpt-6.2-codex cursor/gemini-5.1-pro grok/grok-6
+drivers/acpRegistry.json | code | c06e2ae5f3c50c1c acp-vibe/default
+drivers/acpRegistry.json | debug | 405cc7f21859c292 acp-vibe/default
+drivers/acpRegistry.json | design | e25455af99fc82fe acp-vibe/default
+drivers/acpRegistry.json | plan | e0b2e6c18aeebba7 acp-vibe/default
+drivers/acpRegistry.json | quick | f81fabce55c17d17 acp-vibe/default
+drivers/acpRegistry.json | research | 44e17b5c25199e0f acp-vibe/default
+drivers/acpRegistry.json | review | 942844e2006ca32c acp-vibe/default
+drivers/acpRegistry.json | writing | 0408bf14ea2e12bd acp-vibe/default
+drivers/acpRegistry.json | code large high | c06e2ae5f3c50c1c acp-vibe/default
+drivers/acpRegistry.json | classified | c613f46176d8cf12 acp-vibe/default
+drivers/all-disabled.json | code | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | debug | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | design | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | plan | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | quick | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | research | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | review | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | writing | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | code large high | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/all-disabled.json | classified | 18bc31df95bfe762 error: No provider instance can run a child task (claudeAgent: Provider instance is disabled; cursor: Provider executable is not installed; grok: Provider is not authenticated). Enable or sign in to a provider in T3 Code (Settings → Providers), or remove it from excludeProviders.
+drivers/antigravity.json | code | 160bffea0850de99 antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | debug | 70d434076836c189 antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | design | 55e9fc1445717c7c antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | plan | aaefffcf8a4e7509 antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | quick | b82e53fc4ce07f16 antigravity/gemini-6.8-flash-high antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | research | c6a63bbb968863f7 antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | review | ddcb96f8f632aaa0 antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | writing | 11703cdb68d4438c antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | code large high | 160bffea0850de99 antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/antigravity.json | classified | 4626d05f265a6d4d antigravity/gemini-7-carbon antigravity/antigravity-default
+drivers/claudeAgent.json | code | f9db590667c61a83 claudeAgent/claude-opus-9-2 claudeAgent/claude-sonnet-9-1
+drivers/claudeAgent.json | debug | 4c959540c16a423b claudeAgent/claude-opus-9-2 claudeAgent/claude-sonnet-9-1
+drivers/claudeAgent.json | design | 65d634a3ede05d20 claudeAgent/claude-opus-9-2 claudeAgent/claude-fable-8-3 claudeAgent/claude-sonnet-9-1
+drivers/claudeAgent.json | plan | 8a54c0f28add1cb8 claudeAgent/claude-opus-9-2 claudeAgent/claude-fable-8-3 claudeAgent/claude-sonnet-9-1
+drivers/claudeAgent.json | quick | d153d101ba60a9d4 claudeAgent/claude-haiku-9-0 claudeAgent/claude-sonnet-9-1 claudeAgent/claude-opus-9-2
+drivers/claudeAgent.json | research | 2e9d7a5737a60621 claudeAgent/claude-sonnet-9-1 claudeAgent/claude-opus-9-2
+drivers/claudeAgent.json | review | 2f9dda608dd231ac claudeAgent/claude-opus-9-2 claudeAgent/claude-sonnet-9-1
+drivers/claudeAgent.json | writing | 1736c91523fe263b claudeAgent/claude-opus-9-2 claudeAgent/claude-fable-8-3 claudeAgent/claude-sonnet-9-1
+drivers/claudeAgent.json | code large high | 6295c6567fbf223f claudeAgent/claude-opus-9-2 claudeAgent/claude-sonnet-9-1
+drivers/claudeAgent.json | classified | cc4f0960222c7f11 claudeAgent/claude-opus-9-2 claudeAgent/claude-sonnet-9-1
+drivers/codex.json | code | 656076858acefa09 codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | debug | aaf3291b9bec672c codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | design | 466801cefcbc41ca codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | plan | 475882b2e64b67e3 codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | quick | 1f38ad03c224b730 codex/gpt-9-luna codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | research | 1e9b4abcfde30729 codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | review | ee1fb1751781ee50 codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | writing | 6b81a1ed8320dacc codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | code large high | 6a15d3870c8ea1bc codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/codex.json | classified | 1a56ee65851f5771 codex/gpt-9.1-sol codex/gpt-9-astra
+drivers/cursor.json | code | 8c6b121da6accfeb cursor/claude-opus-9-1 cursor/composer-4 cursor/gpt-9.1-sol
+drivers/cursor.json | debug | c9eae70bb5ee079c cursor/claude-opus-9-1 cursor/gpt-9.1-sol cursor/gemini-7-pro
+drivers/cursor.json | design | e58eb65c4540ba12 cursor/gemini-7-pro cursor/claude-opus-9-1 cursor/gpt-9.1-sol
+drivers/cursor.json | plan | 3a008d9c8c35f175 cursor/claude-opus-9-1 cursor/gpt-9.1-sol cursor/gemini-7-pro
+drivers/cursor.json | quick | 4e6bc9bb3581f30a cursor/composer-4 cursor/gemini-7.5-flash-lite cursor/claude-opus-9-1
+drivers/cursor.json | research | de21740dd2443184 cursor/gemini-7-pro cursor/gpt-9.1-sol cursor/claude-opus-9-1
+drivers/cursor.json | review | 1fe550df5104e3a5 cursor/gpt-9.1-sol cursor/gemini-7-pro cursor/claude-opus-9-1
+drivers/cursor.json | writing | 6ac4b194ef43858d cursor/claude-opus-9-1 cursor/gemini-7-pro cursor/gpt-9.1-sol
+drivers/cursor.json | code large high | 38988e0c25a195ff cursor/claude-opus-9-1 cursor/composer-4 cursor/gpt-9.1-sol
+drivers/cursor.json | classified | 3029617fa2f34cc2 cursor/gpt-9.1-sol cursor/gemini-7-pro cursor/claude-opus-9-1
+drivers/fx.json | code | 9ccfb7933465b2fe fx/default
+drivers/fx.json | debug | 29ebea3b4ebde03c fx/default
+drivers/fx.json | design | 3e841afc0333024b fx/default
+drivers/fx.json | plan | cdf775f375a91805 fx/default
+drivers/fx.json | quick | c551c8ccc09a667c fx/default
+drivers/fx.json | research | d2f62e1e12e03d47 fx/default
+drivers/fx.json | review | 527a47d5fa30abbd fx/default
+drivers/fx.json | writing | 1b3f5ab62145a6e5 fx/default
+drivers/fx.json | code large high | 2126758105ef0d87 fx/default
+drivers/fx.json | classified | a678ca55a90defda fx/default
+drivers/grok.json | code | 3f6828389b6d7d57 grok/grok-8-build grok/grok-8.1 grok/grok-build
+drivers/grok.json | debug | e226e56d197a5f1f grok/grok-8-build grok/grok-8.1 grok/grok-build
+drivers/grok.json | design | 1dd71a37ef981b80 grok/grok-8-build grok/grok-8.1 grok/grok-build
+drivers/grok.json | plan | b887acafd9fb3840 grok/grok-8-build grok/grok-8.1 grok/grok-build
+drivers/grok.json | quick | 75f49a90e882da54 grok/grok-8.1-fast grok/grok-8-build grok/grok-8.1
+drivers/grok.json | research | 05b5d5399cd4d268 grok/grok-8.1 grok/grok-8-build grok/grok-build
+drivers/grok.json | review | 98758ab8beb89f09 grok/grok-8.1 grok/grok-8-build grok/grok-build
+drivers/grok.json | writing | 3e8627f9a2b10ed7 grok/grok-8-build grok/grok-8.1 grok/grok-build
+drivers/grok.json | code large high | 2784df7ca64440d2 grok/grok-8-build grok/grok-8.1 grok/grok-build
+drivers/grok.json | classified | 1955250ad734e492 grok/grok-8.1 grok/grok-8-build grok/grok-build
+drivers/kiro.json | code | 8ea6d42a9f087272 kiro/claude-opus-9.1 kiro/gpt-8.6-sol kiro/kimi-k5
+drivers/kiro.json | debug | 6bfc537387d692d4 kiro/claude-opus-9.1 kiro/gpt-8.6-sol kiro/kimi-k5
+drivers/kiro.json | design | 8bab8fcadaa1cea2 kiro/claude-opus-9.1 kiro/gpt-8.6-sol kiro/claude-sonnet-9.1
+drivers/kiro.json | plan | fa1991353c429661 kiro/claude-opus-9.1 kiro/gpt-8.6-sol kiro/kimi-k5
+drivers/kiro.json | quick | 02d03e9f405c4eef kiro/claude-sonnet-9.1 kiro/claude-opus-9.1 kiro/gpt-8.6-sol
+drivers/kiro.json | research | 6d2871140aab7aa7 kiro/claude-sonnet-9.1 kiro/gpt-8.6-sol kiro/kimi-k5
+drivers/kiro.json | review | ddeccce79da33752 kiro/gpt-8.6-sol kiro/claude-opus-9.1 kiro/kimi-k5
+drivers/kiro.json | writing | 2204b6945a496827 kiro/claude-opus-9.1 kiro/claude-sonnet-9.1 kiro/gpt-8.6-sol
+drivers/kiro.json | code large high | 6b4a80d33cbe5db2 kiro/claude-opus-9.1 kiro/gpt-8.6-sol kiro/kimi-k5
+drivers/kiro.json | classified | 0f02a3556265da2d kiro/gpt-8.6-sol kiro/claude-opus-9.1 kiro/kimi-k5
+drivers/mixed.json | code | b63df1c10c5cdfdc codex/gpt-9.1-sol cursor/claude-opus-9-1 opencode/openrouter/anthropic/claude-opus-9.1
+drivers/mixed.json | debug | 52f157a4e60ecb5d codex/gpt-9.1-sol cursor/claude-opus-9-1 opencode/openrouter/anthropic/claude-opus-9.1
+drivers/mixed.json | design | f0036b7523abbe71 cursor/gemini-7-pro pi/google/gemini-7-pro cursor/claude-opus-9-1
+drivers/mixed.json | plan | 97a11416f0f522e1 codex/gpt-9.1-sol cursor/claude-opus-9-1 opencode/openrouter/anthropic/claude-opus-9.1
+drivers/mixed.json | quick | e147bab60aebd99c cursor/composer-4 codex/gpt-9-luna opencode/opencode/nova-3-free
+drivers/mixed.json | research | bbe57c75ea03c199 cursor/gemini-7-pro pi/google/gemini-7-pro opencode/anthropic/claude-sonnet-9-1
+drivers/mixed.json | review | 0dc5f44d87a9f64b cursor/gpt-9.1-sol opencode/openai/gpt-9.1-sol kiro/gpt-8.6-sol
+drivers/mixed.json | writing | 248df5e7039953fb cursor/claude-opus-9-1 opencode/openrouter/anthropic/claude-opus-9.1 kiro/claude-opus-9.1
+drivers/mixed.json | code large high | ace538ca35f94fc8 codex/gpt-9.1-sol cursor/claude-opus-9-1 opencode/openrouter/anthropic/claude-opus-9.1
+drivers/mixed.json | classified | 122194bbcc965efb cursor/gpt-9.1-sol opencode/openai/gpt-9.1-sol kiro/gpt-8.6-sol
+drivers/multi-instance.json | code | 3cc8ac390650a1ee claudeAgent/claude-opus-9-2 claudeAgent-work/claude-opus-9-2 codex/gpt-9.1-sol
+drivers/multi-instance.json | debug | a60913c7fff35b55 claudeAgent/claude-opus-9-2 claudeAgent-work/claude-opus-9-2 codex/gpt-9.1-sol
+drivers/multi-instance.json | design | 992d0e80b172e427 claudeAgent/claude-opus-9-2 claudeAgent-work/claude-opus-9-2 claudeAgent/claude-fable-8-3
+drivers/multi-instance.json | plan | 27e5dbdd4af08998 claudeAgent/claude-opus-9-2 claudeAgent-work/claude-opus-9-2 codex/gpt-9.1-sol
+drivers/multi-instance.json | quick | bcf59f229379289e claudeAgent/claude-haiku-9-0 claudeAgent-work/claude-haiku-9-0 codex/gpt-9-luna
+drivers/multi-instance.json | research | ffff235e305a42e3 claudeAgent/claude-sonnet-9-1 claudeAgent-work/claude-sonnet-9-1 codex/gpt-9.1-sol
+drivers/multi-instance.json | review | 3b2ca13ffc2c3799 codex/gpt-9.1-sol codex-team/gpt-9-astra claudeAgent-work/claude-opus-9-2
+drivers/multi-instance.json | writing | 615d8d06ab0b9b1b claudeAgent/claude-opus-9-2 claudeAgent-work/claude-opus-9-2 claudeAgent/claude-fable-8-3
+drivers/multi-instance.json | code large high | dadb0f0aa087610a claudeAgent/claude-opus-9-2 claudeAgent-work/claude-opus-9-2 codex/gpt-9.1-sol
+drivers/multi-instance.json | classified | b1208d9e2c3261ab codex/gpt-9.1-sol codex-team/gpt-9-astra claudeAgent-work/claude-opus-9-2
+drivers/muse.json | code | 27af9961425d10c4 muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | debug | 947eea32919c2269 muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | design | 7ab6fa468c481e76 muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | plan | e3c0545045a0dbed muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | quick | 5f70d6e9f3d0b627 muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | research | ccf572a857a23437 muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | review | 05231d216a84c245 muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | writing | 6996e1c800337836 muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | code large high | 0fd784b2ee0c86ff muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/muse.json | classified | 516d7a3ed052da46 muse/muse-spark-3.1 muse/muse-wonder-2.0 muse/default
+drivers/opencode.json | code | 050d766afc6e5ae3 opencode/openrouter/anthropic/claude-opus-9.1 opencode/openai/gpt-9.1-sol opencode/opencode-go/kimi-k5
+drivers/opencode.json | debug | ca8531111d8ce727 opencode/openrouter/anthropic/claude-opus-9.1 opencode/openai/gpt-9.1-sol opencode/opencode-go/kimi-k5
+drivers/opencode.json | design | 09b126e8bf62602a opencode/openrouter/anthropic/claude-opus-9.1 opencode/openai/gpt-9.1-sol opencode/anthropic/claude-sonnet-9-1
+drivers/opencode.json | plan | 64b391f3c36488fe opencode/openrouter/anthropic/claude-opus-9.1 opencode/openai/gpt-9.1-sol opencode/opencode-go/kimi-k5
+drivers/opencode.json | quick | f38cb4142ccadce5 opencode/opencode/nova-3-free opencode/anthropic/claude-sonnet-9-1 opencode/openrouter/anthropic/claude-opus-9.1
+drivers/opencode.json | research | 4f1359a49b8b7381 opencode/anthropic/claude-sonnet-9-1 opencode/openai/gpt-9.1-sol opencode/opencode-go/kimi-k5
+drivers/opencode.json | review | 8dde80cb113915db opencode/openai/gpt-9.1-sol opencode/openrouter/anthropic/claude-opus-9.1 opencode/opencode-go/kimi-k5
+drivers/opencode.json | writing | 35c71ffcb2e04e91 opencode/openrouter/anthropic/claude-opus-9.1 opencode/anthropic/claude-sonnet-9-1 opencode/openai/gpt-9.1-sol
+drivers/opencode.json | code large high | e05fc9da2d3fce3d opencode/openrouter/anthropic/claude-opus-9.1 opencode/openai/gpt-9.1-sol opencode/opencode-go/kimi-k5
+drivers/opencode.json | classified | 9fe89edaee1c111c opencode/openai/gpt-9.1-sol opencode/openrouter/anthropic/claude-opus-9.1 opencode/opencode-go/kimi-k5
+drivers/pi.json | code | 18e410eafc61e423 pi/anthropic/claude-opus-9-1 pi/google/gemini-7-pro pi/openrouter/qwen/qwen5-coder-plus
+drivers/pi.json | debug | aa06a4b6b2128376 pi/anthropic/claude-opus-9-1 pi/google/gemini-7-pro pi/default
+drivers/pi.json | design | fb816278225ba6ae pi/google/gemini-7-pro pi/anthropic/claude-opus-9-1 pi/default
+drivers/pi.json | plan | 759b725824005229 pi/anthropic/claude-opus-9-1 pi/google/gemini-7-pro pi/default
+drivers/pi.json | quick | 9bc2d8e3f3ce4d54 pi/anthropic/claude-opus-9-1 pi/google/gemini-7-pro pi/default
+drivers/pi.json | research | d48c95c12a04b9cc pi/google/gemini-7-pro pi/anthropic/claude-opus-9-1 pi/default
+drivers/pi.json | review | 5d7e38353f8d6281 pi/google/gemini-7-pro pi/anthropic/claude-opus-9-1 pi/default
+drivers/pi.json | writing | 4b18c6ae61416fd3 pi/anthropic/claude-opus-9-1 pi/google/gemini-7-pro pi/default
+drivers/pi.json | code large high | 7c00596611c80d60 pi/anthropic/claude-opus-9-1 pi/google/gemini-7-pro pi/openrouter/qwen/qwen5-coder-plus
+drivers/pi.json | classified | 1760fca8075d596e pi/google/gemini-7-pro pi/anthropic/claude-opus-9-1 pi/default
+drivers/search-cursor-gemini.json | code | d9e32535a2c8e59d cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | debug | 57cd669ad3e45054 cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | design | 2dc6518d13ec14c8 cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | plan | e63b3e6203190ab7 cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | quick | e5e45718605e18ad cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | research | 2509a41efd23f6f5 cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | review | 8631ecf100db8211 cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | writing | facd73a81db8dab1 cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | code large high | c3ba5e88e9aa3fa4 cursor/gemini-8-pro
+drivers/search-cursor-gemini.json | classified | 5370a79551fa261b cursor/gemini-8-pro
+drivers/search-mixed-cursor-opus.json | code | 7d286ee2ed655e02 cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | debug | 68311778c7573668 cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | design | f86cc66dbd670858 cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | plan | 325bd5228b9a9958 cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | quick | dbeb0ef7a842e24c cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | research | bd6cda97c02c65b7 cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | review | ee95299e6d30a3cd cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | writing | 4f0c6d92ead61867 cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | code large high | 951853186cdac453 cursor/claude-opus-9-2 kiro/default pi/default
+drivers/search-mixed-cursor-opus.json | classified | d21ac495f3f5a635 cursor/claude-opus-9-2 kiro/default pi/default
+drivers/unknown-only.json | code | 9bfa06ae959d57e5 sparrow/sparrow-large
+drivers/unknown-only.json | debug | 2c153ee780612b62 sparrow/sparrow-large
+drivers/unknown-only.json | design | f299b57dfb227792 sparrow/sparrow-large
+drivers/unknown-only.json | plan | 3c7c2002d21dba5b sparrow/sparrow-large
+drivers/unknown-only.json | quick | 6fded0fe6aeed920 sparrow/sparrow-large
+drivers/unknown-only.json | research | 6aed8fa330fd4af5 sparrow/sparrow-large
+drivers/unknown-only.json | review | 68a4983fb40008a6 sparrow/sparrow-large
+drivers/unknown-only.json | writing | f2792ccd03d6bfe5 sparrow/sparrow-large
+drivers/unknown-only.json | code large high | 9bfa06ae959d57e5 sparrow/sparrow-large
+drivers/unknown-only.json | classified | df746473fbeef0cd sparrow/sparrow-large
+subscriptions-setup.json | code | 543dffd168a74b09 claudeAgent/claude-opus-9-2 cursor/claude-opus-9-1 grok/grok-8-build
+subscriptions-setup.json | debug | 4b342fb14f02cf2b claudeAgent/claude-opus-9-2 cursor/claude-opus-9-1 cursor/gpt-9.1-sol
+subscriptions-setup.json | design | c404e7d1559b6370 claudeAgent/claude-opus-9-2 cursor/gemini-7-pro opencode/opencode-go/gemini-7.5-pro
+subscriptions-setup.json | plan | 4ef9c374a2cdf473 claudeAgent/claude-opus-9-2 claudeAgent/claude-fable-8-3 cursor/claude-opus-9-1
+subscriptions-setup.json | quick | 9962ae45d9e4ee7e claudeAgent/claude-haiku-9-0 cursor/composer-4 cursor/gpt-8.4-mini
+subscriptions-setup.json | research | 5f3349d3175a92bb claudeAgent/claude-sonnet-9-1 grok/grok-8.1 cursor/gemini-7-pro
+subscriptions-setup.json | review | e2b166435ab129cf cursor/gpt-9.1-sol opencode/openai/gpt-9.1-sol cursor/gemini-7-pro
+subscriptions-setup.json | writing | ad7c31d1ec46b574 claudeAgent/claude-opus-9-2 claudeAgent/claude-fable-8-3 cursor/claude-opus-9-1
+subscriptions-setup.json | code large high | 17efb496c088387b claudeAgent/claude-opus-9-2 cursor/claude-opus-9-1 grok/grok-8-build
+subscriptions-setup.json | classified | 3378d0bbdec070be cursor/gpt-9.1-sol opencode/openai/gpt-9.1-sol cursor/gemini-7-pro

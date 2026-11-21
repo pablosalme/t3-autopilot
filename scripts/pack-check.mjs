@@ -45,6 +45,7 @@ const required = [
   "CHANGELOG.md",
   "package.json",
   "policy/default.yaml",
+  "catalog/agents.yaml",
   "dist/cli.js",
   "dist/index.js",
   "dist/index.d.ts",
@@ -58,7 +59,9 @@ for (const f of new Set(required)) if (!files.includes(f)) fail(`the package lac
 // replace it on npmjs.com. Translations live in docs/.
 const unexpected = files.filter(
   (f) =>
-    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(f),
+    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|catalog\/agents\.yaml|dist\/[\w.-]+\.(?:js|d\.ts))$/.test(
+      f,
+    ),
 );
 if (unexpected.length) fail(`the package has unexpected files: ${unexpected.join(", ")}`);
 // The bin must start with a shebang, or the installed command would not run on Unix.

@@ -44,6 +44,7 @@
   "files": [
     "dist",
     "policy/default.yaml",
+    "catalog/agents.yaml",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"

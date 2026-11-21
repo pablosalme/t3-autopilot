@@ -17,6 +17,7 @@ The technical side of t3-autopilot: the tools, the policy file, the data it keep
 - [Data directory](#data-directory)
 - [Capabilities and restarts](#capabilities-and-restarts)
   - [Merging outputs](#merging-outputs)
+- [Agent catalog](#agent-catalog)
 - [FAQ and limitations](#faq-and-limitations)
 - [Development](#development)
 - [Roadmap](#roadmap)
@@ -440,6 +441,7 @@ Everything lives in `~/.t3-autopilot/` (or the directory named by the `T3_AUTOPI
 | `unavailable.json` | `mark_unavailable` marks: provider instance, model, a reason cut to 200 characters, until when. |
 | `capabilities-cache.json` | The last `orchestrator_capabilities` output: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens. |
 | `subscriptions.yaml` | [Subscription profiles](#subscription-profiles): plan, quota, purpose and rules per provider instance, as the user described them. |
+| `catalog.yaml` | Your additions to the [agent catalog](#agent-catalog). No tool reads it yet. |
 
 The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests.
 
@@ -459,6 +461,46 @@ Outputs are merged by `providerInstanceId`, whether one is passed with `mergeCap
 - **Short lists.** A provider the later output lists no models for (a search that did not select it) keeps its models, its `omittedModels` and its warning.
 
 `recommend_model` calls are handled one at a time, in the order they arrive, so calls sent together see the capabilities the first one brought.
+
+## Agent catalog
+
+T3 Code lists the models of every provider in `orchestrator_capabilities`. The other hosts t3-autopilot is being extended to, Orca and herdr, only say which agent CLIs are installed, or nothing at all, so t3-autopilot ships its own catalog of agent CLIs and the models and efforts each takes: [`catalog/agents.yaml`](../catalog/agents.yaml). T3 Code never reads it, and no tool uses it yet.
+
+Extend it in `~/.t3-autopilot/catalog.yaml` (or `$T3_AUTOPILOT_HOME/catalog.yaml`), with the same keys. Each agent there is merged one level deep onto the built-in one: a key you set (`models`, `efforts`, `hosts`...) replaces the built-in value as a whole, so repeat the entries you want to keep, and `null` removes an agent or one of its keys. Aliases under `hosts.<host>.aliases` are merged by alias (`null` removes one). As with the policy, a key the catalog does not know is ignored with a warning. So are a `family` that is not a policy family (the model is then matched by its id alone), a model listed twice (the first one stays) and an alias to an agent the catalog does not have, or with the name of one of its agents. Anything else that is wrong, such as a model id with a space, a shell character or a leading `-`, is an error that names the file.
+
+```yaml
+agents:
+  codex:
+    models: [gpt-9.2-codex]                  # replaces [default]
+  claude:
+    models:
+      - { id: opus, family: claude-opus }
+      - claude-opus-9-2                      # versioned: beats the alias `opus`
+      - { id: sonnet, family: claude-sonnet }
+  pi:
+    models: [openai/gpt-9.1-sol, anthropic/claude-opus-9-2]
+  goose: { driver: goose, models: [default] }  # an agent the catalog lacks
+  gemini: null                               # never offer Gemini CLI
+```
+
+| Key | Meaning |
+|---|---|
+| `version` | `1`. |
+| `updated` | When the catalog was last reviewed (informative). |
+| `agents.<id>` | An agent CLI. The id is the host's id for it (Orca's `--agent`) and becomes the agent's provider instance id. Letters, digits, `-` and `_`, starting with a letter. |
+| `driver` | Driver kind (`claudeAgent`, `codex`...) for policy families, `provider:` rules and per-driver `match`, so the policy works the same in every host. Default: the agent id. |
+| `name` | Display name. |
+| `models` | What the CLI takes as a model, best known first: `{ id, family?, efforts? }` or the id alone. `default` means starting the CLI without a model, so it uses the one set in its own config. |
+| `models[].family` | Policy family of an id no family regex recognizes, such as the alias `opus` or Codex's `default`, which is always a GPT. The model belongs to that family only. |
+| `models[].efforts` | This model's efforts, instead of the agent's; `[]` for none (Claude's `haiku`). |
+| `efforts` | Efforts the agent takes. Values outside the policy's scale are ignored. |
+| `hosts.<host>` in an agent | What changes in one host (`orca` or `herdr`): `model: false` (the host rejects a model at launch, so only `default` is offered), `models`, `efforts` and `note`. |
+| `hosts.<host>.aliases` at the top level | Ids a host uses for an agent of the catalog (Orca's `opencode2` is `opencode`). |
+
+- **No versioned ids in the built-in catalog.** They go stale, which is the problem families solve: it lists aliases the CLI resolves to its newest model (`opus`, `sonnet`) and `default`, tied to a family where no regex would match them. Versioned ids (needed, for example, by CLIs that only take `provider/model`, like OpenCode and Pi) go in your `catalog.yaml`.
+- **Aliases and versioned ids.** An alias has no version, so a versioned id of the same family wins over it (`claude-opus-9-2` over `opus`); between two aliases of a family, the one listed first wins.
+- **Agents without models.** An agent with no models, an agent the catalog does not know, and an agent in a host that rejects a model at launch are offered `default` only, which the generic fallback reaches with low confidence, unless the agent's own `default` entry gives it a family.
+- **Safe words.** Every model id, effort and alias is checked as one command-line word: letters, digits and `. _ : / @ + = , [ ] -`, at most 200 characters, not starting with `-`. So a model id cannot carry a space, a shell character or an option such as `--dangerously-skip-permissions`.
 
 ## FAQ and limitations
 

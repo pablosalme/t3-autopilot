@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- An agent catalog for the hosts that do not list models, Orca and herdr, whose support is coming: `catalog/agents.yaml` ships with the package and lists each agent CLI with model aliases that do not go stale (`opus`, `sonnet`, Codex's `default`), tied to policy families, and its efforts; `~/.t3-autopilot/catalog.yaml` extends it. No tool uses it yet, and T3 Code results are unchanged.
+
 ## [0.1.3] - 2026-11-20
 
 ### Added

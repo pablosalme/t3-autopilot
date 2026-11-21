@@ -1,0 +1,94 @@
+# Agent CLIs that hosts without a model list (Orca, herdr) start, and the
+# models and efforts each one takes. T3 Code lists its own models and does not
+# read this file.
+#
+# This file ships inside the package. Do not edit it in place: put your
+# additions in ~/.t3-autopilot/catalog.yaml (or $T3_AUTOPILOT_HOME/catalog.yaml).
+# It has the same keys: each agent there is merged one level deep onto the one
+# here (a key you set, such as `models`, replaces the whole value), and null
+# removes an agent or a key. See "Agent catalog" in docs/reference.md:
+# https://github.com/pablosalme/t3-autopilot/blob/main/docs/reference.md#agent-catalog
+#
+# No model id here carries a version (a test checks it): versioned ids go
+# stale, which is the problem policy families solve. The ids below are aliases
+# the CLI resolves to its newest model (`opus`), or `default`: start the CLI
+# without a model and let it use the one set in its own config. `family` ties
+# such an id to a policy family, which no family regex would do.
+# Versioned ids (`claude-opus-9-2`, `openai/gpt-9.1-sol`) go in your
+# catalog.yaml; one there beats an alias of the same family.
+
+version: 1
+# When the agents, models and efforts below were last reviewed.
+updated: 2026-11-21
+
+agents:
+  claude:
+    driver: claudeAgent # driver kind for policy families and `provider:` rules
+    name: Claude Code
+    models: # what the CLI takes as a model, best known first
+      - { id: opus, family: claude-opus } # the newest Opus the account has
+      - { id: sonnet, family: claude-sonnet }
+      - { id: haiku, family: claude-haiku, efforts: [] } # haiku takes no effort
+      - { id: fable, family: claude-fable }
+    efforts: [low, medium, high, xhigh, max]
+
+  codex:
+    driver: codex
+    name: Codex
+    models:
+      - { id: default, family: gpt } # the model set in Codex's config, always a GPT
+    efforts: [minimal, low, medium, high, xhigh]
+
+  cursor:
+    driver: cursor
+    name: Cursor Agent
+    models:
+      - { id: auto } # Cursor chooses; its effort is part of the model id
+    # No efforts: Cursor writes the effort into the model id (gpt-9.3-codex-high).
+
+  grok:
+    driver: grok
+    name: Grok
+    models:
+      - { id: default, family: grok-build } # the CLI's own coding model
+    efforts: [low, medium, high, xhigh]
+
+  opencode:
+    driver: opencode
+    name: OpenCode
+    # Models are provider/model ids (anthropic/claude-opus-9-2): declare yours in catalog.yaml.
+
+  pi:
+    driver: pi
+    name: Pi
+    # Models are provider/id ids (openai/gpt-9.1-sol): declare yours in catalog.yaml.
+    efforts: [minimal, low, medium, high, xhigh, max]
+
+  antigravity:
+    driver: antigravity
+    name: Antigravity
+    # Models depend on the account (`agy models`): declare yours in catalog.yaml.
+    efforts: [low, medium, high]
+
+  muse:
+    driver: muse
+    name: Muse
+    # Models depend on the account: declare yours in catalog.yaml.
+    efforts: [minimal, low, medium, high, xhigh, max]
+
+  kiro:
+    driver: kiro
+    name: Kiro
+    hosts:
+      orca: { model: false } # Orca rejects a model at launch for Kiro
+
+  gemini:
+    driver: gemini
+    name: Gemini CLI
+    hosts:
+      orca: { model: false } # Orca rejects a model at launch for Gemini
+
+hosts:
+  orca:
+    aliases:
+      opencode2: opencode # Orca's id for OpenCode 2
