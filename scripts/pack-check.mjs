@@ -45,6 +45,7 @@ const required = [
   "CHANGELOG.md",
   "package.json",
   "policy/default.yaml",
+  "catalog/agents.yaml",
   "dist/cli.js",
   "dist/index.js",
   "dist/index.d.ts",
@@ -60,7 +61,7 @@ for (const f of new Set(required)) if (!files.includes(f)) fail(`the package lac
 // replace it on npmjs.com. Translations live in docs/.
 const unexpected = files.filter(
   (f) =>
-    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|dist\/(?:hosts\/)?[\w.-]+\.(?:js|d\.ts))$/.test(
+    !/^(?:LICENSE|README\.md|CHANGELOG\.md|package\.json|policy\/default\.yaml|catalog\/agents\.yaml|dist\/(?:hosts\/)?[\w.-]+\.(?:js|d\.ts))$/.test(
       f,
     ),
 );

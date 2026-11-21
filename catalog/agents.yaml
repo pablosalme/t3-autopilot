@@ -1,0 +1,143 @@
+# Agent CLIs that hosts without a model list (Orca, herdr) start, and the
+# models and efforts each one takes. T3 Code lists its own models and does not
+# read this file.
+#
+# This file ships inside the package. Do not edit it in place: put your
+# additions in ~/.t3-autopilot/catalog.yaml (or $T3_AUTOPILOT_HOME/catalog.yaml).
+# It has the same keys: each agent there is merged one level deep onto the one
+# here (a key you set, such as `models`, replaces the whole value), and null
+# removes an agent or a key. See "Agent catalog" in docs/reference.md:
+# https://github.com/pablosalme/t3-autopilot/blob/main/docs/reference.md#agent-catalog
+#
+# No model id here carries a version (a test checks it): versioned ids go
+# stale, which is the problem policy families solve. The ids below are aliases
+# the CLI resolves to its newest model (`opus`), or `default`: start the CLI
+# without a model and let it use the one set in its own config. `family` ties
+# such an id to a policy family, which no family regex would do.
+# Versioned ids (`claude-opus-9-2`, `openai/gpt-9.1-sol`) go in your
+# catalog.yaml; one there beats an alias of the same family.
+#
+# exe, aliases, args, flags and prompt say how herdr runs each CLI: herdr
+# starts a program with arguments and knows nothing about models. `checked` is
+# the CLI version whose --help they were checked against; an agent without it
+# was not installed when the catalog was reviewed, and its flags come from
+# Orca's agent catalogs, so check them before relying on them.
+
+version: 1
+# When the agents, models, efforts and flags below were last reviewed.
+updated: 2026-11-21
+
+agents:
+  claude:
+    driver: claudeAgent # driver kind for policy families and `provider:` rules
+    name: Claude Code
+    models: # what the CLI takes as a model, best known first
+      - { id: opus, family: claude-opus } # the newest Opus the account has
+      - { id: sonnet, family: claude-sonnet }
+      - { id: haiku, family: claude-haiku, efforts: [] } # haiku takes no effort
+      - { id: fable, family: claude-fable }
+    efforts: [low, medium, high, xhigh, max]
+    exe: claude
+    flags: { model: [--model, "{model}"], effort: [--effort, "{effort}"] }
+    prompt: positional # `claude "<brief>"` starts an interactive session with it
+    checked: "2.1.327" # --help names fable, opus and sonnet as aliases; haiku comes from Orca
+
+  codex:
+    driver: codex
+    name: Codex
+    models:
+      - { id: default, family: gpt } # the model set in Codex's config, always a GPT
+    efforts: [minimal, low, medium, high, xhigh]
+    exe: codex
+    args: [--no-daemon] # herdr's guide asks for it: no shared background server
+    flags: { model: [-m, "{model}"], effort: [-c, "model_reasoning_effort={effort}"] }
+    prompt: positional
+    checked: "0.158.0-alpha.2.1" # -c takes any config key; model_reasoning_effort comes from Orca
+
+  cursor:
+    driver: cursor
+    name: Cursor Agent
+    models:
+      - { id: auto } # Cursor chooses; its effort is part of the model id
+    # No efforts: Cursor writes the effort into the model id (gpt-9.3-codex-high).
+    exe: cursor-agent
+    flags: { model: [--model, "{model}"] }
+    prompt: positional
+    # Not checked. Cursor's newer `agent` is not an alias: on some machines `agent` is Grok's.
+
+  grok:
+    driver: grok
+    name: Grok
+    models:
+      - { id: default, family: grok-build } # the CLI's own coding model
+    efforts: [low, medium, high, xhigh]
+    exe: grok
+    flags: { model: [--model, "{model}"], effort: [--reasoning-effort, "{effort}"] }
+    prompt: [--, "{brief}"] # after --, a brief that looks like an option or a command stays the prompt
+    checked: "1.0.92"
+
+  opencode:
+    driver: opencode
+    name: OpenCode
+    # Models are provider/model ids (anthropic/claude-opus-9-2): declare yours in catalog.yaml.
+    exe: opencode
+    aliases: [opencode2]
+    # OpenCode 2's main interface takes no model at start, so there is no flags.model; `opencode mini` takes
+    # one: set `args: [mini]` and `flags: { model: [-m, "{model}"] }` in catalog.yaml to pick a model.
+    prompt: [--prompt, "{brief}"] # its positional argument is a directory, not a prompt
+    checked: "2.3.2"
+
+  pi:
+    driver: pi
+    name: Pi
+    # Models are provider/id ids (openai/gpt-9.1-sol): declare yours in catalog.yaml.
+    efforts: [minimal, low, medium, high, xhigh, max]
+    exe: pi
+    flags: { model: [--model, "{model}"], effort: [--thinking, "{effort}"] }
+    prompt: positional
+    # Not checked.
+
+  antigravity:
+    driver: antigravity
+    name: Antigravity
+    # Models depend on the account (`agy models`): declare yours in catalog.yaml.
+    efforts: [low, medium, high]
+    exe: agy
+    flags: { model: [--model, "{model}"], effort: [--effort, "{effort}"] }
+    prompt: [--prompt-interactive, "{brief}"]
+    # Not checked.
+
+  muse:
+    driver: muse
+    name: Muse
+    # Models depend on the account: declare yours in catalog.yaml.
+    efforts: [minimal, low, medium, high, xhigh, max]
+    exe: muse
+    flags: { model: [--model, "{model}"], effort: [--reasoning-effort, "{effort}"] }
+    prompt: send # Muse reads a brief that looks like a command as one
+    # Not checked.
+
+  kiro:
+    driver: kiro
+    name: Kiro
+    hosts:
+      orca: { model: false } # Orca rejects a model at launch for Kiro
+    exe: kiro-cli
+    args: [chat, --tui]
+    prompt: send
+    # Not checked.
+
+  gemini:
+    driver: gemini
+    name: Gemini CLI
+    hosts:
+      orca: { model: false } # Orca rejects a model at launch for Gemini
+    exe: gemini
+    flags: { model: [-m, "{model}"] }
+    prompt: [--prompt-interactive, "{brief}"]
+    # Not checked.
+
+hosts:
+  orca:
+    aliases:
+      opencode2: opencode # Orca's id for OpenCode 2
