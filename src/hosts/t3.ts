@@ -5,11 +5,28 @@ import { INSTRUCTIONS_SNIPPET } from "../snippet.js";
 import type { HostAdapter } from "./types.js";
 
 /**
+ * An item of another host's list of agents: an object with a string `id` and neither `providerInstanceId`, which
+ * every T3 provider has, nor `providers`, which every T3 output has (Orca's `{ id, name, default }`).
+ */
+function isAgentItem(item: unknown): boolean {
+  return (
+    typeof item === "object" &&
+    item !== null &&
+    !Array.isArray(item) &&
+    typeof (item as { id?: unknown }).id === "string" &&
+    !("providerInstanceId" in item) &&
+    !("providers" in item)
+  );
+}
+
+/**
  * T3 Code's payload: the output of `orchestrator_capabilities` (an object
  * with `providers`), a bare `providers` array, or a list of outputs (objects,
  * or JSON text of each); any of them also as JSON text. A list of plain
  * strings, such as `["claude", "codex"]`, is none of them (each provider is an
  * object), so it is left to the host whose payload it is: herdr's program names.
+ * Nor is a list of agents with an `id` and no `providerInstanceId`: Orca's
+ * agents, from `orca agent installed --json`.
  */
 function looksLikeT3(payload: unknown): boolean {
   let value = payload;
@@ -22,7 +39,8 @@ function looksLikeT3(payload: unknown): boolean {
   }
   if (Array.isArray(value)) {
     const plainStrings = value.length > 0 && value.every((item) => typeof item === "string") && !isOutputList(value);
-    return !plainStrings;
+    const agents = value.length > 0 && value.every(isAgentItem);
+    return !plainStrings && !agents;
   }
   return typeof value === "object" && value !== null && "providers" in value;
 }

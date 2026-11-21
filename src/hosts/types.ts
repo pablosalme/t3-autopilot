@@ -5,7 +5,7 @@ import type { Candidate, RecommendText } from "../recommend.js";
 
 /**
  * A host is the app the orchestrator runs in and starts children with: T3
- * Code and herdr. Each one has an adapter in this folder, listed in the registry
+ * Code, herdr and Orca. Each one has an adapter in this folder, listed in the registry
  * (src/hosts/index.ts); the engine (recommend.ts, families.ts, effort.ts,
  * subscriptions.ts, unavailable.ts, log.ts) never knows which host it serves.
  */

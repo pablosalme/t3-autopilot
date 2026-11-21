@@ -460,6 +460,96 @@ describe("herdr over stdio", () => {
   });
 });
 
+describe("Orca over stdio", () => {
+  const output = (name) => readFileSync(join(root, "test", "fixtures", "orca", `${name}.json`), "utf8");
+  const task = { task: "Implement the CSV export endpoint", taskType: "code" };
+  // Orca's command: orca-ide on Linux, where orca is GNOME's screen reader.
+  const worker = [
+    process.platform === "linux" ? "orca-ide" : "orca",
+    "orchestration",
+    "worker-start",
+    "--environment",
+    "local",
+  ];
+  const tail = ["--worktree", "current", "--spec-file", "{briefFile}", "--json"];
+  // One command-line word, or a whole placeholder.
+  const word = /^(?:\{briefFile\}|--?[A-Za-z0-9][\w.:/@+=,[\]-]*|[A-Za-z0-9][\w.:/@+=,[\]-]*)$/;
+
+  it("recommends from orca agent installed with the worker-start command, keeps it per session apart, and logs with host", async () => {
+    const home = newHome();
+    const { client } = await start(home);
+    try {
+      const call = async (name, args) => {
+        const res = await client.callTool({ name, arguments: args });
+        assert.ok(!res.isError, text(res));
+        return res.structuredContent;
+      };
+      const first = await call("recommend_model", {
+        ...task,
+        host: "orca",
+        session: "term_e2e",
+        capabilities: output("agent-installed-macos"),
+        orchestrator: { agent: "claude", model: "opus" },
+      });
+      assert.equal(first.host, "orca");
+      assert.equal(first.capabilitiesFrom, "call");
+      assert.deepEqual(ids(first), ["claude/opus", "grok/default", "claude/sonnet"]);
+      assert.deepEqual(first.candidates[0].launch.argv, [
+        ...worker,
+        "--agent",
+        "claude",
+        "--model",
+        "opus",
+        "--effort",
+        "high",
+        ...tail,
+      ]);
+      for (const candidate of first.candidates) {
+        for (const arg of candidate.launch.argv) assert.match(arg, word, JSON.stringify(candidate.launch.argv));
+      }
+
+      const review = await call("recommend_model", {
+        task: "Review the export endpoint PR",
+        taskType: "review",
+        host: "orca",
+        session: "term_e2e",
+      });
+      assert.equal(review.capabilitiesFrom, "cache");
+      assert.deepEqual(review.candidates[0].launch.argv, [...worker, "--agent", "grok", ...tail]);
+
+      const logged = await call("log_delegation", {
+        host: "orca",
+        taskType: "code",
+        providerInstanceId: "claude",
+        model: "opus",
+        recommendedRank: 1,
+        childThreadId: "ctx_f2dddf04e3e7",
+      });
+      assert.equal(logged.logged.host, "orca");
+      assert.equal(logged.logged.providerInstanceId, "claude");
+      assert.match(readFileSync(join(home, "log.jsonl"), "utf8"), /"providerInstanceId":"orca:claude"/);
+      assert.ok(existsSync(join(home, "capabilities-cache.orca.json")));
+      assert.ok(!existsSync(join(home, "capabilities-cache.json")));
+
+      // T3 Code never gets Orca's catalog, and Orca's output without host is still Orca's.
+      const t3 = await client.callTool({ name: "recommend_model", arguments: { ...task, host: "t3" } });
+      assert.equal(t3.isError, true);
+      assert.match(text(t3), /^No capabilities yet/);
+      const nameless = await call("recommend_model", { ...task, capabilities: output("agent-installed-macos") });
+      assert.equal(nameless.host, "orca");
+      // Orca's error output says why the command failed.
+      const failed = await client.callTool({
+        name: "recommend_model",
+        arguments: { ...task, host: "orca", capabilities: output("agent-installed-error") },
+      });
+      assert.equal(failed.isError, true);
+      assert.match(text(failed), /failed with runtime_unavailable: Could not read Orca runtime metadata/);
+    } finally {
+      await client.close();
+    }
+  });
+});
+
 describe("CLI commands", () => {
   it("--version, --help and snippet", () => {
     const home = newHome();
@@ -489,23 +579,30 @@ describe("CLI commands", () => {
     assert.match(second.stderr, /already exists; not overwritten/);
   });
 
-  it("snippet --host herdr and --host all print their instructions, and --host needs a known host", () => {
+  it("snippet --host herdr, orca and all print their instructions, and --host needs a known host", () => {
     const home = newHome();
-    const herdr = runCli(["snippet", "--host", "herdr"], home);
-    assert.equal(herdr.status, 0, herdr.stderr);
-    assert.ok(herdr.stdout.startsWith("## Model selection for delegated tasks in herdr (t3-autopilot)\n"));
-    assert.ok(readFileSync(join(root, "docs", "hosts", "herdr.md"), "utf8").includes(herdr.stdout));
+    for (const [host, title] of [
+      ["herdr", "herdr"],
+      ["orca", "Orca"],
+    ]) {
+      const res = runCli(["snippet", "--host", host], home);
+      assert.equal(res.status, 0, res.stderr);
+      assert.ok(res.stdout.startsWith(`## Model selection for delegated tasks in ${title} (t3-autopilot)\n`));
+      assert.ok(readFileSync(join(root, "docs", "hosts", `${host}.md`), "utf8").includes(res.stdout));
+    }
     const all = runCli(["snippet", "--host", "all"], home);
     assert.equal(all.status, 0, all.stderr);
     assert.ok(all.stdout.startsWith("## Model selection for delegated tasks, in every host (t3-autopilot)\n"));
-    for (const section of ["\n### T3 Code\n", "\n### herdr\n"]) assert.ok(all.stdout.includes(section), section);
+    for (const section of ["\n### T3 Code\n", "\n### herdr\n", "\n### Orca\n"]) {
+      assert.ok(all.stdout.includes(section), section);
+    }
     for (const args of [
       ["snippet", "--host"],
       ["snippet", "--host", "nope"],
     ]) {
       const res = runCli(args, home);
       assert.equal(res.status, 2, args.join(" "));
-      assert.match(res.stderr, /t3, herdr/);
+      assert.match(res.stderr, /t3, herdr, orca/);
     }
   });
 

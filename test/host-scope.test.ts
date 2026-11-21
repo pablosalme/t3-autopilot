@@ -428,9 +428,9 @@ describe("snippet --host", () => {
         "",
       ].join("\n"),
     );
-    // A host added to the registry is in it at once, after the others: herdr's, and Orca's once it is registered.
+    // A host added to the registry is in it at once, after the others: herdr's and Orca's.
     const three = await run(["snippet", "--host", "all"], [...HOSTS, fake]);
-    const order = ["### T3 Code", "### herdr", "### Fake Host"].map((h) => three.out.indexOf(`\n${h}\n`));
+    const order = ["### T3 Code", "### herdr", "### Orca", "### Fake Host"].map((h) => three.out.indexOf(`\n${h}\n`));
     expect(order.every((at, i) => at > 0 && (i === 0 || at > (order[i - 1] ?? 0)))).toBe(true);
     for (const host of [...HOSTS, fake]) expect(three.out).toContain(`- ${host.name}: ${host.recognize}.`);
     // With one host, its own snippet.

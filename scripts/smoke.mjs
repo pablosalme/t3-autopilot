@@ -139,6 +139,26 @@ check(
   ) === true,
 );
 
+// 9. Orca: the output of orca agent installed, and the worker-start command that starts each candidate.
+const orca = await recommend("Orca: orca agent installed output", {
+  task: "Implement the CSV export endpoint",
+  taskType: "code",
+  host: "orca",
+  capabilities: readFileSync(join(root, "test", "fixtures", "orca", "agent-installed-macos.json"), "utf8"),
+  orchestrator: { agent: "claude", model: "opus" },
+});
+check("Orca: host in the result", orca?.host === "orca");
+check(
+  "Orca: every candidate starts with worker-start and the brief file, one argument per element",
+  orca?.candidates.every(
+    (c) =>
+      ["orca", "orca-ide"].includes(c.launch?.argv[0]) &&
+      c.launch.argv.slice(1, 3).join(" ") === "orchestration worker-start" &&
+      c.launch.argv.includes("{briefFile}") &&
+      c.launch.argv.every((a) => !/\s/.test(a)),
+  ) === true,
+);
+
 const out = await client.callTool({
   name: "log_outcome",
   arguments: {

@@ -52,6 +52,8 @@ const required = [
   "dist/hosts/index.js",
   "dist/hosts/t3.js",
   "dist/hosts/herdr.js",
+  "dist/hosts/orca.js",
+  "dist/hosts/common.js",
   // Every file listed in "files" that exists in the repository.
   ...pkg.files.filter((f) => existsSync(join(root, f)) && !statSync(join(root, f)).isDirectory()),
 ];

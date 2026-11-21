@@ -3,6 +3,7 @@ import { type LoadedCatalog, loadCatalog } from "../catalog.js";
 import { DATA_FILES } from "../paths.js";
 import type { CandidateRule, Policy } from "../policy.js";
 import { herdr } from "./herdr.js";
+import { orca } from "./orca.js";
 import { t3 } from "./t3.js";
 import type { HostAdapter, HostContext, HostId } from "./types.js";
 
@@ -10,11 +11,10 @@ import type { HostAdapter, HostContext, HostId } from "./types.js";
  * The hosts this version knows, the default one first: a call that names no
  * host, and that a payload does not tell apart, is for it. A new host is a
  * file in this folder and one line here (see "Adding a host" in
- * CONTRIBUTING.md). Orca's adapter (src/hosts/orca.ts, PR #2 rewritten on
- * this seam) goes after herdr; `snippet --host orca` and `--host all` then
- * pick it up from here.
+ * CONTRIBUTING.md); `snippet --host <id>` and `--host all` pick it up from
+ * here. `detect` runs in this order.
  */
-export const HOSTS: readonly HostAdapter[] = [t3, herdr];
+export const HOSTS: readonly HostAdapter[] = [t3, herdr, orca];
 
 /** What `snippet --host` takes for every host's instructions at once. Never a host id. */
 export const ALL_HOSTS = "all";

@@ -1,0 +1,36 @@
+{
+  "id": "9d2f4c1a-6b7e-4a58-8c3d-2e1f0a9b8c7d",
+  "ok": true,
+  "result": {
+    "agents": [
+      {
+        "id": "claude",
+        "name": "Claude",
+        "default": false
+      },
+      {
+        "id": "opencode",
+        "name": "OpenCode",
+        "default": false
+      },
+      {
+        "id": "opencode2",
+        "name": "OpenCode 2",
+        "default": false
+      },
+      {
+        "id": "hermes",
+        "name": "Hermes",
+        "default": false
+      },
+      {
+        "id": "grok",
+        "name": "Grok",
+        "default": false
+      }
+    ]
+  },
+  "_meta": {
+    "runtimeId": "4e8a1b2c-3d5f-4a6b-9c7d-8e0f1a2b3c4d"
+  }
+}

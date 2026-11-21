@@ -116,6 +116,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   const host0 = hosts[0] ?? DEFAULT_HOST;
   const hostIds = hosts.map((h) => h.id) as [string, ...string[]];
   const hostList = hosts.map((h) => (h.name.toLowerCase() === h.id ? h.id : `${h.id} (${h.name})`)).join(", ");
+  const otherHosts = hosts.slice(1).map((h) => h.name);
   const hostArg = z
     .enum(hostIds)
     .optional()
@@ -272,7 +273,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           })
           .optional()
           .describe(
-            `Outside ${host0.name} (herdr): your own agent, as your host names it (claude, codex, cursor-agent...), ` +
+            `Outside ${host0.name}${otherHosts.length ? ` (${otherHosts.join(", ")})` : ""}: your own agent, as your ` +
+              "host names it (claude, codex, cursor-agent...), " +
               "and the model and options you run with. It says which candidates are yourself (sameAsOrchestrator) " +
               `and keeps an independent review off your agent. ${host0.name}'s capabilities already name them.`,
           ),
