@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { DEFAULT_HOST } from "./hosts/index.js";
 import { userPolicyPath } from "./paths.js";
 import { createServer, VERSION } from "./server.js";
-import { INSTRUCTIONS_SNIPPET } from "./snippet.js";
 
 /**
  * What `init-policy` writes: a short commented template. Everything not set
@@ -73,7 +73,7 @@ export async function runCli(argv: string[], io: CliIo = stdio): Promise<number>
       return 0;
     }
     case "snippet":
-      io.out(INSTRUCTIONS_SNIPPET);
+      io.out(DEFAULT_HOST.snippet);
       return 0;
     case "init-policy": {
       const target = userPolicyPath();

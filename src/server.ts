@@ -2,13 +2,15 @@ import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { mergeCapabilities, parseCapabilitiesInput, SelectedOptionSchema } from "./capabilities.js";
+import { mergeCapabilities, SelectedOptionSchema } from "./capabilities.js";
 import {
   type CapabilitiesEntry,
   formatAge,
   loadCapabilitiesCache,
   saveCapabilitiesCache,
 } from "./capabilitiesCache.js";
+import { DEFAULT_HOST, HOSTS } from "./hosts/index.js";
+import type { HostAdapter } from "./hosts/types.js";
 import { computeStats, logDelegation, logOutcome, OUTCOMES, readLog } from "./log.js";
 import { autopilotHome, DATA_FILES } from "./paths.js";
 import { type LoadedPolicy, loadPolicy, type Policy } from "./policy.js";
@@ -30,14 +32,6 @@ import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usag
 
 export const VERSION = "0.1.3";
 
-const NOTHING_TO_MERGE =
-  "mergeCapabilities: there were no earlier capabilities to merge into (first call, or the server restarted and " +
-  "its saved copy is missing or expired), so only this output was used and it was not kept. If it is a search " +
-  "output, pass the full orchestrator_capabilities output too, as capabilities: [full, search].";
-
-const NO_CAPABILITIES =
-  "No capabilities yet: call orchestrator_capabilities and pass its full output as `capabilities` (later calls can omit it).";
-
 export interface ServerOptions {
   /** Loads the policy; called on every tool call so edits apply without a restart. */
   loadPolicy?: () => LoadedPolicy;
@@ -51,6 +45,8 @@ export interface ServerOptions {
   logPath?: () => string;
   /** Clock, for tests. */
   now?: () => Date;
+  /** The hosts the server knows, the default one first: the registry's (src/hosts/index.ts) by default. */
+  hosts?: readonly HostAdapter[];
 }
 
 function ok(data: unknown): CallToolResult {
@@ -69,7 +65,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
   const load = opts.loadPolicy ?? (() => loadPolicy());
   const dataDir = opts.dataDir ?? autopilotHome;
   const getLogPath = opts.logPath ?? (() => join(dataDir(), DATA_FILES.log));
-  const cachePath = () => join(dataDir(), DATA_FILES.capabilitiesCache);
+  const host = (opts.hosts ?? HOSTS)[0] ?? DEFAULT_HOST;
+  const cachePath = () => join(dataDir(), host.cacheFile);
   const marksPath = () => join(dataDir(), DATA_FILES.unavailable);
   const subscriptionsPath = () => join(dataDir(), DATA_FILES.subscriptions);
   const now = opts.now ?? (() => new Date());
@@ -184,8 +181,17 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           const notes: string[] = [...policyWarnings];
           if (args.capabilities !== undefined) {
             // `listed`: how many outputs were passed as a list ([full, search, ...]); 0 for a single output.
-            const { capabilities: given, outputs: listed } = parseCapabilitiesInput(args.capabilities);
-            const base = args.mergeCapabilities ? kept() : undefined;
+            const catalog = host.catalog(
+              { capabilities: args.capabilities },
+              { dataDir: dataDir(), now: at, policy, platform: process.platform },
+            );
+            const { capabilities: given, outputs: listed } = catalog;
+            notes.push(...catalog.notes);
+            if (args.mergeCapabilities && !host.merges) {
+              notes.push(`mergeCapabilities is ignored: ${host.name} sends its whole catalog in one output.`);
+            }
+            const merge = args.mergeCapabilities === true && host.merges;
+            const base = merge ? kept() : undefined;
             if (base) {
               const capabilities = mergeCapabilities([base.capabilities, given]);
               entry = { ...base, capabilities, merged: true };
@@ -194,14 +200,14 @@ export function createServer(opts: ServerOptions = {}): McpServer {
               entry = { capabilities: given, receivedAt: at.toISOString(), merged: listed > 1, fromDisk: false };
               capabilitiesFrom = "call";
               // A lone output passed for merging is most likely a search: not a catalog to keep.
-              if (args.mergeCapabilities && listed === 0) {
+              if (merge && listed === 0) {
                 keep = false;
-                notes.push(NOTHING_TO_MERGE);
+                notes.push(host.text.nothingToMerge);
               }
             }
           } else {
             const base = kept();
-            if (!base) throw new Error(NO_CAPABILITIES);
+            if (!base) throw new Error(host.text.noCatalog);
             entry = base;
             capabilitiesFrom = base.fromDisk ? "disk-cache" : "cache";
           }
@@ -211,8 +217,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
             const who = entry.savedBy ? ` by an orchestrator on ${entry.savedBy}` : "";
             notes.push(
               `Capabilities from the disk cache (the server restarted): received ${formatAge(age)} ago${who}. ` +
-                "If that is not you, or a child cannot start or its model id is rejected, call orchestrator_capabilities " +
-                "and pass its full output as capabilities.",
+                `If that is not you, or a child cannot start or its model id is rejected, ${host.text.capture}.`,
             );
           }
           // Kept before the recommendation: if that fails (an unknown taskType, say), the capabilities this call
@@ -242,6 +247,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
             {
               ...rest,
               capabilities: entry.capabilities,
+              text: host.text,
               unavailable,
               ...(subs.error ? {} : { subscriptions: subs.subscriptions }),
             },
@@ -470,9 +476,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         const warnings: string[] = [];
         const caps = keptCapabilities(policy.capabilitiesCacheTtlHours, now())?.capabilities;
         if (caps && !caps.providers.some((p) => p.providerInstanceId === id)) {
-          warnings.push(
-            `${id} is not in the last orchestrator_capabilities output; check the providerInstanceId (saved anyway).`,
-          );
+          warnings.push(`${id} is not in ${host.text.lastCatalog}; check the providerInstanceId (saved anyway).`);
         }
         if (profile.quotaPool !== undefined) {
           const mates = Object.keys(subscriptions).filter(

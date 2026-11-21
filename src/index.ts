@@ -9,6 +9,7 @@ export {
 export { type Classification, classifyTask } from "./classify.js";
 export { buildOptions, clampEffort, findEffortOption, shiftEffort } from "./effort.js";
 export { compareVersions, resolveFamily, versionKey } from "./families.js";
+export type { HostAdapter } from "./hosts/types.js";
 export { computeStats, logDelegation, logOutcome, readLog, type Stats } from "./log.js";
 export { autopilotHome, defaultPolicyPath, logPath, userPolicyPath } from "./paths.js";
 export { loadPolicy, mergePolicy, type Policy, validatePolicy } from "./policy.js";

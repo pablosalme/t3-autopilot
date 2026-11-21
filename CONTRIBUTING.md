@@ -41,7 +41,8 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 
 | Path | What it is |
 |---|---|
-| `src/capabilities.ts` | Parses and merges `orchestrator_capabilities` output |
+| `src/capabilities.ts` | The canonical catalog the engine reads (the shape of `orchestrator_capabilities`); parses and merges T3's outputs |
+| `src/hosts/` | The hosts: `types.ts` (the `HostAdapter` contract), `index.ts` (the registry), `t3.ts` (T3 Code). See [Adding a host](#adding-a-host) |
 | `src/families.ts` | Resolves a model family to the newest matching model id |
 | `src/recommend.ts` | Eligibility, candidate ranking, fallbacks and warnings |
 | `src/effort.ts`, `src/usage.ts` | Effort options and usage thresholds |
@@ -52,7 +53,7 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 | `src/capabilitiesCache.ts`, `src/store.ts` | Capabilities saved for a restart; atomic JSON writes |
 | `src/server.ts` | The seven MCP tools |
 | `src/cli.ts`, `src/cliMain.ts`, `src/snippet.ts` | CLI commands and the orchestrator snippet |
-| `test/` | Vitest unit and in-memory MCP tests |
+| `test/` | Vitest unit and in-memory MCP tests; `test/fakeHost.ts` is a host that exists only in the tests |
 | `test/golden.test.ts`, `test/golden/` | Golden snapshots of what a T3 Code orchestrator gets: tool results, errors, tool schemas, files written, CLI output |
 | `test/e2e/stdio.e2e.mjs` | End-to-end test over stdio (Node's test runner) |
 | `test/fixtures/` | Invented `orchestrator_capabilities` outputs |
@@ -61,6 +62,25 @@ Biome lints and formats TypeScript, the scripts and JSON config. It was chosen o
 | `docs/reference.md` | The technical reference: tools, policy, data files |
 | `docs/providers.md` | How each T3 Code driver is handled, with references to T3's source |
 | `docs/README.es.md` | The README in Spanish |
+
+## Adding a host
+
+A host is the app the orchestrator runs in and starts children with. T3 Code is the only one so far. The engine (`recommend.ts`, `families.ts`, `effort.ts`, `subscriptions.ts`, `unavailable.ts`, `log.ts`) does not know which host it serves: whatever is specific to one goes through its `HostAdapter` (`src/hosts/types.ts`). A new host is a file in `src/hosts/` that exports its adapter, and one line in the `HOSTS` list of `src/hosts/index.ts`. The first host in that list (T3 Code) serves every call that names no host, as in every 0.1 version.
+
+| Member | What it is |
+|---|---|
+| `id` | Short lower-case id (`t3`). |
+| `name` | The host's name for people (`T3 Code`), used in messages. |
+| `cacheFile` | The file in the data directory where the server keeps the host's capabilities for a restart. |
+| `merges` | Whether the host sends its catalog in several outputs that the server merges (T3's short lists plus `search`). When `false`, `mergeCapabilities` is ignored with a warning. |
+| `text` | The phrases of the results that name the host or its tools: how to get the catalog (`capture`), the error when there is none (`noCatalog`), the warning for `mergeCapabilities` with nothing to merge into (`nothingToMerge`), the last catalog in a warning (`lastCatalog`), and the four phrases of the engine (`noProviders`, `enable`, `listOrder`, `firstListed`, from `RecommendText` in `src/recommend.ts`). |
+| `snippet` | The instructions the user pastes into the orchestrator's `CLAUDE.md` or `AGENTS.md`. |
+| `detect(payload)` | Whether a `capabilities` payload has this host's shape. It must not accept another host's payload. |
+| `catalog(input, ctx)` | Turns the host's payload (`input.capabilities`, exactly as the orchestrator passed it) into the canonical catalog: `{ capabilities, outputs, notes }`. It throws, with a message that says what to pass, when the payload is not valid. `ctx` has the data directory, the clock, the policy in force and the platform. |
+
+The canonical catalog is `Capabilities` in `src/capabilities.ts`, the shape of T3's `orchestrator_capabilities` output: one provider per agent the host can start, with `providerInstanceId` (the id the orchestrator passes back to start it), `driverKind` (the policy's driver, such as `claudeAgent` or `codex`, so families and `provider:` rules apply), `models` (each with its options; an effort option has an id from the policy's `effortOptionIds`), `canRunChildTask` and `constraints`, and the orchestrator's own agent and model in `inheritedProviderInstanceId` and `inheritedModel`. `outputs` is the number of outputs a list held (0 for one), and `notes` go into the result's `warnings`.
+
+A host's tests use an anonymized fixture of its real output, cover `detect` and `catalog`, and leave the T3 [golden snapshots](#guidelines) as they are; `test/hosts.test.ts` shows how to run the server with an adapter.
 
 ## Guidelines
 
