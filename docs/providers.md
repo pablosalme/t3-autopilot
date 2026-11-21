@@ -5,6 +5,8 @@ Source: [pingdotgg/t3code](https://github.com/pingdotgg/t3code) (MIT), commit
 (2026-11-18). Paths below are relative to that repository; line numbers are from that commit.
 Behaviour may change in later T3 versions.
 
+This page is about T3 Code. In herdr, the agents and their models come from t3-autopilot's agent catalog instead: see [hosts/herdr.md](hosts/herdr.md).
+
 ## Driver list
 
 T3 ships eleven provider drivers ([`apps/server/src/provider/builtInDrivers.ts:33-45`](https://github.com/pingdotgg/t3code/blob/8cf97b5f06f30a872ce30ab8a888f2ff012365a2/apps/server/src/provider/builtInDrivers.ts#L33-L45)),

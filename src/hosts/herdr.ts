@@ -319,6 +319,7 @@ export const herdr: HostAdapter = {
     lastCatalog: "the last herdr catalog",
   },
   snippet: HERDR_SNIPPET,
+  recognize: "`HC_TERMINAL_ID` is set in your environment (you run in a terminal of herdr's `hc`)",
   /**
    * A list of program names or paths, also as JSON text, or the probe's output (absolute paths, alias lines).
    * T3 Code's adapter comes first and takes any list, and herdr is `explicit`, so this only matters when a call

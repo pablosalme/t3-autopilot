@@ -42,6 +42,7 @@ export const fake: HostAdapter = {
     lastCatalog: "the last fake-agents output",
   },
   snippet: "## Model selection in Fake Host\n\nCall recommend_model with host: fake.\n",
+  recognize: "you can run `fake-agents`",
   detect: (payload) => typeof payload === "object" && payload !== null && "fake" in payload,
   catalog: ({ capabilities }) => {
     const { agents, orchestrator } = (capabilities as FakePayload).fake;

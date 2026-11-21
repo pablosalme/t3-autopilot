@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { DEFAULT_HOST, HOSTS } from "./hosts/index.js";
+import { ALL_HOSTS, allHostsSnippet, DEFAULT_HOST, HOSTS } from "./hosts/index.js";
 import type { HostAdapter } from "./hosts/types.js";
 import { userPolicyPath } from "./paths.js";
 import { createServer, VERSION } from "./server.js";
@@ -47,7 +47,7 @@ export const POLICY_TEMPLATE = `# t3-autopilot policy override. Keys here replac
 export function helpText(hosts: readonly HostAdapter[] = HOSTS): string {
   const others = hosts.slice(1).map((h) => h.id);
   const snippetHost = others.length
-    ? `  t3-autopilot snippet --host <id> Print another host's instructions: ${others.join(", ")}.\n`
+    ? `  t3-autopilot snippet --host <id> Print another host's instructions (${others.join(", ")}), or every host's (${ALL_HOSTS}).\n`
     : "";
   return `t3-autopilot ${VERSION}: model selection MCP server for T3 Code orchestrators.
 
@@ -92,9 +92,13 @@ export async function runCli(
         return 0;
       }
       const id = argv[2];
+      if (id === ALL_HOSTS) {
+        io.out(allHostsSnippet(hosts));
+        return 0;
+      }
       const host = hosts.find((h) => h.id === id);
       if (!host) {
-        const known = hosts.map((h) => h.id).join(", ");
+        const known = `${hosts.map((h) => h.id).join(", ")}, or ${ALL_HOSTS} for every host`;
         io.err(
           id === undefined
             ? `snippet --host needs a host: ${known}.\n`

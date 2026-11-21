@@ -2,7 +2,7 @@
   "unknown command": {
     "code": 2,
     "out": "",
-    "err": "Unknown command \"frobnicate\".\n\nt3-autopilot <version>: model selection MCP server for T3 Code orchestrators.\n\nUsage:\n  t3-autopilot [serve]             Start the MCP server on stdio (what your agent CLI runs).\n  t3-autopilot snippet             Print the instructions to paste into CLAUDE.md / AGENTS.md.\n  t3-autopilot snippet --host <id> Print another host's instructions: herdr.\n  t3-autopilot init-policy         Write a commented override template to the user policy path.\n  t3-autopilot --help | -h | help  Print this text.\n  t3-autopilot --version | -v      Print the version.\n\nData directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl,\ncapabilities-cache.json, unavailable.json).\n"
+    "err": "Unknown command \"frobnicate\".\n\nt3-autopilot <version>: model selection MCP server for T3 Code orchestrators.\n\nUsage:\n  t3-autopilot [serve]             Start the MCP server on stdio (what your agent CLI runs).\n  t3-autopilot snippet             Print the instructions to paste into CLAUDE.md / AGENTS.md.\n  t3-autopilot snippet --host <id> Print another host's instructions (herdr), or every host's (all).\n  t3-autopilot init-policy         Write a commented override template to the user policy path.\n  t3-autopilot --help | -h | help  Print this text.\n  t3-autopilot --version | -v      Print the version.\n\nData directory: $T3_AUTOPILOT_HOME or ~/.t3-autopilot (policy.yaml, log.jsonl,\ncapabilities-cache.json, unavailable.json).\n"
   },
   "init-policy": {
     "code": 0,

@@ -10,9 +10,37 @@ import type { HostAdapter, HostContext, HostId } from "./types.js";
  * The hosts this version knows, the default one first: a call that names no
  * host, and that a payload does not tell apart, is for it. A new host is a
  * file in this folder and one line here (see "Adding a host" in
- * CONTRIBUTING.md).
+ * CONTRIBUTING.md). Orca's adapter (src/hosts/orca.ts, PR #2 rewritten on
+ * this seam) goes after herdr; `snippet --host orca` and `--host all` then
+ * pick it up from here.
  */
 export const HOSTS: readonly HostAdapter[] = [t3, herdr];
+
+/** What `snippet --host` takes for every host's instructions at once. Never a host id. */
+export const ALL_HOSTS = "all";
+
+/** A snippet without its title: what follows its first blank line. */
+function snippetBody(snippet: string): string {
+  const at = snippet.indexOf("\n\n");
+  return at === -1 ? snippet : snippet.slice(at + 2);
+}
+
+/**
+ * `snippet --host all`: how to tell which host the orchestrator runs in, then each host's instructions under its
+ * name, in the registry's order, for one rules file read by agents in several hosts. With one host, its snippet.
+ */
+export function allHostsSnippet(hosts: readonly HostAdapter[] = HOSTS): string {
+  const [only] = hosts;
+  if (hosts.length === 1 && only) return only.snippet;
+  const which = hosts.map((h) => `- ${h.name}: ${h.recognize}.`).join("\n");
+  const sections = hosts.map((h) => `### ${h.name}\n\n${snippetBody(h.snippet)}`).join("\n");
+  return (
+    "## Model selection for delegated tasks, in every host (t3-autopilot)\n\n" +
+    "These instructions cover every host t3-autopilot supports. First find the one you run in, the first of these " +
+    `that applies, then follow only its section:\n\n${which}\n\nIf none of them applies, do not call t3-autopilot.` +
+    `\n\n${sections}`
+  );
+}
 
 /** The host of calls that name none: T3 Code, as in every 0.1 version. Its ids are stored with no prefix. */
 export const DEFAULT_HOST: HostAdapter = t3;

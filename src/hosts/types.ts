@@ -143,8 +143,13 @@ export interface HostAdapter {
    */
   readonly explicit?: boolean;
   readonly text: HostText;
-  /** The instructions the user pastes into the orchestrator's CLAUDE.md / AGENTS.md. */
+  /** The instructions the user pastes into the orchestrator's CLAUDE.md / AGENTS.md: a `## ` title line, a blank line, the body. */
   readonly snippet: string;
+  /**
+   * How an orchestrator can tell it runs in this host, for `snippet --host all`, which lists one per host
+   * before each host's instructions: "you have the `orchestrator_capabilities` tool".
+   */
+  readonly recognize: string;
   /** Whether a payload has this host's shape. */
   detect(payload: unknown): boolean;
   /** The canonical catalog for a call; throws, with a message that says what to pass, when the payload is not valid. */

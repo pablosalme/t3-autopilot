@@ -48,6 +48,7 @@ export const t3: HostAdapter = {
     lastCatalog: "the last orchestrator_capabilities output",
   },
   snippet: INSTRUCTIONS_SNIPPET,
+  recognize: "you have the `orchestrator_capabilities` tool",
   detect: looksLikeT3,
   catalog: ({ capabilities }) => {
     const parsed = parseCapabilitiesInput(capabilities);

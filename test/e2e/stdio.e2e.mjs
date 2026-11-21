@@ -489,12 +489,16 @@ describe("CLI commands", () => {
     assert.match(second.stderr, /already exists; not overwritten/);
   });
 
-  it("snippet --host herdr prints herdr's instructions, and --host needs a known host", () => {
+  it("snippet --host herdr and --host all print their instructions, and --host needs a known host", () => {
     const home = newHome();
     const herdr = runCli(["snippet", "--host", "herdr"], home);
     assert.equal(herdr.status, 0, herdr.stderr);
     assert.ok(herdr.stdout.startsWith("## Model selection for delegated tasks in herdr (t3-autopilot)\n"));
     assert.ok(readFileSync(join(root, "docs", "hosts", "herdr.md"), "utf8").includes(herdr.stdout));
+    const all = runCli(["snippet", "--host", "all"], home);
+    assert.equal(all.status, 0, all.stderr);
+    assert.ok(all.stdout.startsWith("## Model selection for delegated tasks, in every host (t3-autopilot)\n"));
+    for (const section of ["\n### T3 Code\n", "\n### herdr\n"]) assert.ok(all.stdout.includes(section), section);
     for (const args of [
       ["snippet", "--host"],
       ["snippet", "--host", "nope"],

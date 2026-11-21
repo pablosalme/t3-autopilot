@@ -4,7 +4,9 @@
 
 [![CI](https://github.com/pablosalme/t3-autopilot/actions/workflows/ci.yml/badge.svg)](https://github.com/pablosalme/t3-autopilot/actions/workflows/ci.yml)
 
-Elige el modelo de IA adecuado para cada tarea que encarga tu agente de [T3 Code](https://github.com/pingdotgg/t3code), para que no tengas que elegirlo tú.
+Elige el modelo de IA adecuado para cada tarea que encarga tu agente, para que no tengas que elegirlo tú.
+
+**Funciona con [T3 Code](https://github.com/pingdotgg/t3code) y con [herdr](https://herdr.dev)** (Orca llegará pronto).
 
 ## Qué es
 
@@ -20,7 +22,9 @@ Piensa en quien reparte el trabajo en un taller: el encargo delicado va a la per
 
 (Es lo que sale con las preferencias de serie si tienes conectados Claude y Codex y tu agente funciona con Claude. Puedes cambiarlas.)
 
-Es un proyecto independiente; no forma parte de T3 Code.
+Funciona igual en herdr, donde tus agentes trabajan en terminales que siguen vivas: allí, cada respuesta trae además la orden que arranca al ayudante (mira [En herdr](#en-herdr)).
+
+Es un proyecto independiente; no forma parte de T3 Code ni de herdr.
 
 ## Para qué sirve
 
@@ -58,14 +62,14 @@ Tu agente también puede apuntar cómo ha salido cada encargo (se aceptó tal cu
 
 Necesitas:
 
-- T3 Code, con la sesión iniciada en al menos un proveedor.
+- T3 Code, con la sesión iniciada en al menos un proveedor, o el `hc` de herdr (herdr-core o la app de herdr), con al menos una CLI de agente instalada (Claude Code, Codex, Cursor Agent, Grok, OpenCode y otras).
 - [Node.js](https://nodejs.org) 22 o posterior. Para comprobarlo, ejecuta `node --version` en un terminal.
 
 No hay nada que descargar a mano: `npx`, una herramienta que viene con Node.js, descarga t3-autopilot y lo ejecuta.
 
 ### Paso 1. Añádelo a tu agente
 
-Solo lo necesita el agente con el que hablas (T3 Code lo llama *orquestador*); los ayudantes no. Copia la línea del agente que uses y pégala en un terminal:
+Solo lo necesita el agente con el que hablas (el *orquestador*); los ayudantes no. Las órdenes son las mismas en T3 Code y en herdr. Copia la línea del agente que uses y pégala en un terminal:
 
 **Claude Code**
 
@@ -110,13 +114,25 @@ Añade este bloque a su configuración de MCP:
 
 ### Paso 2. Dile a tu agente que lo use
 
-Los agentes leen un fichero de reglas cada vez que arrancan: `CLAUDE.md` en Claude Code y `AGENTS.md` en casi todos los demás. t3-autopilot te muestra el párrafo que hay que añadirle:
+Los agentes leen un fichero de reglas cada vez que arrancan: `CLAUDE.md` en Claude Code y `AGENTS.md` en casi todos los demás. t3-autopilot te muestra el párrafo que hay que añadirle. En T3 Code:
 
 ```sh
 npx -y t3-autopilot snippet
 ```
 
-Copia lo que muestra y pégalo al final de tu fichero de reglas. O deja que lo haga el terminal (solo en macOS y Linux; en Windows, copia y pega, porque PowerShell puede guardar el texto añadido con una codificación distinta de la del resto del fichero). Para Claude Code:
+En herdr el párrafo es otro:
+
+```sh
+npx -y t3-autopilot snippet --host herdr
+```
+
+Si el mismo fichero de reglas se lee en los dos (un único `CLAUDE.md` para todos tus proyectos, por ejemplo), usa el de todos los hosts, que primero le dice a tu agente cómo averiguar dónde está:
+
+```sh
+npx -y t3-autopilot snippet --host all
+```
+
+Copia lo que muestra y pégalo al final de tu fichero de reglas. O deja que lo haga el terminal (solo en macOS y Linux; en Windows, copia y pega, porque PowerShell puede guardar el texto añadido con una codificación distinta de la del resto del fichero). Estas líneas añaden el de T3 Code; para herdr, escribe `snippet --host herdr` (o `snippet --host all`) en lugar de `snippet`. Para Claude Code:
 
 ```sh
 npx -y t3-autopilot snippet >> ~/.claude/CLAUDE.md
@@ -143,7 +159,7 @@ npx -y t3-autopilot snippet >> ~/.config/opencode/AGENTS.md
 No te saltes este paso. Sin él, tu agente tiene la herramienta pero no sabe cuándo usarla. El párrafo también le da permiso para cambiar de modelo, algo que T3 Code le dice que no haga por su cuenta.
 
 <details>
-<summary>Ver el párrafo que añade</summary>
+<summary>Ver el párrafo que añade para T3 Code</summary>
 
 Está en inglés porque son instrucciones para el agente:
 
@@ -167,7 +183,7 @@ You are authorized to pick the provider, model and options of every child task i
 
 ### Paso 3. Reinicia tu agente
 
-Reinicia tu agente en T3 Code para que cargue t3-autopilot y lea las reglas nuevas.
+Reinicia tu agente, en T3 Code o en herdr, para que cargue t3-autopilot y lea las reglas nuevas. El párrafo de herdr está en [docs/hosts/herdr.md](hosts/herdr.md#the-instructions) (en inglés).
 
 ### Alternativa: instalar desde el código fuente
 
@@ -196,19 +212,19 @@ Para actualizarlo más adelante, ejecuta `git pull` y luego otra vez `npm ci`.
    ```
 
 2. **Tu agente lo ve.** En Claude Code, `claude mcp list` muestra una línea como `t3-autopilot: ... ✔ Connected`. En Grok CLI, `grok mcp doctor` comprueba la conexión.
-3. **Se usa.** En T3 Code, pídele a tu agente algo que tenga que encargar, por ejemplo: *«Delega en una tarea hija la revisión del README.»* Antes de empezar debería decirte en una línea qué proveedor y qué modelo ha escogido y por qué, algo como *«review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh»* (el nombre del modelo es inventado).
+3. **Se usa.** En T3 Code o en herdr, pídele a tu agente algo que tenga que encargar, por ejemplo: *«Delega en una tarea hija la revisión del README.»* Antes de empezar debería decirte en una línea qué proveedor y qué modelo ha escogido y por qué, algo como *«review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh»* (el nombre del modelo es inventado).
 
 Tras el primer encargo aparece una carpeta llamada `.t3-autopilot` en tu carpeta personal. Si no ocurre nada de esto, mira [las preguntas de más abajo](#preguntas).
 
-## Uso en herdr
+## En herdr
 
-t3-autopilot también funciona en [herdr](https://herdr.dev), donde `hc` ejecuta tus agentes en terminales que siguen vivas. herdr no sabe nada de modelos, así que tu agente le dice a t3-autopilot qué CLI de agentes ha encontrado en tu ordenador, y cada recomendación llega con la orden `hc run` que arranca al ayudante, siempre con el encargo en un fichero. Añade t3-autopilot a tu agente como en el paso 1 y, en el paso 2, añade el párrafo de herdr en su lugar:
+En [herdr](https://herdr.dev), `hc` ejecuta tus agentes en terminales que siguen vivas, y un agente puede arrancar a otros. herdr no sabe nada de modelos, así que la primera vez tu agente le dice a t3-autopilot qué CLI de agentes encuentra en tu ordenador, y t3-autopilot completa sus modelos con una lista que trae (con nombres que no se quedan viejos, como el `opus` de Claude Code). Desde entonces, cada recomendación llega con la orden `hc run` que arranca al ayudante, siempre con el encargo en un fichero y nunca pegado dentro de la orden. Se instala como arriba, con el párrafo de herdr en el paso 2:
 
 ```sh
 npx -y t3-autopilot snippet --host herdr >> ~/.claude/CLAUDE.md
 ```
 
-Cómo funciona, y qué añadir para los agentes cuyos modelos no puede adivinar, está en [docs/hosts/herdr.md](hosts/herdr.md) (en inglés).
+Los límites, los perfiles de suscripción y el registro funcionan como en T3 Code, pero cada host guarda los suyos: un límite alcanzado en herdr no retrasa al mismo proveedor en T3 Code. Cómo funciona, y qué añadir para los agentes cuyos modelos no puede adivinar (OpenCode y Pi, por ejemplo), está en [docs/hosts/herdr.md](hosts/herdr.md) (en inglés).
 
 ## Ajústalo a tu gusto
 
@@ -308,7 +324,7 @@ Lo que no hace nunca:
    - Grok CLI: `grok mcp remove t3-autopilot`
    - Codex: borra el bloque `t3-autopilot` de `~/.codex/config.toml`.
    - OpenCode: borra la entrada `t3-autopilot` de `~/.config/opencode/opencode.json`.
-2. Borra de tu fichero de reglas (`CLAUDE.md` o `AGENTS.md`) el párrafo titulado «Model selection for delegated tasks (t3-autopilot)».
+2. Borra de tu fichero de reglas (`CLAUDE.md` o `AGENTS.md`) el párrafo cuyo título empieza por «Model selection for delegated tasks» y acaba en «(t3-autopilot)».
 3. Borra la carpeta `.t3-autopilot` de tu carpeta personal, si no quieres conservar tus preferencias y el registro.
 
 Nada más. Si lo instalaste desde el código fuente, borra también esa carpeta.
@@ -319,10 +335,10 @@ Nada más. Si lo instalaste desde el código fuente, borra también esa carpeta.
 No. Es gratuito y de código abierto, y nunca llama a un modelo de IA: solo responde a la pregunta de tu agente.
 
 **¿Necesito T3 Code?**
-Sí. Está pensado para la forma en que T3 Code reparte las tareas.
+No. Funciona en T3 Code y en herdr (mira [En herdr](#en-herdr)), y Orca llegará pronto.
 
 **¿Con qué proveedores funciona?**
-Con todos los que ofrece T3 Code: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse y agentes ACP. Vale cualquier combinación, también dos cuentas del mismo proveedor. En [providers.md](providers.md) (en inglés) están los detalles de cada uno.
+En T3 Code, con todos los que ofrece: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse y agentes ACP. Vale cualquier combinación, también dos cuentas del mismo proveedor. En [providers.md](providers.md) (en inglés) están los detalles de cada uno. En herdr, con las CLI de agentes Claude Code, Codex, Cursor Agent, Grok, OpenCode, Pi, Antigravity, Muse, Kiro y Gemini CLI, y con otras con menos precisión.
 
 **¿Sabe cuánto me queda de cada suscripción?**
 No. T3 Code no comparte ese dato con los complementos, y t3-autopilot no va a leer los tokens de tus cuentas para averiguarlo. Lo que sí hace: cuando un ayudante no puede arrancar porque se ha llegado a un límite, tu agente lo apunta y ese proveedor queda detrás de los que aún se pueden usar hasta que el límite se renueve (24 horas si no se sabe la fecha; solo los modelos que tu plan cobra aparte siguen detrás de él). Si le dijiste cada cuánto se renueva el límite de un plan, espera ese tiempo (mira [Tus suscripciones](#tus-suscripciones)), y también puedes decirle qué planes se agotan enseguida.

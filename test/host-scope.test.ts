@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { helpText, runCli } from "../src/cliMain.js";
 import {
+  allHostsSnippet,
   DEFAULT_HOST,
+  HOSTS,
   resolveHost,
   splitKey,
   splitOwn,
@@ -392,20 +394,54 @@ describe("snippet --host", () => {
     expect(await run(["snippet", "--host"])).toEqual({
       code: 2,
       out: "",
-      err: "snippet --host needs a host: t3, fake.\n",
+      err: "snippet --host needs a host: t3, fake, or all for every host.\n",
     });
     expect(await run(["snippet", "--host", "orca"])).toEqual({
       code: 2,
       out: "",
-      err: 'Unknown host "orca". Known hosts: t3, fake.\n',
+      err: 'Unknown host "orca". Known hosts: t3, fake, or all for every host.\n',
     });
     expect((await run(["snippet", "--host", "t3"], [t3])).out).toBe(INSTRUCTIONS_SNIPPET);
+  });
+
+  it("--host all says how to find your host, then gives every registered host's instructions", async () => {
+    const all = await run(["snippet", "--host", "all"]);
+    expect(all).toEqual({ code: 0, out: allHostsSnippet(HOSTS2), err: "" });
+    expect(all.out).toBe(
+      [
+        "## Model selection for delegated tasks, in every host (t3-autopilot)",
+        "",
+        "These instructions cover every host t3-autopilot supports. First find the one you run in, the first of " +
+          "these that applies, then follow only its section:",
+        "",
+        "- T3 Code: you have the `orchestrator_capabilities` tool.",
+        "- Fake Host: you can run `fake-agents`.",
+        "",
+        "If none of them applies, do not call t3-autopilot.",
+        "",
+        "### T3 Code",
+        "",
+        INSTRUCTIONS_SNIPPET.slice(INSTRUCTIONS_SNIPPET.indexOf("\n\n") + 2),
+        "### Fake Host",
+        "",
+        "Call recommend_model with host: fake.",
+        "",
+      ].join("\n"),
+    );
+    // A host added to the registry is in it at once, after the others: herdr's, and Orca's once it is registered.
+    const three = await run(["snippet", "--host", "all"], [...HOSTS, fake]);
+    const order = ["### T3 Code", "### herdr", "### Fake Host"].map((h) => three.out.indexOf(`\n${h}\n`));
+    expect(order.every((at, i) => at > 0 && (i === 0 || at > (order[i - 1] ?? 0)))).toBe(true);
+    for (const host of [...HOSTS, fake]) expect(three.out).toContain(`- ${host.name}: ${host.recognize}.`);
+    // With one host, its own snippet.
+    expect((await run(["snippet", "--host", "all"], [t3])).out).toBe(INSTRUCTIONS_SNIPPET);
   });
 
   it("the help lists --host once there is another host", async () => {
     expect(helpText([t3])).not.toContain("--host");
     expect(helpText(HOSTS2)).toContain(
-      "  t3-autopilot snippet --host <id> Print another host's instructions: fake.\n  t3-autopilot init-policy",
+      "  t3-autopilot snippet --host <id> Print another host's instructions (fake), or every host's (all).\n" +
+        "  t3-autopilot init-policy",
     );
     expect((await run(["--help"])).out).toBe(helpText(HOSTS2));
     expect((await run(["frobnicate"])).err).toContain("snippet --host <id>");

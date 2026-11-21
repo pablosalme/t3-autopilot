@@ -28,7 +28,7 @@ T3 Code is not needed.
    npx -y t3-autopilot snippet --host herdr >> ~/.claude/CLAUDE.md
    ```
 
-   For Codex, Grok CLI or OpenCode, append it to `~/.codex/AGENTS.md`, `~/.grok/AGENTS.md` or `~/.config/opencode/AGENTS.md`. On Windows, copy and paste instead. The text is at the [end of this page](#the-instructions).
+   For Codex, Grok CLI or OpenCode, append it to `~/.codex/AGENTS.md`, `~/.grok/AGENTS.md` or `~/.config/opencode/AGENTS.md`. On Windows, copy and paste instead. The text is at the [end of this page](#the-instructions). If the same rules file is also read in T3 Code, use `snippet --host all` instead: it holds both hosts' instructions, and first tells your agent how to find where it runs.
 
 3. **Start the orchestrator in herdr,** in a terminal of the herdr app, or with `hc run --bg --name lead claude` and then `hc attach lead`.
 

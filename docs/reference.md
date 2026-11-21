@@ -110,7 +110,7 @@ The package installs one command, `t3-autopilot` (run it with `npx -y t3-autopil
 |---|---|---|
 | `t3-autopilot` (or `t3-autopilot serve`) | Starts the MCP server on stdio. This is what your agent CLI runs. | `0` |
 | `t3-autopilot snippet` | Prints the instructions to paste into `CLAUDE.md` / `AGENTS.md`. | `0` |
-| `t3-autopilot snippet --host <id>` | Prints the instructions for that [host](#hosts): `t3` or `herdr`. | `0`, or `2` without a host or with an unknown one |
+| `t3-autopilot snippet --host <id>` | Prints the instructions for that [host](#hosts): `t3` or `herdr`; `all` prints every host's, after how to tell which one the orchestrator runs in. | `0`, or `2` without a host or with an unknown one |
 | `t3-autopilot init-policy` | Writes a commented override template to `policy.yaml` in the [data directory](#data-directory). Never overwrites an existing file. | `0`, or `1` if the file exists |
 | `t3-autopilot --help` (`-h`, `help`) | Prints the usage text. | `0` |
 | `t3-autopilot --version` (`-v`) | Prints the version. | `0` |
@@ -192,7 +192,7 @@ In short, it tells the orchestrator to:
 
 Whether the orchestrator follows it depends on the model; nothing enforces it. `get_stats` shows how often the first candidate was used.
 
-An orchestrator that runs in herdr gets its own instructions from `t3-autopilot snippet --host herdr`: the same steps, with herdr's probe as `capabilities` and the candidate's `launch` to start each child. They are in [hosts/herdr.md](hosts/herdr.md#the-instructions).
+An orchestrator that runs in herdr gets its own instructions from `t3-autopilot snippet --host herdr`: the same steps, with herdr's probe as `capabilities` and the candidate's `launch` to start each child. They are in [hosts/herdr.md](hosts/herdr.md#the-instructions). For one rules file read by agents in several hosts (a single global `CLAUDE.md`), `t3-autopilot snippet --host all` prints every host's instructions, each under its name, after a first step that tells the orchestrator how to find its host: T3 Code if it has the `orchestrator_capabilities` tool, herdr if `HC_TERMINAL_ID` is set.
 
 ## Tools
 
