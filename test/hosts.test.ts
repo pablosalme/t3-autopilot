@@ -81,9 +81,27 @@ describe("the T3 Code adapter", () => {
       [],
     ];
     for (const payload of forms) expect(t3.detect(payload)).toBe(true);
-    // A list of plain strings is no form of T3's output (each provider is an object): herdr's program names.
-    const others = [fakePayload([]), {}, "{bad", "plain text", 42, null, undefined, ["claude", "codex"], '["claude"]'];
-    for (const payload of others) expect(t3.detect(payload)).toBe(false);
+    // A list with one provider or output is T3's, so the parser names the item that is wrong.
+    expect(t3.detect([(full.providers as unknown[])[0], {}])).toBe(true);
+    expect(t3.detect([full, "{bad"])).toBe(true);
+    // A list of plain strings is no form of T3's output (each provider is an object): herdr's program names. Nor is
+    // a list with no provider or output in it, nor a failed command's output.
+    const others = [
+      fakePayload([]),
+      {},
+      "{bad",
+      "plain text",
+      42,
+      null,
+      undefined,
+      ["claude", "codex"],
+      '["claude"]',
+      [{}],
+      [{ id: "claude" }],
+      [42, null],
+      { ok: false, error: { code: "internal" } },
+    ];
+    for (const payload of others) expect(t3.detect(payload), JSON.stringify(payload)).toBe(false);
   });
 
   it("builds the catalog with parseCapabilitiesInput, with no notes of its own", () => {

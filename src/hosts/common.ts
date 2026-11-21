@@ -13,6 +13,30 @@ export function parseJson(text: string): unknown {
   }
 }
 
+const isPlain = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** The first line of a message, trimmed, without a final period: a message that goes on after it. */
+const firstLine = (text: string) =>
+  text
+    .replace(/\n[\s\S]*/, "")
+    .trim()
+    .replace(/\.+$/, "");
+
+/**
+ * A payload that is a failed command's JSON output, `{ ok: false, ... }` (also as JSON text), with what its `error`
+ * says: Orca's `{ code, message }` gives "runtime_unavailable: Could not read …", a plain string its first line.
+ * Undefined for any other payload.
+ */
+export function failedOutput(payload: unknown): { code?: string; message?: string } | undefined {
+  const value = typeof payload === "string" ? parseJson(payload) : payload;
+  if (!isPlain(value) || value.ok !== false) return undefined;
+  const error = isPlain(value.error) ? value.error : { message: value.error };
+  const code = typeof error.code === "string" && error.code.trim() ? error.code.trim() : undefined;
+  const message = typeof error.message === "string" ? firstLine(error.message) : "";
+  return { ...(code ? { code } : {}), ...(message ? { message } : {}) };
+}
+
 /** "a", "a and b", "a, b and c". */
 export function list(items: readonly string[]): string {
   return items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;

@@ -1,7 +1,7 @@
 import { CapabilitiesSchema, type Model, type Provider } from "../capabilities.js";
 import { type AgentCatalog, agentProvider, agentView, DEFAULT_MODEL_ID, isToken, resolveAgent } from "../catalog.js";
 import type { Candidate } from "../recommend.js";
-import { list, noModelsNote, onlyDefaultModel, orchestratorOf, parseJson } from "./common.js";
+import { failedOutput, list, noModelsNote, onlyDefaultModel, orchestratorOf, parseJson } from "./common.js";
 import type { CallOptions, HostAdapter, HostCatalog, HostContext, Launch, Orchestrator } from "./types.js";
 
 /**
@@ -177,17 +177,9 @@ function short(value: unknown): string {
  */
 export function readInstalled(payload: unknown): Installed {
   const value = payloadValue(payload);
-  if (isPlain(value) && value.ok === false) {
-    const error = isPlain(value.error) ? value.error : {};
-    const code = typeof error.code === "string" ? error.code : "an error";
-    // Its first line, without a final period: the message goes on after it.
-    const message =
-      typeof error.message === "string"
-        ? error.message
-            .replace(/\n[\s\S]*/, "")
-            .trim()
-            .replace(/\.+$/, "")
-        : "";
+  const failed = failedOutput(value);
+  if (failed !== undefined) {
+    const { code = "an error", message } = failed;
     throw new Error(
       `${ORCA_DISCOVERY} failed with ${code}${message ? `: ${message}` : ""}. Pass its output once it succeeds.`,
     );
@@ -464,15 +456,18 @@ export const orca: HostAdapter = {
   recognize:
     "`ORCA_TERMINAL_HANDLE` or `ORCA_AGENT_SESSION_ID` is set in your environment (you run in an Orca terminal or chat)",
   /**
-   * Orca's output, also as JSON text: an object with `ok` and a `result` or an `error` (the error output too, so
-   * the call says why it failed), its `result` (`{ agents }`), or the agents list itself. T3 Code's adapter, first
-   * in the registry, leaves such a list to Orca: every T3 provider has a `providerInstanceId`.
+   * Orca's output, also as JSON text: `{ ok: true, result }`, its `result` (`{ agents }`), or a list of agents (one
+   * object with an `id` and no `providerInstanceId` is enough, so a list with one item that is not an agent is still
+   * Orca's, whose reader ignores that item); empty, the list is Orca's only when the call names Orca, as T3 Code
+   * comes first. Its error output, `{ ok: false, error }`, only as Orca prints it, with `_meta.runtimeId`: any other
+   * failed output is no host's, and resolveHost says so in a call that names no host.
    */
   detect: (payload) => {
     const value = payloadValue(payload);
-    if (Array.isArray(value)) return value.every(isAgentItem);
+    if (Array.isArray(value)) return value.length === 0 || value.some(isAgentItem);
     if (!isPlain(value)) return false;
-    if (typeof value.ok === "boolean") return "result" in value || "error" in value;
+    if (value.ok === true) return "result" in value;
+    if (value.ok === false) return "error" in value && isPlain(value._meta) && "runtimeId" in value._meta;
     return Array.isArray(value.agents);
   },
   catalog: ({ capabilities, orchestrator }, ctx): HostCatalog => {

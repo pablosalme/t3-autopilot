@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { type LoadedCatalog, loadCatalog } from "../catalog.js";
 import { DATA_FILES } from "../paths.js";
 import type { CandidateRule, Policy } from "../policy.js";
+import { failedOutput } from "./common.js";
 import { herdr } from "./herdr.js";
 import { orca } from "./orca.js";
 import { t3 } from "./t3.js";
@@ -58,9 +59,11 @@ export interface HostQuery {
 /**
  * The host a call is for: the one it names, else the one whose shape its
  * payload has, else the host of the last recommend_model call, else the
- * default host. Throws when the named host is unknown, when the payload looks
- * like another host's output, and when it has the shape of an `explicit`
- * host's payload but the call names no host (unless the last call was for it).
+ * default host. Throws when the named host is unknown, when the payload has
+ * another host's shape and not the named host's, and, in a call that names no
+ * host, when it has the shape of an `explicit` host's payload (unless the last
+ * call was for it) or is a failed command's output (`{ ok: false }`) that no
+ * host claims, which no host's reader could tell apart.
  */
 export function resolveHost(query: HostQuery, hosts: readonly HostAdapter[] = HOSTS): HostAdapter {
   const { host, payload, last } = query;
@@ -79,6 +82,14 @@ export function resolveHost(query: HostQuery, hosts: readonly HostAdapter[] = HO
     return named;
   }
   const detected = payload === undefined ? undefined : hosts.find((h) => h.detect(payload));
+  const failed = detected === undefined ? failedOutput(payload) : undefined;
+  if (failed !== undefined) {
+    const what = [failed.code, failed.message].filter(Boolean).join(": ") || "ok: false";
+    throw new Error(
+      `capabilities is the output of a command that failed (${what}), not a list of agents or models. Run that ` +
+        "command again and pass its output once it succeeds; outside T3 Code, also pass host.",
+    );
+  }
   if (detected?.explicit && detected !== last) {
     throw new Error(
       `capabilities look like ${detected.name} output, but the call names no host: pass host: "${detected.id}".`,

@@ -222,6 +222,9 @@ describe("orca agent installed --json", () => {
       readInstalled({ ok: false, error: { code: "runtime_unavailable", message: " Busy...\nRetry later.\n" } }),
     ).toThrow(`${ORCA_DISCOVERY} failed with runtime_unavailable: Busy. Pass its output once it succeeds.`);
     expect(() => readInstalled({ ok: false })).toThrow(`${ORCA_DISCOVERY} failed with an error. Pass its output`);
+    expect(() => readInstalled({ ok: false, error: "no network\nretry" })).toThrow(
+      `${ORCA_DISCOVERY} failed with an error: no network. Pass its output`,
+    );
     const what = `capabilities for Orca is the output of ${ORCA_DISCOVERY}, exactly as printed (or its list of agents); got`;
     expect(() => readInstalled("claude codex")).toThrow(`${what} text that is not JSON.`);
     expect(() => readInstalled({ ok: true, result: { agents: "claude" } })).toThrow(
@@ -243,8 +246,15 @@ describe("orca agent installed --json", () => {
       [],
       "[]",
       '[{"id":"pi"}]',
+      // A list of agents with one item that is not an agent: Orca's reader ignores that item.
+      [{ id: "claude" }, { name: "x" }],
     ]) {
       expect(orca.detect(payload), JSON.stringify(payload).slice(0, 40)).toBe(true);
+    }
+    // A failed output is Orca's only as Orca prints it, with its envelope's _meta.runtimeId.
+    const bare = { ok: false, error: { code: "runtime_unavailable", message: "Start the Orca app first." } };
+    for (const payload of [bare, JSON.stringify(bare), { ...bare, _meta: {} }, { ok: true }]) {
+      expect(orca.detect(payload), JSON.stringify(payload)).toBe(false);
     }
     const t3Output = driverFixtureRaw("mixed");
     const probe = "/usr/local/bin/claude\n/usr/local/bin/codex\n";
@@ -295,6 +305,41 @@ describe("the host of a call with Orca's payload", () => {
     expect(t3.detect(parsed.result.agents)).toBe(false);
     expect(t3.detect(JSON.stringify(parsed.result.agents))).toBe(false);
     expect(t3.detect([{ id: "claude", providerInstanceId: "claude" }])).toBe(true);
+  });
+
+  it("follows the host the call names, unless the payload is another host's for sure", () => {
+    // Orca's list with one item that is not an agent: Orca's, named or not, and never T3 Code's.
+    const odd = [{ id: "claude" }, { name: "x" }];
+    expect(t3.detect(odd)).toBe(false);
+    expect(resolveHost({ host: "orca", payload: odd })).toBe(orca);
+    expect(resolveHost({ payload: odd })).toBe(orca);
+    expect(orca.catalog({ capabilities: odd }, context()).notes).toContain(
+      'Ignored in capabilities: {"name":"x"} (not an Orca agent id).',
+    );
+    // A failed output that is not Orca's, as printed, goes to the host the call names, whose reader says why.
+    const bare = { ok: false, error: { code: "boom", message: "It broke.\nDetails follow." } };
+    expect(resolveHost({ host: "t3", payload: bare })).toBe(t3);
+    expect(resolveHost({ host: "orca", payload: bare })).toBe(orca);
+    // A list of objects no host's shape has goes to the named host too.
+    expect(resolveHost({ host: "orca", payload: [{}] })).toBe(orca);
+  });
+
+  it("says a failed output is a failed command's when the call names no host, whatever the last host was", () => {
+    const neutral =
+      "capabilities is the output of a command that failed (boom: It broke), not a list of agents or models. Run " +
+      "that command again and pass its output once it succeeds; outside T3 Code, also pass host.";
+    const bare = { ok: false, error: { code: "boom", message: "It broke.\nDetails follow." } };
+    expect(() => resolveHost({ payload: bare })).toThrow(neutral);
+    expect(() => resolveHost({ payload: JSON.stringify(bare), last: t3 })).toThrow(neutral);
+    expect(() => resolveHost({ payload: { ok: false }, last: orca })).toThrow("command that failed (ok: false)");
+    expect(() => resolveHost({ payload: { ok: false, error: "no network" } })).toThrow(
+      "command that failed (no network)",
+    );
+    // Orca's own error output, as printed, is still Orca's, and its reader says what failed.
+    expect(resolveHost({ payload: output("agent-installed-error") })).toBe(orca);
+    // The empty list is still T3 Code's when the call names no host.
+    expect(resolveHost({ payload: [] })).toBe(t3);
+    expect(resolveHost({ payload: "[]", last: orca })).toBe(t3);
   });
 
   it("refuses a payload of another host", () => {
@@ -812,6 +857,19 @@ describe("recommend_model in Orca", () => {
     // Orca has OpenCode twice (opencode and opencode2): one provider, started as opencode, which takes a model.
     const review = data(await recommend(client, { ...real, taskType: "review" }));
     expect(args(review)).toEqual(["--agent grok", "--agent opencode", "--agent hermes"]);
+  });
+
+  it("leaves a T3 Code session with a failed output on T3 Code, or tells it what failed, never in Orca's words", async () => {
+    const { client } = await connectServer(tempDir(), { now: () => T0 });
+    data(await recommend(client, { capabilities: driverFixtureRaw("mixed") }));
+    const failed = { ok: false, error: { code: "internal", message: "The tool failed." } };
+    const nameless = resultText(await recommend(client, { capabilities: failed }));
+    expect(nameless).toMatch(/^capabilities is the output of a command that failed \(internal: The tool failed\)/);
+    expect(resultText(await recommend(client, { host: "t3", capabilities: failed }))).toMatch(
+      /^capabilities does not look like orchestrator_capabilities output/,
+    );
+    // The session stays T3 Code's: a call without capabilities still gets T3's.
+    expect(data(await recommend(client, {})).host).toBeUndefined();
   });
 
   it("finds Orca's output without host, since nothing else looks like it", async () => {

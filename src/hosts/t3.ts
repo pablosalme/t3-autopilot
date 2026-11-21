@@ -4,29 +4,25 @@ import { DEFAULT_RECOMMEND_TEXT } from "../recommend.js";
 import { INSTRUCTIONS_SNIPPET } from "../snippet.js";
 import type { HostAdapter } from "./types.js";
 
+const isObject = (value: unknown): value is object =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 /**
- * An item of another host's list of agents: an object with a string `id` and neither `providerInstanceId`, which
- * every T3 provider has, nor `providers`, which every T3 output has (Orca's `{ id, name, default }`).
+ * An item of one of T3's lists: a provider (it has `providerInstanceId`), an output (it has `providers`) or an
+ * output's JSON text.
  */
-function isAgentItem(item: unknown): boolean {
-  return (
-    typeof item === "object" &&
-    item !== null &&
-    !Array.isArray(item) &&
-    typeof (item as { id?: unknown }).id === "string" &&
-    !("providerInstanceId" in item) &&
-    !("providers" in item)
-  );
+function isT3Item(item: unknown): boolean {
+  if (typeof item === "string") return isOutputList([item]);
+  return isObject(item) && ("providerInstanceId" in item || "providers" in item);
 }
 
 /**
- * T3 Code's payload: the output of `orchestrator_capabilities` (an object
- * with `providers`), a bare `providers` array, or a list of outputs (objects,
- * or JSON text of each); any of them also as JSON text. A list of plain
- * strings, such as `["claude", "codex"]`, is none of them (each provider is an
- * object), so it is left to the host whose payload it is: herdr's program names.
- * Nor is a list of agents with an `id` and no `providerInstanceId`: Orca's
- * agents, from `orca agent installed --json`.
+ * T3 Code's payload, by what only it has: the output of `orchestrator_capabilities` (an object with `providers`), a
+ * bare `providers` array, or a list of outputs (objects, or JSON text of each); any of them also as JSON text. A list
+ * counts when one of its items is a provider or an output, so the parser names the item that is wrong, and the empty
+ * list is T3's, as in every 0.1 version. Anything else, such as herdr's program names, Orca's agents (an `id` and no
+ * `providerInstanceId`) or a list of objects that are neither, is not claimed: a call that names another host passes
+ * it to that host's reader, and one that names none goes to the host of the last call, else to T3 Code (resolveHost).
  */
 function looksLikeT3(payload: unknown): boolean {
   let value = payload;
@@ -37,12 +33,8 @@ function looksLikeT3(payload: unknown): boolean {
       return false;
     }
   }
-  if (Array.isArray(value)) {
-    const plainStrings = value.length > 0 && value.every((item) => typeof item === "string") && !isOutputList(value);
-    const agents = value.length > 0 && value.every(isAgentItem);
-    return !plainStrings && !agents;
-  }
-  return typeof value === "object" && value !== null && "providers" in value;
+  if (Array.isArray(value)) return value.length === 0 || value.some(isT3Item);
+  return isObject(value) && "providers" in value;
 }
 
 /**
