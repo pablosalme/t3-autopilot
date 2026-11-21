@@ -21,6 +21,8 @@ export interface DelegationRecord {
   recommendedRank?: number | null;
   childThreadId?: string;
   summary?: string;
+  /** The host, when it is not T3 Code; `providerInstanceId` then carries its prefix (`orca:codex`). */
+  host?: string;
 }
 
 export interface OutcomeRecord {
@@ -33,6 +35,8 @@ export interface OutcomeRecord {
   taskType?: string;
   providerInstanceId?: string;
   model?: string;
+  /** The host, when it is not T3 Code and the outcome was logged on its own. */
+  host?: string;
 }
 
 export type LogRecord = DelegationRecord | OutcomeRecord;
@@ -99,6 +103,8 @@ export interface OutcomeInput {
   taskType?: string;
   providerInstanceId?: string;
   model?: string;
+  /** Stored with an outcome logged on its own (see {@link OutcomeRecord}). */
+  host?: string;
 }
 
 /**
@@ -126,7 +132,12 @@ export function logOutcome(path: string, input: OutcomeInput, now: Date = new Da
     outcome: input.outcome,
     ...(input.note !== undefined ? { note: truncateText(input.note) } : {}),
     ...(standalone
-      ? { taskType: input.taskType, providerInstanceId: input.providerInstanceId, model: input.model }
+      ? {
+          taskType: input.taskType,
+          providerInstanceId: input.providerInstanceId,
+          model: input.model,
+          ...(input.host !== undefined ? { host: input.host } : {}),
+        }
       : {}),
   };
   append(path, record);
@@ -147,6 +158,19 @@ export function readLog(path: string): LogRecord[] {
     }
   }
   return out;
+}
+
+/**
+ * The records of the provider instances `keep` accepts: delegations and the
+ * outcomes logged on their own by their `providerInstanceId`, every other
+ * outcome by the delegation it belongs to.
+ */
+export function recordsOf(records: readonly LogRecord[], keep: (providerInstanceId: string) => boolean): LogRecord[] {
+  const kept = new Set(records.flatMap((r) => (r.kind === "delegation" && keep(r.providerInstanceId) ? [r.id] : [])));
+  return records.filter((r) => {
+    if (r.kind === "delegation") return kept.has(r.id);
+    return r.providerInstanceId !== undefined ? keep(r.providerInstanceId) : kept.has(r.delegationId);
+  });
 }
 
 export interface Counts {

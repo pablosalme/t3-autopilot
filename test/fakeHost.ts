@@ -28,6 +28,7 @@ export const fakePayload = (agents: FakeAgent[], orchestrator?: { agent: string;
 export const fake: HostAdapter = {
   id: "fake",
   name: "Fake Host",
+  keyPrefix: "fake:",
   cacheFile: "capabilities-cache.fake.json",
   merges: false,
   text: {

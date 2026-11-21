@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "marks": [
+    {
+      "providerInstanceId": "claudeAgent",
+      "reason": "session limit",
+      "markedAt": "2026-11-21T08:00:00.000Z",
+      "until": "2099-01-01T00:00:00.000Z"
+    },
+    {
+      "providerInstanceId": "cursor",
+      "model": "gemini-5.1-pro",
+      "reason": "not included in your weekly usage",
+      "markedAt": "2026-11-21T08:00:00.000Z",
+      "until": "2099-01-01T00:00:00.000Z"
+    },
+    {
+      "providerInstanceId": "opencode",
+      "model": "opencode-go/*",
+      "reason": "5-hour limit reached",
+      "markedAt": "2026-11-21T08:00:00.000Z",
+      "until": "2099-01-01T00:00:00.000Z"
+    },
+    {
+      "providerInstanceId": "grok",
+      "reason": "expired long ago",
+      "markedAt": "2020-01-01T00:00:00.000Z",
+      "until": "2020-01-02T00:00:00.000Z"
+    }
+  ]
+}

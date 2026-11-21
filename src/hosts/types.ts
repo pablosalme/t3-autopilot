@@ -1,6 +1,6 @@
 import type { Capabilities } from "../capabilities.js";
 import type { Policy } from "../policy.js";
-import type { RecommendText } from "../recommend.js";
+import type { Candidate, RecommendText } from "../recommend.js";
 
 /**
  * A host is the app the orchestrator runs in and starts children with: T3
@@ -49,6 +49,31 @@ export interface HostText extends RecommendText {
 }
 
 /**
+ * How to start a candidate in a host that starts children with a command
+ * (T3 Code takes the candidate itself as `delegate_task.target`, so it has
+ * none). Every element is one argument: never a shell string, and the brief
+ * never goes inside one.
+ */
+export interface Launch {
+  /** supervised: the child reports back to the orchestrator when it is done or stuck; handoff: nothing comes back. */
+  mode: "supervised" | "handoff";
+  /** The host's agent id. */
+  agent: string;
+  /** Absent: the agent CLI's own default model. */
+  model?: string;
+  /** Absent: the CLI does not take one for this model. */
+  effort?: string;
+  /** The selection tokens, for any launch command of the host. */
+  args: string[];
+  /** The recommended command, one element per argument; whole elements such as `{briefFile}` are placeholders. */
+  argv: string[];
+  /** Commands to run next, when the agent does not take the brief at start. */
+  then?: string[][];
+  /** Notes for the platform or the CLI. */
+  notes?: string[];
+}
+
+/**
  * What t3-autopilot needs to know about a host. The contract is described in
  * CONTRIBUTING.md ("Adding a host").
  */
@@ -56,6 +81,13 @@ export interface HostAdapter {
   readonly id: HostId;
   /** Its name for people: "T3 Code". */
   readonly name: string;
+  /**
+   * What the host's ids carry in the data files (unavailable.json,
+   * subscriptions.yaml, log.jsonl, the policy's excludeProviders and
+   * `instance:`): "" for T3 Code, whose ids are stored as they are, as in
+   * 0.1; `<id>:` for any other host, so its `codex` never meets T3's.
+   */
+  readonly keyPrefix: "" | `${string}:`;
   /** The file in the data directory where the server keeps this host's capabilities for a restart. */
   readonly cacheFile: string;
   /**
@@ -71,4 +103,10 @@ export interface HostAdapter {
   detect(payload: unknown): boolean;
   /** The canonical catalog for a call; throws, with a message that says what to pass, when the payload is not valid. */
   catalog(input: CallInput, ctx: HostContext): HostCatalog;
+  /**
+   * How to start a candidate, added to it as `launch`. Absent when the
+   * candidate is enough (T3 Code). Throws to leave a candidate out (a token
+   * that fails validation, say); the message goes into `skipped`.
+   */
+  launch?(candidate: Candidate, ctx: HostContext): Launch;
 }

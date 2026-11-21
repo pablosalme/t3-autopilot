@@ -9,6 +9,7 @@ The technical side of t3-autopilot: the tools, the policy file, the data it keep
 - [Registering the server](#registering-the-server)
 - [Instructions for the orchestrator](#instructions-for-the-orchestrator)
 - [Tools](#tools)
+  - [Hosts](#hosts)
 - [Supported providers](#supported-providers)
 - [The policy](#the-policy)
 - [Unavailable marks](#unavailable-marks)
@@ -107,6 +108,7 @@ The package installs one command, `t3-autopilot` (run it with `npx -y t3-autopil
 |---|---|---|
 | `t3-autopilot` (or `t3-autopilot serve`) | Starts the MCP server on stdio. This is what your agent CLI runs. | `0` |
 | `t3-autopilot snippet` | Prints the instructions to paste into `CLAUDE.md` / `AGENTS.md`. | `0` |
+| `t3-autopilot snippet --host <id>` | Prints the instructions for that [host](#hosts) (`t3` is the only one so far). | `0`, or `2` without a host or with an unknown one |
 | `t3-autopilot init-policy` | Writes a commented override template to `policy.yaml` in the [data directory](#data-directory). Never overwrites an existing file. | `0`, or `1` if the file exists |
 | `t3-autopilot --help` (`-h`, `help`) | Prints the usage text. | `0` |
 | `t3-autopilot --version` (`-v`) | Prints the version. | `0` |
@@ -192,13 +194,13 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 
 | Tool | Input | Output |
 |---|---|---|
-| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage` | `taskType` (the type used), `requestedTaskType` (only when `taskType` was an alias), `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`), `skipped[]`, `warnings[]`, `usageSource`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`), `setupNeeded` (only when an eligible provider has no subscription profile) |
-| `log_delegation` | `taskType`, `providerInstanceId`, `model`, optional `options`, `recommendedRank` (1-based, or null), `childThreadId`, `summary` | `delegationId` and `logged` (the stored record) |
-| `log_outcome` | `outcome` (`success`/`corrected`/`failure`), optional `note`, plus `delegationId` **or** `taskType` + `providerInstanceId` + `model` | `logged` (the stored record) |
-| `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model; `prefix*` for every id that starts with `prefix`), `reason` (required unless clearing), `until` (ISO date; by default the provider's `quotaWindow`, else 24 h), or `clear: true` to remove marks | `marked` and `untilFrom` (`until`, the `quotaWindow` used, or `default 24 h`), or `cleared`; `active`, every mark in force |
-| `set_subscription` | `providerInstanceId`, `plan`, `quota` (`generous`/`standard`/`tight`), optional `purpose`, `role`, `quotaPool`, `quotaWindow` (`5h`/`weekly`/`monthly`), `includedFamilies` or `paidFamilies`, `onlyFamilies` or `avoidFamilies`, `onlyTaskTypes`; or `remove: true` alone | `saved` (or `removed`, null if there was none), `file`, `subscriptions` (every profile), `missing` (eligible providers of the kept capabilities without a profile; null if none are kept), `warnings` |
-| `get_subscriptions` | none | `file`, `subscriptions`, `missing` |
-| `get_stats` | optional `since` (ISO date), `taskType` | `log` (the file path), counts, success rate and pending delegations in total, per task type and per model; `followedFirstRecommendation`; the `unavailable` marks in force. With `taskType`: `stats` for that type only (or `null`) |
+| `recommend_model` | `task`, `taskType` (always pass it), optional `capabilities` (required on the first call), `mergeCapabilities`, `size` (`small`/`medium`/`large`), `criticality` (`low`/`normal`/`high`), `usage`, `host` | `host` (only outside T3 Code), `taskType` (the type used), `requestedTaskType` (only when `taskType` was an alias), `classification`, `candidates[]` (`providerInstanceId`, `model`, `options`, `reason`, `source`, `sameAsOrchestrator`; `launch` in a host that starts children with a command), `skipped[]`, `warnings[]`, `usageSource`, `capabilitiesFrom` (`call`/`cache`/`disk-cache`/`merged`), `capabilitiesAgeMinutes` (unless `call`), `setupNeeded` (only when an eligible provider has no subscription profile) |
+| `log_delegation` | `taskType`, `providerInstanceId`, `model`, optional `options`, `recommendedRank` (1-based, or null), `childThreadId`, `summary`, `host` | `delegationId` and `logged` (the stored record; outside T3 Code with `host`, and its id without the host's prefix) |
+| `log_outcome` | `outcome` (`success`/`corrected`/`failure`), optional `note`, plus `delegationId` **or** `taskType` + `providerInstanceId` + `model`; `host` | `logged` (the stored record) |
+| `mark_unavailable` | `providerInstanceId`, optional `model` (omit for every model; `prefix*` for every id that starts with `prefix`), `reason` (required unless clearing), `until` (ISO date; by default the provider's `quotaWindow`, else 24 h), or `clear: true` to remove marks; `host` | `marked` and `untilFrom` (`until`, the `quotaWindow` used, or `default 24 h`), or `cleared`; `active`, every mark of the host in force |
+| `set_subscription` | `providerInstanceId`, `plan`, `quota` (`generous`/`standard`/`tight`), optional `purpose`, `role`, `quotaPool`, `quotaWindow` (`5h`/`weekly`/`monthly`), `includedFamilies` or `paidFamilies`, `onlyFamilies` or `avoidFamilies`, `onlyTaskTypes`; or `remove: true` alone; `host` | `saved` (or `removed`, null if there was none), `file`, `subscriptions` (every profile of the host), `otherHosts` (only when other hosts have profiles), `missing` (eligible providers of the kept capabilities without a profile; null if none are kept), `warnings` |
+| `get_subscriptions` | optional `host` | `file`, `subscriptions`, `otherHosts` (only when other hosts have profiles), `missing` |
+| `get_stats` | optional `since` (ISO date), `taskType`, `host` | `log` (the file path), counts, success rate and pending delegations in total, per task type and per model; `followedFirstRecommendation`; the `unavailable` marks in force. With `taskType`: `stats` for that type only (or `null`). With `host`: only that host's records and marks, and `host` |
 
 - `capabilities` accepts the object as T3 returns it, a JSON string, a bare `providers` array, or a list of several outputs (`[full, search1, ...]`), merged by `providerInstanceId` (see [Merging outputs](#merging-outputs)). Pass each output complete: the server keeps what it gets.
 - `classification` says whether the task type was `given` by the caller or came from the keyword `classifier`, with the keywords that matched.
@@ -207,7 +209,14 @@ Whether the orchestrator follows it depends on the model; nothing enforces it. `
 - `skipped` says why providers or policy entries were left out (disabled, not signed in, excluded, marked unavailable); `warnings` are things the orchestrator can act on: models left out of a short list, capabilities read from the disk cache, an unknown key in the policy file.
 - `usageSource` is `none`, or `none+call` when the call passed `usage`.
 - `setupNeeded` has `providers[]` (`providerInstanceId`, `driverKind`, `displayName`, `families`: the policy families with a model listed on it, and `questions` for the user) and `instructions` for the orchestrator. It never blocks the recommendation.
+- `host` is the [host](#hosts) the orchestrator runs in. Leave it out in T3 Code.
 - Errors (unknown `taskType`, no capabilities yet, no eligible provider, an invalid policy file) come back as tool errors with a message that says what to fix; the server keeps running.
+
+### Hosts
+
+A host is the app the orchestrator runs in and starts children with. T3 Code (`t3`) is the only one so far, and the default; support for Orca and herdr is planned. Every tool takes an optional `host`; a call without one is for the host of this server's last `recommend_model` call (a server process serves one agent session), else T3 Code. `recommend_model` also tells the host from the shape of `capabilities`, and fails when `host` names one and `capabilities` look like another host's output. Outside T3 Code the result says `host`, and in a host that starts children with a command each candidate has `launch`: the tokens and the command to start it, one element per argument.
+
+What t3-autopilot keeps is kept per host: [marks](#unavailable-marks), [subscription profiles](#subscription-profiles), the [log](#log-and-statistics) and the ids of the policy's `excludeProviders` and `instance`. T3 Code's ids are stored as they are, as in every 0.1 version; another host's carry its prefix (`orca:codex`), so a `codex` in one host never meets the other's. Tools take and return ids without the prefix, in the calling host; a stored id with `:` is another host's, because T3's provider instance ids never have one. A quota shared across hosts is said with the same [`quotaPool`](#shared-quota-quotapool) on both profiles; nothing else is shared.
 
 ## Supported providers
 
@@ -236,7 +245,7 @@ Merge rules: entries under `families` and `taskTypes` replace the default entry 
 | `usage.source` | `none` | Where usage comes from. `none`: only the `usage` passed in the call. |
 | `usage.thresholds` | `{ session: 80, weekly: 75, monthly: 90, other: 90 }` | Percent used from which a provider is moved after the others. |
 | `capabilitiesCacheTtlHours` | `12` | How long saved capabilities are reused after a restart. `0`: never. |
-| `excludeProviders` | `[]` | Provider instance ids never recommended. |
+| `excludeProviders` | `[]` | Provider instance ids never recommended; another [host](#hosts)'s with its prefix (`orca:cursor`). |
 | `genericFallback` | `true` | Whether to fill free slots with a provider's default model, low confidence. |
 | `families` | see the file | Model families. |
 | `taskTypes` | see the file | Task types with their candidates. |
@@ -291,7 +300,7 @@ usage:
 
 ### Candidates
 
-A candidate names a driver kind (`provider`, matching every eligible instance of it), `'*'` (any eligible instance, in the order T3 lists them) or an exact provider instance (`instance`, which takes precedence over `provider`), and a `family`. Optional `effort`, optional `options` (for example `{ fastMode: true }`), set when the model supports them, and `noDemote: true`, which keeps a candidate in place when its provider is busy (below 100%).
+A candidate names a driver kind (`provider`, matching every eligible instance of it), `'*'` (any eligible instance, in the order T3 lists them) or an exact provider instance (`instance`, which takes precedence over `provider`; another [host](#hosts)'s with its prefix), and a `family`. Optional `effort`, optional `options` (for example `{ fastMode: true }`), set when the model supports them, and `noDemote: true`, which keeps a candidate in place when its provider is busy (below 100%).
 
 The candidate order in the default policy is an unvalidated starting point, not a benchmark result. `claude-fable` is placed second for `writing`, and third for `design` and `plan`, because T3 gives it a fixed 1M-token context; that is a guess too. Use `get_stats` to see what works for you.
 
@@ -322,6 +331,8 @@ If you pass `usage` (percentages per provider instance, in the same shape as T3'
 
 A mark says nothing about quality. A poor result is a `failure` in `log_outcome`, which changes no ordering. A mark on a whole provider instance also applies to the instances that share its [quota pool](#shared-quota-quotapool), for the models their plan includes.
 
+Marks are kept per [host](#hosts): another host's are stored with its prefix (`"providerInstanceId": "orca:codex"`), change nothing in T3 Code, and are not in its `active` list; `get_stats` lists every host's, with their prefix.
+
 ## Subscription profiles
 
 The policy says which model families suit each task; a subscription profile says what each provider instance is worth to the user. Profiles are kept per `providerInstanceId` in `subscriptions.yaml` in the [data directory](#data-directory), written by `set_subscription` (atomically, mode `600`) and re-read on every call. Without the file, recommendations are what they were before, plus `setupNeeded`.
@@ -341,6 +352,8 @@ The policy says which model families suit each task; a subscription profile says
 | `onlyTaskTypes` | no | The instance is only for these task types. |
 | `updatedAt` | set by the server | When `set_subscription` saved it. |
 
+Profiles are kept per [host](#hosts) in the same file: another host's under its prefix (the key `orca:codex`), with the same keys and `version: 1`. `subscriptions` lists the calling host's profiles; `otherHosts`, only when there are any, the other hosts' with their prefix (T3 Code's as `t3:<id>` seen from another host).
+
 Family and task type names are checked against the policy in force (your override included) when the profile is saved; if the policy later drops one, `recommend_model` warns. Lists cannot be empty or repeat a name, and a profile with an unknown key is rejected. `set_subscription` replaces the instance's whole profile; `get_subscriptions` shows the current one. An invalid file (bad YAML, an unknown key, a wrong value) is never overwritten: `set_subscription` and `get_subscriptions` fail with the reason, and `recommend_model` ignores every profile, says so in `warnings` and omits `setupNeeded` until it is fixed.
 
 ### How a profile changes the recommendation
@@ -359,6 +372,8 @@ Instances with the same `quotaPool` draw from one quota: one plan that covers se
 
 - a [mark](#unavailable-marks) on a whole instance of the pool applies to the others, with a reason that names it (`shares quota pool "x-premium" with grok, marked unavailable until ...`);
 - usage windows passed for one instance (those not scoped to `modelIds`) count for the others.
+
+A pool can join instances of different [hosts](#hosts) (the same ChatGPT plan behind `codex` in T3 Code and in Orca): a mark on one applies to the other, and its reason names the mate as the calling host sees it (`orca:codex`, or `t3:codex` from Orca). Without a shared `quotaPool`, nothing passes from one host to another.
 
 ### Example: the author's setup
 
@@ -426,8 +441,9 @@ OpenCode's GPT and Gemini still fit its profile (the user has them nowhere else 
 - `summary` and `note` are cut to 200 characters. `options`, `recommendedRank`, `childThreadId`, `summary` and `note` are stored only when passed.
 - `log_outcome` needs a `delegationId` that is in the log, or `taskType` + `providerInstanceId` + `model`; with those three and no id, the outcome is stored on its own with a new id.
 - Lines that are not valid records are skipped when reading.
+- Outside T3 Code, records store the [host](#hosts)'s prefix in `providerInstanceId` (`orca:codex`) and a `host` field (an outcome only when it is logged on its own).
 
-`get_stats` returns `total`, `byTaskType` (each with its own `byModel`) and `byModel` (keys are `providerInstanceId/model`). Each has `delegations`, `success`, `failure`, `corrected`, `pending` (delegations with no outcome yet) and `successRate` (`success` divided by the outcomes logged; `null` when there are none). The last outcome logged for a delegation wins. `followedFirstRecommendation` counts, among delegations that logged a `recommendedRank`, how many used rank 1. `since` keeps only the records from that date on.
+`get_stats` returns `total`, `byTaskType` (each with its own `byModel`) and `byModel` (keys are `providerInstanceId/model`). Each has `delegations`, `success`, `failure`, `corrected`, `pending` (delegations with no outcome yet) and `successRate` (`success` divided by the outcomes logged; `null` when there are none). The last outcome logged for a delegation wins. `followedFirstRecommendation` counts, among delegations that logged a `recommendedRank`, how many used rank 1. `since` keeps only the records from that date on, and `host` only that host's records and marks; rows keep the stored keys, so `orca:codex/gpt-6` and `codex/gpt-6` are different rows.
 
 ## Data directory
 
@@ -440,6 +456,8 @@ Everything lives in `~/.t3-autopilot/` (or the directory named by the `T3_AUTOPI
 | `unavailable.json` | `mark_unavailable` marks: provider instance, model, a reason cut to 200 characters, until when. |
 | `capabilities-cache.json` | The last `orchestrator_capabilities` output: provider and model ids, options, sign-in constraints, the orchestrator's thread, provider and model; no tokens. |
 | `subscriptions.yaml` | [Subscription profiles](#subscription-profiles): plan, quota, purpose and rules per provider instance, as the user described them. |
+
+Every [host](#hosts) shares these files: another host's ids carry its prefix (`orca:codex`), T3 Code's are stored as they are, so a 0.1 server and a newer one can use the same directory.
 
 The task text passed to `recommend_model` is not stored; `log_delegation` stores a `summary` and `log_outcome` a `note` only if you pass them (cut to 200 characters). t3-autopilot makes no network requests.
 

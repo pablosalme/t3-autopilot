@@ -32,6 +32,7 @@ function looksLikeT3(payload: unknown): boolean {
 export const t3: HostAdapter = {
   id: "t3",
   name: "T3 Code",
+  keyPrefix: "",
   cacheFile: DATA_FILES.capabilitiesCache,
   merges: true,
   text: {
