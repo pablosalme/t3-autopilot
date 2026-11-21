@@ -48,6 +48,15 @@ const CWD = "{cwd}";
 /** A provider's field (kept in the cache with it) for the program the probe found, such as `cursor-agent`. */
 const PROGRAM = "program";
 
+/**
+ * The shell the recipe of step 3 needs: `"$(cat '<file>')"` passes the brief file's text as one argument only in a
+ * POSIX shell. PowerShell expands it to the file's lines joined by spaces, and cmd.exe passes it as it is written.
+ * `code` writes it as the instructions do (in backticks) or as a note does (plain), so both say the same.
+ */
+const posixShell = (code: (text: string) => string) =>
+  `Run these commands in bash, zsh or another POSIX shell: in PowerShell or cmd.exe, ${code(`"$(cat '<file>')"`)} ` +
+  "does not pass the brief file's text as it is.";
+
 /** An agent id the engine can key state with, for an agent the catalog does not know. */
 const AGENT_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
 
@@ -229,9 +238,8 @@ function launch(candidate: Candidate, ctx: HostContext, provider: Provider): Lau
     brief = "send";
     notes.push(`${agent} is not in the agent catalog: it starts with no flags and gets the brief once it is ready.`);
   }
-  if (ctx.platform === "win32") {
-    notes.push(`herdr on Windows is not covered yet: "$(cat '<file>')" for {brief} needs a POSIX shell.`);
-  }
+  // The instructions say it too (step 3), in the same words; Windows shells are PowerShell and cmd.exe by default.
+  if (ctx.platform === "win32") notes.push(`${posixShell((text) => text)} herdr on Windows is not covered yet.`);
   const words = brief === "argv" ? briefWords(ctx, agent) : 0;
   return {
     mode: "supervised",
@@ -263,7 +271,7 @@ You are authorized to pick the agent, model and effort of every child you start 
 
 1. Before every child, call \`recommend_model\` with \`host: "herdr"\`, \`session\` (your terminal id: the value of \`$HC_TERMINAL_ID\`, such as \`t2\`, which \`printenv HC_TERMINAL_ID\` prints), \`task\` (one line), \`taskType\` (always; choose from the types listed in the tool description) and, if you know them, \`size\` and \`criticality\`.
 2. On the first call, and again after an error or when agents change, pass as \`capabilities\` the output of \`${HERDR_PROBE}\`, exactly as printed, and as \`orchestrator\` your own \`agent\` (\`claude\`, \`codex\`, ...) and \`model\`. If a call fails with "No herdr catalog yet", run it again and pass its output.
-3. Use the first candidate. Write its brief to a file with your file tool (never \`echo\` or a heredoc), starting with a word and ending with "Report with hc send <id> when done or stuck.", where \`<id>\` is your terminal id written out (\`t2\`), never \`$HC_TERMINAL_ID\`: the child runs that line in its own shell, where the variable is the child's own id. Run its \`launch.argv\` as one shell command, each element in single quotes, with \`{name}\` replaced by a name for the child (1 to 32 of a-z, 0-9, \`-\`, \`_\` and \`.\`, starting with a letter or digit, not shaped like an id such as \`t7\`: \`fix-login\`, say), \`{cwd}\` by its working folder (an absolute path), and \`{brief}\`, without single quotes, by \`"$(cat '<file>')"\`, which passes the file's text as one argument and runs nothing in it. A \`'\` in a path is written \`'\\''\` inside single quotes. For example: \`'hc' 'run' '--bg' '--name' 'fix-login' '--cwd' '/src/app' 'claude' '--model' 'opus' "$(cat '/tmp/fix-login.md')"\`. Then run each command of \`launch.then\`, if there is one, the same way. If it has \`sameAsOrchestrator: true\`, your native subagent tool works too.
+3. Use the first candidate. Write its brief to a file with your file tool (never \`echo\` or a heredoc), starting with a word and ending with "Report with hc send <id> when done or stuck.", where \`<id>\` is your terminal id written out (\`t2\`), never \`$HC_TERMINAL_ID\`: the child runs that line in its own shell, where the variable is the child's own id. Run its \`launch.argv\` as one shell command, each element in single quotes, with \`{name}\` replaced by a name for the child (1 to 32 of a-z, 0-9, \`-\`, \`_\` and \`.\`, starting with a letter or digit, not shaped like an id such as \`t7\`: \`fix-login\`, say), \`{cwd}\` by its working folder (an absolute path), and \`{brief}\`, without single quotes, by \`"$(cat '<file>')"\`, which passes the file's text as one argument and runs nothing in it. A \`'\` in a path is written \`'\\''\` inside single quotes. For example: \`'hc' 'run' '--bg' '--name' 'fix-login' '--cwd' '/src/app' 'claude' '--model' 'opus' "$(cat '/tmp/fix-login.md')"\`. Then run each command of \`launch.then\`, if there is one, the same way. ${posixShell((text) => `\`${text}\``)} If it has \`sameAsOrchestrator: true\`, your native subagent tool works too.
 4. If hc reports the child blocked, read its screen with \`hc read <name>\` and answer it with \`hc keys <name>\` and the keys it needs. In a folder it has not seen, Claude Code first asks whether to trust it, with "No, exit" selected: \`hc keys <name> down enter\` picks "Yes, I trust this folder", which you may do for a folder you chose. Ask the user about anything else, such as a permission request.
 5. If the child cannot start, or stops at once, because of a usage limit or its plan, call \`mark_unavailable\` with \`host: "herdr"\`, its \`providerInstanceId\`, its \`model\` (omit it if the whole agent is out), a short \`reason\` and \`until\` if you know when the limit resets; then use the next candidate.
 6. Tell the user in one line which agent and model you picked, and why (the candidate's \`reason\`).

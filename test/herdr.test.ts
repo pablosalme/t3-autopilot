@@ -385,13 +385,19 @@ describe("the launch command for hc", () => {
     expect(() => launch(candidate("claude", "opus", "high; rm -rf ~"))).toThrow(/is not one command-line word/);
   });
 
-  it("says which options it cannot pass, and that Windows is not covered", () => {
+  it("says which options it cannot pass, and on Windows the instructions' shell rule and that it is not covered", () => {
     expect(launch(candidate("claude", "opus", undefined, [{ id: "fastMode", value: true }])).notes).toEqual([
       "Not passed: fastMode; the agent catalog has no flag for it.",
     ]);
+    const rule =
+      "Run these commands in bash, zsh or another POSIX shell: in PowerShell or cmd.exe, \"$(cat '<file>')\" does " +
+      "not pass the brief file's text as it is.";
     expect(launch(candidate("claude", "opus"), context(tempDir(), "win32")).notes).toEqual([
-      `herdr on Windows is not covered yet: "$(cat '<file>')" for {brief} needs a POSIX shell.`,
+      `${rule} herdr on Windows is not covered yet.`,
     ]);
+    // Step 3 says the same, in the same words, with the command in backticks.
+    const step3 = HERDR_SNIPPET.split("\n").find((line) => line.startsWith("3.")) ?? "";
+    expect(step3).toContain(rule.replace(`"$(cat '<file>')"`, `\`"$(cat '<file>')"\``));
   });
 
   // What the instructions have the orchestrator do, run for real through sh, with a stand-in for hc.
