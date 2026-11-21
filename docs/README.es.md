@@ -6,7 +6,7 @@
 
 Elige el modelo de IA adecuado para cada tarea que encarga tu agente, para que no tengas que elegirlo tú.
 
-**Funciona con [T3 Code](https://github.com/pingdotgg/t3code) y con [herdr](https://herdr.dev)** (Orca llegará pronto).
+**Funciona con [T3 Code](https://github.com/pingdotgg/t3code), con [Orca](https://orca.dev) y con [herdr](https://herdr.dev).**
 
 ## Qué es
 
@@ -22,9 +22,9 @@ Piensa en quien reparte el trabajo en un taller: el encargo delicado va a la per
 
 (Es lo que sale con las preferencias de serie si tienes conectados Claude y Codex y tu agente funciona con Claude. Puedes cambiarlas.)
 
-Funciona igual en herdr, donde tus agentes trabajan en terminales que siguen vivas: allí, cada respuesta trae además la orden que arranca al ayudante (mira [En herdr](#en-herdr)).
+Funciona igual en Orca, donde tus agentes trabajan uno al lado de otro, cada uno en su espacio de trabajo, y en herdr, donde trabajan en terminales que siguen vivas: allí, cada respuesta trae además la orden que arranca al ayudante (mira [En Orca](#en-orca) y [En herdr](#en-herdr)).
 
-Es un proyecto independiente; no forma parte de T3 Code ni de herdr.
+Es un proyecto independiente; no forma parte de T3 Code, de Orca ni de herdr.
 
 ## Para qué sirve
 
@@ -62,14 +62,14 @@ Tu agente también puede apuntar cómo ha salido cada encargo (se aceptó tal cu
 
 Necesitas:
 
-- T3 Code, con la sesión iniciada en al menos un proveedor, o el `hc` de herdr (herdr-core o la app de herdr), con al menos una CLI de agente instalada (Claude Code, Codex, Cursor Agent, Grok, OpenCode y otras).
+- T3 Code, con la sesión iniciada en al menos un proveedor; u Orca, o el `hc` de herdr (herdr-core o la app de herdr), con al menos una CLI de agente instalada (Claude Code, Codex, Cursor Agent, Grok, OpenCode y otras).
 - [Node.js](https://nodejs.org) 22 o posterior. Para comprobarlo, ejecuta `node --version` en un terminal.
 
 No hay nada que descargar a mano: `npx`, una herramienta que viene con Node.js, descarga t3-autopilot y lo ejecuta.
 
 ### Paso 1. Añádelo a tu agente
 
-Solo lo necesita el agente con el que hablas (el *orquestador*); los ayudantes no. Las órdenes son las mismas en T3 Code y en herdr. Copia la línea del agente que uses y pégala en un terminal:
+Solo lo necesita el agente con el que hablas (el *orquestador*); los ayudantes no. Las órdenes son las mismas en T3 Code, en Orca y en herdr. Copia la línea del agente que uses y pégala en un terminal:
 
 **Claude Code**
 
@@ -120,19 +120,20 @@ Los agentes leen un fichero de reglas cada vez que arrancan: `CLAUDE.md` en Clau
 npx -y t3-autopilot snippet
 ```
 
-En herdr el párrafo es otro:
+En Orca y en herdr el párrafo es otro:
 
 ```sh
+npx -y t3-autopilot snippet --host orca
 npx -y t3-autopilot snippet --host herdr
 ```
 
-Si el mismo fichero de reglas se lee en los dos (un único `CLAUDE.md` para todos tus proyectos, por ejemplo), usa el de todos los hosts, que primero le dice a tu agente cómo averiguar dónde está:
+Si el mismo fichero de reglas se lee en más de uno (un único `CLAUDE.md` para todos tus proyectos, por ejemplo), usa el de todos los hosts, que primero le dice a tu agente cómo averiguar dónde está:
 
 ```sh
 npx -y t3-autopilot snippet --host all
 ```
 
-Copia lo que muestra y pégalo al final de tu fichero de reglas. O deja que lo haga el terminal (solo en macOS y Linux; en Windows, copia y pega, porque PowerShell puede guardar el texto añadido con una codificación distinta de la del resto del fichero). Estas líneas añaden el de T3 Code; para herdr, escribe `snippet --host herdr` (o `snippet --host all`) en lugar de `snippet`. Para Claude Code:
+Copia lo que muestra y pégalo al final de tu fichero de reglas. O deja que lo haga el terminal (solo en macOS y Linux; en Windows, copia y pega, porque PowerShell puede guardar el texto añadido con una codificación distinta de la del resto del fichero). Estas líneas añaden el de T3 Code; para Orca o herdr, escribe `snippet --host orca` o `snippet --host herdr` (o `snippet --host all`) en lugar de `snippet`. Para Claude Code:
 
 ```sh
 npx -y t3-autopilot snippet >> ~/.claude/CLAUDE.md
@@ -183,7 +184,7 @@ You are authorized to pick the provider, model and options of every child task i
 
 ### Paso 3. Reinicia tu agente
 
-Reinicia tu agente, en T3 Code o en herdr, para que cargue t3-autopilot y lea las reglas nuevas. El párrafo de herdr está en [docs/hosts/herdr.md](hosts/herdr.md#the-instructions) (en inglés).
+Reinicia tu agente, en T3 Code, en Orca o en herdr, para que cargue t3-autopilot y lea las reglas nuevas. El párrafo de Orca está en [docs/hosts/orca.md](hosts/orca.md#the-instructions), y el de herdr en [docs/hosts/herdr.md](hosts/herdr.md#the-instructions) (los dos en inglés).
 
 ### Alternativa: instalar desde el código fuente
 
@@ -212,9 +213,19 @@ Para actualizarlo más adelante, ejecuta `git pull` y luego otra vez `npm ci`.
    ```
 
 2. **Tu agente lo ve.** En Claude Code, `claude mcp list` muestra una línea como `t3-autopilot: ... ✔ Connected`. En Grok CLI, `grok mcp doctor` comprueba la conexión.
-3. **Se usa.** En T3 Code o en herdr, pídele a tu agente algo que tenga que encargar, por ejemplo: *«Delega en una tarea hija la revisión del README.»* Antes de empezar debería decirte en una línea qué proveedor y qué modelo ha escogido y por qué, algo como *«review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh»* (el nombre del modelo es inventado).
+3. **Se usa.** En T3 Code, en Orca o en herdr, pídele a tu agente algo que tenga que encargar, por ejemplo: *«Delega en una tarea hija la revisión del README.»* Antes de empezar debería decirte en una línea qué proveedor y qué modelo ha escogido y por qué, algo como *«review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh»* (el nombre del modelo es inventado).
 
 Tras el primer encargo aparece una carpeta llamada `.t3-autopilot` en tu carpeta personal. Si no ocurre nada de esto, mira [las preguntas de más abajo](#preguntas).
+
+## En Orca
+
+En [Orca](https://orca.dev), tus agentes trabajan uno al lado de otro, cada uno en su espacio de trabajo, y el agente con el que hablas puede arrancar a otros como trabajadores que le avisan al terminar. Orca dice qué CLI de agentes tienes activadas, pero no sus modelos, así que la primera vez tu agente le pasa esa lista a t3-autopilot, y t3-autopilot completa los modelos con una lista que trae (con nombres que no se quedan viejos, como el `opus` de Claude Code). Desde entonces, cada recomendación llega con la orden `orca orchestration worker-start` que arranca al trabajador, siempre con el encargo en un fichero y nunca pegado dentro de la orden, y solo con las opciones que Orca acepta para ese agente. Se instala como arriba, con el párrafo de Orca en el paso 2:
+
+```sh
+npx -y t3-autopilot snippet --host orca >> ~/.claude/CLAUDE.md
+```
+
+Los límites, los perfiles de suscripción y el registro funcionan como en T3 Code, pero cada host guarda los suyos: un límite alcanzado en Orca no retrasa al mismo proveedor en T3 Code. Cómo funciona, a qué agentes deja Orca elegir modelo y qué añadir para los agentes cuyos modelos no puede adivinar (los identificadores de modelo de Codex, para poder elegir el esfuerzo, por ejemplo), está en [docs/hosts/orca.md](hosts/orca.md) (en inglés).
 
 ## En herdr
 
@@ -306,8 +317,9 @@ Todo lo que guarda t3-autopilot está en una sola carpeta de tu ordenador: `.t3-
 | `unavailable.json` | Proveedores o modelos que no se pueden usar durante un tiempo porque se llegó a un límite, con el motivo y hasta cuándo. |
 | `capabilities-cache.json` | La última lista de proveedores y modelos que T3 Code le dio a tu agente, y si cada uno se puede usar. Sin contraseñas ni tokens. |
 | `capabilities-cache.t3.json` | Las mismas listas, una por conversación de tu agente, para que tras un reinicio cada una recupere la suya. |
+| `capabilities-cache.orca.json` | En Orca, las CLI de agentes que ha listado Orca, una lista por conversación. |
 | `capabilities-cache.herdr.json` | En herdr, las CLI de agentes que ha encontrado tu agente, una lista por conversación. |
-| `catalog.yaml` | Los modelos que has añadido para los agentes en herdr. Solo existe si lo has creado tú. |
+| `catalog.yaml` | Los modelos que has añadido para los agentes en Orca y en herdr. Solo existe si lo has creado tú. |
 | `subscriptions.yaml` | Lo que le contaste a tu agente de cada suscripción: el plan, cuánto margen tiene, para qué es y qué modelos incluye. |
 
 Lo que no hace nunca:
@@ -335,10 +347,10 @@ Nada más. Si lo instalaste desde el código fuente, borra también esa carpeta.
 No. Es gratuito y de código abierto, y nunca llama a un modelo de IA: solo responde a la pregunta de tu agente.
 
 **¿Necesito T3 Code?**
-No. Funciona en T3 Code y en herdr (mira [En herdr](#en-herdr)), y Orca llegará pronto.
+No. Funciona en T3 Code, en Orca y en herdr (mira [En Orca](#en-orca) y [En herdr](#en-herdr)).
 
 **¿Con qué proveedores funciona?**
-En T3 Code, con todos los que ofrece: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse y agentes ACP. Vale cualquier combinación, también dos cuentas del mismo proveedor. En [providers.md](providers.md) (en inglés) están los detalles de cada uno. En herdr, con las CLI de agentes Claude Code, Codex, Cursor Agent, Grok, OpenCode, Pi, Antigravity, Muse, Kiro y Gemini CLI, y con otras con menos precisión.
+En T3 Code, con todos los que ofrece: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse y agentes ACP. Vale cualquier combinación, también dos cuentas del mismo proveedor. En [providers.md](providers.md) (en inglés) están los detalles de cada uno. En Orca y en herdr, con las CLI de agentes Claude Code, Codex, Cursor Agent, Grok, OpenCode, Pi, Antigravity, Muse, Kiro y Gemini CLI, y con otras con menos precisión.
 
 **¿Sabe cuánto me queda de cada suscripción?**
 No. T3 Code no comparte ese dato con los complementos, y t3-autopilot no va a leer los tokens de tus cuentas para averiguarlo. Lo que sí hace: cuando un ayudante no puede arrancar porque se ha llegado a un límite, tu agente lo apunta y ese proveedor queda detrás de los que aún se pueden usar hasta que el límite se renueve (24 horas si no se sabe la fecha; solo los modelos que tu plan cobra aparte siguen detrás de él). Si le dijiste cada cuánto se renueva el límite de un plan, espera ese tiempo (mira [Tus suscripciones](#tus-suscripciones)), y también puedes decirle qué planes se agotan enseguida.

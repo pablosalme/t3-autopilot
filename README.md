@@ -6,7 +6,7 @@
 
 Picks the right AI model for every task your agent hands off, so you don't have to.
 
-**Works with [T3 Code](https://github.com/pingdotgg/t3code) and [herdr](https://herdr.dev)** (Orca support is coming).
+**Works with [T3 Code](https://github.com/pingdotgg/t3code), [Orca](https://orca.dev) and [herdr](https://herdr.dev).**
 
 ## What it is
 
@@ -22,9 +22,9 @@ Think of the person who hands out the work in a workshop: the delicate job goes 
 
 (This is what the built-in preferences give if you have Claude and Codex connected and your agent runs on Claude. You can change them.)
 
-It works the same way in herdr, where your agents run in terminals that stay alive: there, each answer also brings the command that starts the helper (see [In herdr](#in-herdr)).
+It works the same way in Orca, where your agents run side by side in their own workspaces, and in herdr, where they run in terminals that stay alive: there, each answer also brings the command that starts the helper (see [In Orca](#in-orca) and [In herdr](#in-herdr)).
 
-It is an independent project, not part of T3 Code or herdr.
+It is an independent project, not part of T3 Code, Orca or herdr.
 
 ## Why it helps
 
@@ -62,14 +62,14 @@ Your agent can also note how each handoff went (accepted as is, needed fixes, or
 
 You need:
 
-- T3 Code, with at least one provider signed in, or herdr's `hc` (herdr-core or the herdr app), with at least one agent CLI installed (Claude Code, Codex, Cursor Agent, Grok, OpenCode and others).
+- T3 Code, with at least one provider signed in; or Orca, or herdr's `hc` (herdr-core or the herdr app), with at least one agent CLI installed (Claude Code, Codex, Cursor Agent, Grok, OpenCode and others).
 - [Node.js](https://nodejs.org) 22 or later. To check, run `node --version` in a terminal.
 
 There is nothing to download by hand: `npx`, a tool that comes with Node.js, fetches t3-autopilot and runs it.
 
 ### Step 1. Add it to your agent
 
-Only the agent you talk to needs it (the *orchestrator*); the helpers do not. The commands are the same in T3 Code and in herdr. Copy the line for the agent you use and paste it into a terminal:
+Only the agent you talk to needs it (the *orchestrator*); the helpers do not. The commands are the same in T3 Code, Orca and herdr. Copy the line for the agent you use and paste it into a terminal:
 
 **Claude Code**
 
@@ -120,19 +120,20 @@ Agents read a rules file every time they start: `CLAUDE.md` for Claude Code, `AG
 npx -y t3-autopilot snippet
 ```
 
-In herdr, the paragraph is a different one:
+In Orca and in herdr, the paragraph is a different one:
 
 ```sh
+npx -y t3-autopilot snippet --host orca
 npx -y t3-autopilot snippet --host herdr
 ```
 
-If the same rules file is read in both (one `CLAUDE.md` for every project, say), use the one for every host, which first tells your agent how to find where it runs:
+If the same rules file is read in more than one (one `CLAUDE.md` for every project, say), use the one for every host, which first tells your agent how to find where it runs:
 
 ```sh
 npx -y t3-autopilot snippet --host all
 ```
 
-Copy what it prints and paste it at the end of your rules file. Or let the terminal do it (on macOS and Linux only; on Windows, copy and paste, because PowerShell can save the added text in a different encoding from the rest of the file). The lines below add T3 Code's; for herdr, write `snippet --host herdr` (or `snippet --host all`) instead of `snippet`. For Claude Code:
+Copy what it prints and paste it at the end of your rules file. Or let the terminal do it (on macOS and Linux only; on Windows, copy and paste, because PowerShell can save the added text in a different encoding from the rest of the file). The lines below add T3 Code's; for Orca or herdr, write `snippet --host orca` or `snippet --host herdr` (or `snippet --host all`) instead of `snippet`. For Claude Code:
 
 ```sh
 npx -y t3-autopilot snippet >> ~/.claude/CLAUDE.md
@@ -181,7 +182,7 @@ You are authorized to pick the provider, model and options of every child task i
 
 ### Step 3. Restart your agent
 
-Restart your agent, in T3 Code or in herdr, so it loads t3-autopilot and reads the new rules. herdr's paragraph is in [docs/hosts/herdr.md](docs/hosts/herdr.md#the-instructions).
+Restart your agent, in T3 Code, Orca or herdr, so it loads t3-autopilot and reads the new rules. Orca's paragraph is in [docs/hosts/orca.md](docs/hosts/orca.md#the-instructions), and herdr's in [docs/hosts/herdr.md](docs/hosts/herdr.md#the-instructions).
 
 ### Alternative: install from the source code
 
@@ -210,9 +211,19 @@ To update later, run `git pull` and then `npm ci` again.
    ```
 
 2. **Your agent sees it.** In Claude Code, `claude mcp list` shows a line like `t3-autopilot: ... ✔ Connected`. In Grok CLI, `grok mcp doctor` checks the connection.
-3. **It is used.** In T3 Code or herdr, ask your agent for something it has to hand off, for example: *"Delegate a review of the README to a child task."* Before it starts, it should tell you in one line which provider and model it picked and why, something like *"review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh"* (the model name is made up).
+3. **It is used.** In T3 Code, Orca or herdr, ask your agent for something it has to hand off, for example: *"Delegate a review of the README to a child task."* Before it starts, it should tell you in one line which provider and model it picked and why, something like *"review #1: latest gpt on codex is gpt-6.2-codex, effort xhigh"* (the model name is made up).
 
 After the first handoff, a folder called `.t3-autopilot` appears in your home folder. If none of this happens, see [the questions below](#questions).
+
+## In Orca
+
+In [Orca](https://orca.dev), your agents run side by side, each in its own workspace, and the one you talk to can start others as workers that report back when they finish. Orca says which agent CLIs you have turned on, but not their models, so the first time, your agent passes that list to t3-autopilot, and t3-autopilot fills in the models from a list it carries (with names that do not go stale, such as Claude Code's `opus`). Each recommendation then comes with the `orca orchestration worker-start` command that starts the worker, with the task always in a file, never pasted into the command, and only with the choices Orca accepts for that agent. Install it as above, with Orca's paragraph in step 2:
+
+```sh
+npx -y t3-autopilot snippet --host orca >> ~/.claude/CLAUDE.md
+```
+
+What a limit or a subscription profile does, and the log, work as in T3 Code, but each host keeps its own: a limit reached in Orca does not hold back the same provider in T3 Code. How it works, which agents Orca lets pick a model, and what to add for agents whose models it cannot guess (Codex's model ids, to choose an effort, for example), is in [docs/hosts/orca.md](docs/hosts/orca.md).
 
 ## In herdr
 
@@ -304,8 +315,9 @@ Everything t3-autopilot keeps is in one folder on your computer: `.t3-autopilot`
 | `unavailable.json` | Providers or models that are out for a while because a limit was reached, with the reason and until when. |
 | `capabilities-cache.json` | The last list of providers and models T3 Code gave your agent, and whether each can be used. No passwords or tokens. |
 | `capabilities-cache.t3.json` | The same lists, one per conversation of your agent, so that after a restart each one gets its own back. |
+| `capabilities-cache.orca.json` | In Orca, the agent CLIs Orca listed, one list per conversation. |
 | `capabilities-cache.herdr.json` | In herdr, the agent CLIs your agent found, one list per conversation. |
-| `catalog.yaml` | The models you added for agents in herdr. Only there if you created it. |
+| `catalog.yaml` | The models you added for agents in Orca and herdr. Only there if you created it. |
 | `subscriptions.yaml` | What you told your agent about each subscription: the plan, how much room it has, what it is for and which models it includes. |
 
 What it never does:
@@ -333,10 +345,10 @@ That is all. If you installed from the source code, delete that folder too.
 No. It is free and open source, and it never calls an AI model: it only answers your agent's question.
 
 **Do I need T3 Code?**
-No. It works in T3 Code and in herdr (see [In herdr](#in-herdr)), and Orca support is coming.
+No. It works in T3 Code, Orca and herdr (see [In Orca](#in-orca) and [In herdr](#in-herdr)).
 
 **Which providers does it work with?**
-In T3 Code, all the ones it offers: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse and ACP agents. Any combination works, including two accounts of the same provider. [docs/providers.md](docs/providers.md) has the details of each. In herdr, the agent CLIs Claude Code, Codex, Cursor Agent, Grok, OpenCode, Pi, Antigravity, Muse, Kiro and Gemini CLI, and others with less precision.
+In T3 Code, all the ones it offers: Claude, Codex, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, fx, Muse and ACP agents. Any combination works, including two accounts of the same provider. [docs/providers.md](docs/providers.md) has the details of each. In Orca and herdr, the agent CLIs Claude Code, Codex, Cursor Agent, Grok, OpenCode, Pi, Antigravity, Muse, Kiro and Gemini CLI, and others with less precision.
 
 **Does it know how much of my subscription is left?**
 No. T3 Code does not share that with add-ons, and t3-autopilot will not read your account tokens to find out. What it does: when a helper cannot start because a limit was reached, your agent notes it, and that provider drops behind the ones that can still run until the limit resets (24 hours if the date is not known; only models your plan charges extra for stay behind it). If you told it how often a plan's limit resets, it waits that long instead (see [Your subscriptions](#your-subscriptions)), and you can tell it which plans run out quickly.
