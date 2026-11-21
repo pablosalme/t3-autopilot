@@ -52,7 +52,7 @@ import {
 } from "./unavailable.js";
 import { createUsageSource, ProviderUsageSchema, type UsageSource } from "./usage.js";
 
-export const VERSION = "0.1.3";
+export const VERSION = "0.2.0";
 
 export interface ServerOptions {
   /** Loads the policy; called on every tool call so edits apply without a restart. */

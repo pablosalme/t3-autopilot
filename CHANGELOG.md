@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-21
+
 ### Added
 
 - An optional `host` argument on every tool, for the hosts t3-autopilot supports besides T3 Code (herdr and Orca, below). T3 Code (`t3`) is the default, so nothing changes for it: leave `host` out. Marks, subscription profiles, the log and the ids in `excludeProviders` and `instance` are kept per host in the same files, another host's ids with its prefix (`orca:codex`), so a usage limit in one host never demotes a provider in another; a `quotaPool` shared by the profiles of two hosts still carries a mark between them. `get_subscriptions` and `set_subscription` list the other hosts' profiles apart, in `otherHosts`, and `get_stats` takes `host` to show one host's records and marks. A 0.1 server still reads and rewrites the same files. `t3-autopilot snippet --host <id>` prints a host's snippet.
@@ -88,7 +90,8 @@ For those who ran it from a source checkout before this version:
 - The instructions snippet changed. Replace the paragraph in your `CLAUDE.md` / `AGENTS.md` with the output of `t3-autopilot snippet`.
 - The technical part of the README moved to `docs/reference.md`.
 
-[Unreleased]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/pablosalme/t3-autopilot/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/pablosalme/t3-autopilot/compare/v0.1.0...v0.1.1

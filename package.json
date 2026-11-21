@@ -1,6 +1,6 @@
 {
   "name": "t3-autopilot",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "MCP server that recommends the agent or provider, model and reasoning effort for each child task an orchestrator delegates in T3 Code, Orca or herdr, from a family-based policy and the models you actually have.",
   "keywords": [
     "t3code",
